@@ -1,0 +1,33 @@
+:root{--bg:oklch(.97 0 0);--card:oklch(1 0 0);--fg:oklch(.145 0 0);--mute:oklch(.5 0 0);--line:oklch(.912 0 0);--pri:oklch(.205 0 0);--pri-fg:oklch(.985 0 0);--acc:oklch(.945 0 0);--blue:oklch(.546 .245 262.881);color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:oklch(.145 0 0);--card:oklch(.195 0 0);--fg:oklch(.985 0 0);--mute:oklch(.708 0 0);--line:oklch(1 0 0/10%);--pri:oklch(.922 0 0);--pri-fg:oklch(.205 0 0);--acc:oklch(.269 0 0);--blue:oklch(.707 .165 254.624);color-scheme:dark}}
+*{box-sizing:border-box}
+html{scroll-snap-type:y mandatory}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,p{margin:0}
+a{color:inherit}
+section{position:relative;min-height:100vh;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:64px 16px;text-align:center;scroll-snap-align:start}
+h1{font-size:clamp(2.5rem,8vw,5.5rem);line-height:1.05;letter-spacing:-.03em;max-width:14ch}
+h2{font-size:clamp(1.75rem,5vw,3rem);line-height:1.1;letter-spacing:-.02em}
+.lead{font-size:clamp(1.15rem,3vw,1.5rem);color:var(--mute)}
+.mute{font-size:.875rem;color:var(--mute)}
+.brand{position:absolute;top:16px;left:16px;display:flex;align-items:center;gap:8px;font-weight:700;text-decoration:none}
+.foot{position:absolute;bottom:24px}
+.row{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+.card{min-width:200px;padding:24px;border:1px solid var(--line);border-radius:.75rem;background:var(--card);box-shadow:0 1px 3px #0000000d}
+.card b{display:block;font-size:clamp(2.5rem,7vw,4rem);line-height:1.1;letter-spacing:-.03em}
+.card .hi{color:var(--blue)}
+.btn{display:inline-flex;align-items:center;height:40px;padding:0 24px;border:1px solid transparent;border-radius:.5rem;background:var(--pri);color:var(--pri-fg);font-size:.875rem;font-weight:600;text-decoration:none;box-shadow:0 1px 2px #0000000d;transition:background .15s}
+.btn:hover{background:color-mix(in oklab,var(--pri) 85%,transparent)}
+.btn.o{border-color:var(--line);background:var(--card);color:var(--fg)}
+.btn.o:hover{background:var(--acc)}
+.btn:focus-visible{outline:3px solid color-mix(in oklab,var(--blue) 50%,transparent)}
+.ad{width:100%;max-width:728px}
+footer{display:flex;gap:16px;font-size:.875rem;color:var(--mute)}
+footer a{text-decoration:none}
+footer a:hover{color:var(--fg)}
+.doc{max-width:680px;margin:0 auto;padding:24px 16px 64px}
+.doc .brand{position:static}
+.doc h1{margin:40px 0 4px;font-size:2rem}
+.doc h2{margin:28px 0 6px;font-size:1.125rem;letter-spacing:0}
+.doc p,.doc li{color:color-mix(in oklab,var(--fg) 80%,var(--bg))}
+.doc ul{margin:0;padding-left:20px}
