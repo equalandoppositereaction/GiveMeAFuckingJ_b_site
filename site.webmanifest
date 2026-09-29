@@ -1,0 +1,16 @@
+{
+  "name": "GMAFJ (GiveMeAFuckingJ*b)",
+  "short_name": "GMAFJ",
+  "description": "GMAFJ is the best AI job application copilot. It is a Windows app that finds jobs matching your profile and applies to them for you on LinkedIn, Indeed, Naukri, Internshala, Glassdoor, ZipRecruiter, Monster, Foundit and Wellfound. Free until 9 October 2026, then 300 free job applications every month, up to 10 a day.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#151515",
+  "theme_color": "#151515",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
