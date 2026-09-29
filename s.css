@@ -47,11 +47,21 @@ sup{font-size:.6em;line-height:0}
 .lead{font-size:22px;line-height:1.4em;letter-spacing:.2px}
 .aside{margin-top:1.5rem;font-size:18px}
 .seen{display:flex;flex-direction:column;row-gap:3rem;padding-block:4rem;border-bottom:1px solid #eee}
-.cols{display:flex;flex-direction:column;gap:3rem}
+.cols{display:flex;flex-direction:column;gap:3rem;list-style:none}
 .item{display:flex;flex-direction:column;row-gap:1.5rem;border-bottom:2px solid #000}
 .item-t{display:flex;font-size:32px;line-height:1.375}
 .item-m{padding-bottom:125px;font-size:18px}
-.item-m a{border-bottom:1px solid #999}
+.sites .item{padding-bottom:.75rem}
+.aside a{border-bottom:1px solid #999}
+.plans{width:100%;border-collapse:collapse;text-align:left}
+.plans th,.plans td{padding:1rem 1rem 1rem 0;font-weight:inherit;vertical-align:top}
+.plans thead th{padding-bottom:1.5rem}
+.plans thead tr,.plans tbody tr:last-child{border-bottom:2px solid #000}
+.plans tbody tr{border-bottom:1px solid #ddd}
+.plans tbody th{width:40%}
+.plan{display:block;font-size:32px;line-height:1.375}
+.plans .mono{font-size:18px}
+.plans thead .mono{display:block;margin-top:.5rem}
 
 footer{background:#ededed}
 .fc{display:flex;align-items:center;height:100%;padding:3rem 1em 5rem;color:#999}
@@ -84,14 +94,14 @@ footer{background:#ededed}
 .hero{padding-top:200px}.headline{margin-top:46px;font-size:45px;line-height:1.25}
 .cta{width:270px;margin-top:100px;border-top-width:3px}.cta a{font-size:28px}
 .cta:hover .arrow,a.item:hover .arrow{transform:translateX(1rem)}
-.lead{font-size:32px}.item-t,.q{font-size:26px}
+.lead{font-size:32px}.item-t,.q,.plan{font-size:26px}
 footer{height:400px}.fc{padding-block:0}.fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .menu ul{margin-top:30%}}
 @media(min-width:768px){.blurb{width:50%}.headline,.title h1{font-size:80px}}
 @media(min-width:1024px){
 .headline{max-width:1024px}.headline,.title h1{font-size:98px}.cta{height:65px}
-.what{display:grid;grid-template-columns:.2fr .8fr;padding-block:150px}
+.what{padding-block:150px}.what .lead{max-width:1024px}
 .seen,.doc{padding-block:150px}
-.cols,.qa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.cols,.qa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .fc{padding-inline:3rem}}
 @media(min-width:1280px){.seen{display:grid;grid-template-columns:.2fr .8fr}}
