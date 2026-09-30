@@ -38,12 +38,14 @@ sup{font-size:.6em;line-height:0}
 .headline{margin-top:10%;font-size:min(45px,12.5vw);font-weight:360;line-height:1.375}
 .cta{display:flex;width:180px;height:50px;margin-top:20%;border-top:2px solid #fff}
 .cta a{display:flex;align-self:flex-end;font-size:18px}
+.cta+p{margin-top:2rem}
 .arrow{flex:none;align-self:flex-end;width:1em;height:1em;margin:0 0 .125em .75rem;transition:transform .15s cubic-bezier(.4,0,.2,1)}
 .cta:hover .arrow,a.item:hover .arrow{transform:translateX(.5rem)}
 
 .white{background:#fff}
-.what{display:flex;flex-direction:column;row-gap:3rem;padding-block:4rem;border-bottom:1px solid #eee}
-.label{font-size:34px;font-weight:360;line-height:1.5;user-select:none}
+.what{display:flex;flex-direction:column;row-gap:1.5rem;padding-block:4rem;border-bottom:1px solid #eee;text-align:center}
+.what .lead{max-width:1024px;margin-inline:auto;text-wrap:balance}
+.label{font-size:34px;font-weight:360;line-height:1.5;text-wrap:balance;user-select:none}
 .lead{font-size:22px;line-height:1.4em;letter-spacing:.2px}
 .aside{margin-top:1.5rem;font-size:18px}
 .seen{display:flex;flex-direction:column;row-gap:3rem;padding-block:4rem;border-bottom:1px solid #eee}
@@ -100,7 +102,7 @@ footer{height:400px}.fc{padding-block:0}.fg{display:grid;grid-template-columns:r
 @media(min-width:768px){.blurb{width:50%}.headline,.title h1{font-size:80px}}
 @media(min-width:1024px){
 .headline{max-width:1024px}.headline,.title h1{font-size:98px}.cta{height:65px}
-.what{padding-block:150px}.what .lead{max-width:1024px}
+.what{padding-block:150px}
 .seen,.doc{padding-block:150px}
 .cols,.qa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .fc{padding-inline:3rem}}
