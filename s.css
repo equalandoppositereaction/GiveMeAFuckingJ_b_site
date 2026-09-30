@@ -44,7 +44,7 @@ sup{font-size:.6em;line-height:0}
 
 .white{background:#fff}
 .what{display:flex;flex-direction:column;row-gap:1.5rem;padding-block:4rem;border-bottom:1px solid #eee;text-align:center}
-.what .lead{max-width:1024px;margin-inline:auto;text-wrap:balance}
+.what .lead{text-wrap:balance}
 .label{font-size:34px;font-weight:360;line-height:1.5;text-wrap:balance;user-select:none}
 .lead{font-size:22px;line-height:1.4em;letter-spacing:.2px}
 .aside{margin-top:1.5rem;font-size:18px}
@@ -55,6 +55,7 @@ sup{font-size:.6em;line-height:0}
 .item-m{padding-bottom:125px;font-size:18px}
 .sites .item{padding-bottom:.75rem}
 .aside a{border-bottom:1px solid #999}
+.label+.intro{margin-top:-2rem}
 .plans{width:100%;border-collapse:collapse;text-align:left}
 .plans th,.plans td{padding:1rem 1rem 1rem 0;font-weight:inherit;vertical-align:top}
 .plans thead th{padding-bottom:1.5rem}
@@ -106,4 +107,4 @@ footer{height:400px}.fc{padding-block:0}.fg{display:grid;grid-template-columns:r
 .seen,.doc{padding-block:150px}
 .cols,.qa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 .fc{padding-inline:3rem}}
-@media(min-width:1280px){.seen{display:grid;grid-template-columns:.2fr .8fr}}
+@media(min-width:1280px){.seen{display:grid;grid-template-columns:.2fr .8fr}.seen>.label,.seen>.intro{grid-column:1/-1}.seen>div{grid-column:2}}
