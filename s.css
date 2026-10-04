@@ -12,7 +12,6 @@ sup{font-size:.6em;line-height:0}
 .sys{font-family:"Proxima Nova",ui-sans-serif,system-ui,sans-serif;font-weight:400}
 
 .c{width:100%;min-width:100%;margin-inline:auto;padding-inline:1rem}
-.c0{padding-inline:0}
 @media(min-width:640px){.c{max-width:640px;min-width:calc(640px - 2em)}}
 @media(min-width:768px){.c{max-width:768px;min-width:calc(768px - 2em)}}
 @media(min-width:1024px){.c{max-width:1024px;min-width:calc(1024px - 2em)}}
@@ -34,37 +33,62 @@ sup{font-size:.6em;line-height:0}
 .hero{min-height:735px;padding-top:150px;background:#151515;color:#fff}
 @supports(min-height:100svh){.hero{min-height:clamp(735px,100svh,1000px)}}
 .hero>.c{padding-bottom:3rem}
-.blurb{max-width:600px;font-size:18px;line-height:1.75em;letter-spacing:.05em}
 .headline{margin-top:10%;font-size:min(45px,12.5vw);font-weight:360;line-height:1.375}
 .cta{display:flex;width:180px;height:50px;margin-top:20%;border-top:2px solid #fff}
 .cta a{display:flex;align-self:flex-end;font-size:18px}
 .cta+p{margin-top:2rem}
 .arrow{flex:none;align-self:flex-end;width:1em;height:1em;margin:0 0 .125em .75rem;transition:transform .15s cubic-bezier(.4,0,.2,1)}
-.cta:hover .arrow,a.item:hover .arrow{transform:translateX(.5rem)}
+.cta:hover .arrow{transform:translateX(.5rem)}
 
 .white{background:#fff}
-.what{display:flex;flex-direction:column;row-gap:1.5rem;padding-block:4rem;border-bottom:1px solid #eee;text-align:center}
-.what .lead{text-wrap:balance}
 .label{font-size:34px;font-weight:360;line-height:1.5;text-wrap:balance;user-select:none}
-.lead{font-size:22px;line-height:1.4em;letter-spacing:.2px}
-.aside{margin-top:1.5rem;font-size:18px}
 .seen{display:flex;flex-direction:column;row-gap:3rem;padding-block:4rem;border-bottom:1px solid #eee}
-.cols{display:flex;flex-direction:column;gap:3rem;list-style:none}
-.item{display:flex;flex-direction:column;row-gap:1.5rem;border-bottom:2px solid #000}
-.item-t{display:flex;font-size:32px;line-height:1.375}
-.item-m{padding-bottom:125px;font-size:18px}
-.sites .item{padding-bottom:.75rem}
-.aside a{border-bottom:1px solid #999}
-.label+.intro{margin-top:-2rem}
-.plans{width:100%;border-collapse:collapse;text-align:left}
-.plans th,.plans td{padding:1rem 1rem 1rem 0;font-weight:inherit;vertical-align:top}
-.plans thead th{padding-bottom:1.5rem}
-.plans thead tr,.plans tbody tr:last-child{border-bottom:2px solid #000}
-.plans tbody tr{border-bottom:1px solid #ddd}
-.plans tbody th{width:40%}
-.plan{display:block;font-size:32px;line-height:1.375}
-.plans .mono{font-size:18px}
-.plans thead .mono{display:block;margin-top:.5rem}
+
+/* The job search (the owner, 2026-10-05): the tagline centred, the search and its filters under it, then the jobs. */
+.hero.find{min-height:0}
+.find>.c{padding-bottom:4rem}
+.find .headline{margin:.5rem auto 0;text-align:center;text-wrap:balance}
+.search{max-width:1100px;margin:2.5rem auto 0;color-scheme:dark}
+.q{display:flex;align-items:center;gap:1rem;border-bottom:3px solid #fff}
+.q input{flex:1;min-width:0;padding:.4rem 0;background:none;color:#fff;font-size:24px;outline:none}
+.q button{display:flex;padding:.5rem 0}
+.q .arrow{width:26px;height:26px;margin:0}
+.q button:hover .arrow{transform:translateX(.5rem)}
+.search ::placeholder{color:#8a8a8a;opacity:1}
+.filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem 1.5rem;margin-top:2rem}
+.filters input,.filters select{width:100%;min-width:0;padding:.45rem 0;border-bottom:1px solid #666;border-radius:0;background:transparent;color:#fff;font:inherit;font-size:15px;letter-spacing:.03em;outline:none;appearance:none;-webkit-appearance:none}
+.filters #loc{grid-column:1/-1}
+.filters select{padding-right:1.5rem;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='1.2' d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E") no-repeat right .15rem center/12px 8px;cursor:pointer}
+.filters select:has(option[value=""]:checked){color:#8a8a8a}
+.filters option{background:#151515;color:#fff}
+.filters input:focus,.filters select:focus{border-color:#fff}
+
+.results{padding-block:2.5rem 4rem}
+.count{margin-bottom:1.5rem;font-size:18px}
+/* Every tile is one row tall; an open one takes two more, and the grid flows the rest around it. */
+.jobs{--row:17.75rem;--strip:2.5rem;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:var(--row);gap:1.25rem}
+.job{display:flex;flex-direction:column;min-width:0;border:2px solid #000;background:#fff}
+.job.open{grid-row:span 3}
+.top{display:flex;flex:none;flex-direction:column;gap:.3rem;height:calc(var(--row) - var(--strip) - 4px);padding:1.25rem 1.25rem 1.1rem;cursor:pointer}
+.top h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin-bottom:.35rem;font-size:22px;font-weight:360;line-height:1.3}
+.top h3 button{text-align:left}
+.top h3 button:focus-visible,.apply:focus-visible,.app:focus-visible{outline:2px solid #000;outline-offset:3px}
+.top p{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:16px;color:#333}
+.apply{display:flex;align-items:center;align-self:flex-start;margin-top:auto;padding:.5rem 1rem;background:#000;color:#fff;font-size:18px}
+.apply .arrow,.app .arrow,.moreb .arrow{align-self:center;width:.85em;height:.85em;margin:0 0 0 .6rem}
+.apply:hover .arrow,.app:hover .arrow{transform:translateX(.35rem)}
+.more{flex:1;min-height:0;overflow:auto;padding:1rem 1.25rem 1.25rem;border-top:1px solid #ddd;font-size:15px;animation:drop .25s ease-out}
+@keyframes drop{from{opacity:0;transform:translateY(-.4rem)}}
+@media(prefers-reduced-motion:reduce){.more{animation:none}.arrow{transition:none}}
+.facts p+p{margin-top:.15rem}
+.note{margin-top:1rem;color:#555}
+.more h4{margin:1.1rem 0 .45rem;font-size:16px;font-weight:700}
+.more ul{display:flex;flex-direction:column;gap:.3rem;padding-left:1.1rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.chips span{padding:.1rem .5rem;border:1px solid #bbb;font-size:14px}
+.app{display:flex;flex:none;align-items:center;justify-content:space-between;height:var(--strip);margin-top:auto;padding:0 1rem 0 1.25rem;background:#ededed;font-size:13px;line-height:1.2}
+.moreb{display:flex;align-items:center;margin:2.5rem auto 0;padding:.75rem 1.5rem;border:2px solid #000;font-size:18px}
+.moreb:hover{background:#000;color:#fff}
 
 footer{background:#ededed}
 .fc{display:flex;align-items:center;height:100%;padding:3rem 1em 5rem;color:#999}
@@ -95,16 +119,18 @@ footer{background:#ededed}
 @media(min-width:640px){
 .links{display:flex}.burger{display:none}
 .hero{padding-top:200px}.headline{margin-top:46px;font-size:45px;line-height:1.25}
+.find.hero{padding-top:150px}.q input{font-size:28px}.filters input,.filters select{font-size:17px}
 .cta{width:270px;margin-top:100px;border-top-width:3px}.cta a{font-size:28px}
-.cta:hover .arrow,a.item:hover .arrow{transform:translateX(1rem)}
-.lead{font-size:32px}.item-t,.q,.plan{font-size:26px}
+.cta:hover .arrow{transform:translateX(1rem)}
+.q{font-size:26px}
 footer{height:400px}.fc{padding-block:0}.fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .menu ul{margin-top:30%}}
-@media(min-width:768px){.blurb{width:50%}.headline,.title h1{font-size:80px}}
+@media(min-width:768px){.headline,.title h1{font-size:80px}.jobs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:1024px){
 .headline{max-width:1024px}.headline,.title h1{font-size:98px}.cta{height:65px}
-.what{padding-block:150px}
+.find .headline{max-width:none}
+.filters{grid-template-columns:1.6fr repeat(4,minmax(0,1fr))}.filters #loc{grid-column:auto}
 .seen,.doc{padding-block:150px}
-.cols,.qa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.qa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
 .fc{padding-inline:3rem}}
-@media(min-width:1280px){.seen{display:grid;grid-template-columns:.2fr .8fr}.seen>.label,.seen>.intro{grid-column:1/-1}.seen>div{grid-column:2}}
+@media(min-width:1280px){.seen{display:grid;grid-template-columns:.2fr .8fr}.seen>.label{grid-column:1/-1}.seen>div{grid-column:2}}

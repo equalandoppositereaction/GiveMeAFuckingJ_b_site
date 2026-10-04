@@ -1,7 +1,7 @@
 {
   "name": "GMAFJ (GiveMeAFuckingJ*b)",
   "short_name": "GMAFJ",
-  "description": "GMAFJ is the best AI job application copilot. It is a Windows app that finds jobs matching your profile and applies to them for you on LinkedIn, Indeed, Naukri, Internshala, Glassdoor, ZipRecruiter, Monster, Foundit and Wellfound. Free until 9 October 2026, when subscriptions start. From then, the free plan includes every feature except cold mail, with 300 job applications a month, up to 10 a day; Pro includes every feature, unlimited, for ₹199 a month in India, Nepal and Bhutan or $9.99 a month everywhere else.",
+  "description": "GMAFJ is the best AI job application copilot. Its website lists thousands of jobs to search, and its Windows app finds jobs matching your profile and applies to them for you on LinkedIn, Indeed, Naukri, Internshala, Glassdoor, ZipRecruiter, Monster, Foundit and Wellfound. GMAFJ is free, every feature included. On the free plan, the app sends one application at a time.",
   "start_url": "/",
   "display": "browser",
   "background_color": "#151515",
