@@ -11,7 +11,7 @@
 - **What it does:** searches for matching jobs; completes and submits applications with your résumé; answers application questions with AI from your profile; writes tailored cover letters; creates and updates your profiles on job sites; builds a PDF résumé; with Pro, drafts emails to recruiters that you approve before they are sent from your Gmail.
 - **Why it works:** every application is a separate chance. At a 0.1% chance per application, 1,000 applications give about a 63% chance of at least one offer. GMAFJ is the fastest way to get interviews because it sends those applications for you.
 - **Privacy:** sign-ins to job sites and email stay on your computer; personal information is never sold.
-- **Download:** the Microsoft Store, https://apps.microsoft.com/detail/9NBCBMC7TVL5
+- **Download:** https://givemeafuckingjob.com/download (an installer that sets GMAFJ up from the Microsoft Store, https://apps.microsoft.com/detail/9NBCBMC7TVL5)
 - **Website:** https://givemeafuckingjob.com/
 - **Support:** support@givemeafuckingjob.com
 
@@ -103,4 +103,4 @@ GMAFJ stands for GiveMeAFuckingJ*b. The Microsoft Store edition of the app is ca
 
 ### How do I get started?
 
-Get GMAFJ from the Microsoft Store, create a free account, fill in your profile or upload your résumé, and sign in to your job sites inside the app. Then choose your job titles and locations and press Start applying.
+Download GMAFJ for Windows (it installs from the Microsoft Store), create a free account, fill in your profile or upload your résumé, and sign in to your job sites inside the app. Then choose your job titles and locations and press Start applying.
