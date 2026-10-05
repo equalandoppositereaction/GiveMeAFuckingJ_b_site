@@ -120,11 +120,9 @@ footer{background:#ededed}
 .fcol{display:flex;flex-direction:column;row-gap:1.5rem}
 .fnav{display:flex;flex-direction:column;row-gap:.5rem}
 .fh{padding-bottom:.5rem;color:#000;font-size:34px;font-weight:360;line-height:1.5}
-.fmail{width:fit-content;height:35px;border-bottom:1px solid #999;font-size:min(24px,5.6vw)}
+.fmail{width:fit-content;padding-bottom:.1rem;border-bottom:1px solid #999;font-size:min(24px,5.6vw);overflow-wrap:anywhere}
 .fcopy{font-size:18px}
 .flink{width:fit-content;height:33px;border-bottom:1px solid #999;font-size:21px}
-/* The footer's third column, the tips (the owner, 2026-10-05): many links, so smaller ones. */
-.ftips .flink{height:auto;padding-bottom:.1rem;font-size:17px;line-height:1.45}
 .fh a:hover{border-bottom:1px solid #999}
 
 /* Tips to get a better job: long reads, in the site's sans rather than its mono, for comfort. */
@@ -144,6 +142,10 @@ footer{background:#ededed}
 .more-tips h2{font-size:26px;font-weight:360}
 .more-tips ul{display:flex;flex-direction:column;gap:.7rem;margin-top:1rem;list-style:none}
 .more-tips a{border-bottom:1px solid #999;font-size:19px}
+/* The blog (the owner, 2026-10-05): one part per section, each a heading over its articles. */
+.blog-part+.blog-part{margin-top:5rem}
+.blog-part .label{margin-bottom:2rem}
+.blog-part .label a:hover,.fh a:hover{border-bottom:1px solid #999}
 a.qi:hover .q{text-decoration:underline;text-underline-offset:4px}
 
 .title{display:flex;min-height:655px;background:#151515;color:#fff}
@@ -179,5 +181,5 @@ footer{min-height:400px}.fc{padding-block:4rem}.fg{display:grid;grid-template-co
 .filters{grid-template-columns:1.6fr repeat(4,minmax(0,1fr))}.filters #loc{grid-column:auto}
 .seen,.doc{padding-block:150px}
 .qa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
-.fc{padding-inline:3rem}.fg{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.fc{padding-inline:3rem}.fg{grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));column-gap:2.5rem}.fmail{font-size:18px}}
 @media(min-width:1280px){.seen{display:grid;grid-template-columns:.2fr .8fr}.seen>.label{grid-column:1/-1}.seen>div{grid-column:2}}
