@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>How to Keep Your Profiles on Job Sites Up to Date | GMAFJ</title>
 <meta name="description" content="Filling in your profiles on job sites from the one profile you keep in GMAFJ, and keeping them current.">
-<meta name="robots" content="noindex,follow">
+<meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
 <link rel="canonical" href="https://givemeafuckingjob.com/guide/profiles-on-job-sites">
 <meta name="theme-color" content="#151515">
 <meta name="application-name" content="GMAFJ">
@@ -49,17 +49,133 @@
 <div class="white"><div class="c doc">
 <article class="tip">
 <!-- ARTICLE START (write the article between this line and ARTICLE END; see docs/blog-prompt.md) -->
-<p>TIP-PLACEHOLDER: this article has not been written yet. See docs/blog-prompt.md.</p>
+<p>Job sites hold a profile of you long before you apply to anything on them. Recruiters search those profiles, the boards themselves use them to match people to postings, and applications made through a site borrow from them. GMAFJ fills in your profile on the job boards it works with, from the one profile you keep in the app, so your details get typed once instead of site by site. This guide covers why those profiles matter, how the fill works, what to check afterwards, and what the app leaves for you.</p>
+
+<h2>Why a complete profile on a job site matters</h2>
+
+<p>Every board GMAFJ works with is also a place recruiters look for candidates. When a recruiter searches a board for a role and a city, that search runs over profiles, not applications, and the board's own matching and suggestion engines read the same data. A profile with no skills listed, no expected salary and a half typed work history turns up in fewer of those searches than a complete one, and it gives the board almost nothing to match against.</p>
+
+<p>The profile also feeds your applications. Apply through a site and the form often arrives pre-filled from the profile that site holds, so a gap there becomes a gap in every application that travels through it. Recruiters who receive your application frequently open the profile behind it as well, which means a thin profile can quietly undo a strong resume.</p>
+
+<p>Structured fields matter most of all. Skills, job titles, locations, years of experience, notice period and salary expectations are what boards index, filter and build job alerts from. Nice prose in an about section does not rescue an empty skills list, because the search never gets that far.</p>
+
+<p>Which board deserves your attention first depends on where you are looking. In India that is usually Naukri, with Internshala if you are after internships or your first role. In the United States, Indeed, ZipRecruiter and Glassdoor carry much of the volume. Whichever they are, the profiles do not have to become a separate typing project each, and that is what the rest of this page is about.</p>
+
+<h2>The one profile GMAFJ works from</h2>
+
+<p>GMAFJ keeps exactly one profile of you. It holds your name and contact details, links such as LinkedIn and GitHub, your education, each job in your work history, your projects, your skills with the years behind each one, awards, work eligibility details such as the countries you can work in, your notice period and your salary expectations, and your preferences: the job titles and locations you are actually searching for. If you have not built yours yet, <a href="/guide/build-your-profile">the guide to building your profile</a> walks through it, and you can start it from an uploaded resume if writing it all out from scratch sounds grim.</p>
+
+<p>Everything the app does on your behalf draws from that single profile: the applications it fills, the resume it attaches, the drafts it writes, and the profiles it maintains on job sites. That is the appeal of the design. You keep the details current in one place, and the app carries them wherever they are asked for.</p>
+
+<p>What the single profile does not do is update the job sites by itself. Each board keeps its own copy of you, on its own pages, behind your sign-in. The fill described next is how the app pushes your details across, and it runs when you send it, site by site. Nothing syncs silently in the background, and nothing changes on a site you have not pointed the app at.</p>
+
+<h2>How the fill works, step by step</h2>
+
+<p>The feature lives in <strong>Profile on Job Sites</strong>, the menu in the sidebar where your job site accounts live. It is the same place you sign in to each board, and the two belong together: a fill runs inside your logged-in session on the site, so signing in comes first. During setup the app brings you here right after your profile, and logging into any one of the sites is enough to continue.</p>
+
+<p>GMAFJ fills in your profile on Naukri, Internshala, Glassdoor, ZipRecruiter, Monster, Foundit and Wellfound. If you are job hunting in India, Naukri, Internshala and Foundit are the natural first ones, with Internshala carrying internships and fresher roles. In the United States, Glassdoor, ZipRecruiter and Monster carry much of the market, and Wellfound rounds out the list among the sites used for internships and entry level roles.</p>
+
+<ol>
+<li>Open <strong>Profile on Job Sites</strong> in the sidebar.</li>
+<li>Make sure you are signed in to the site whose profile you want filled. If you are not, sign in first, on the site's own sign-in page in the app's browser, typing the login yourself; the app never sees your password. <a href="/guide/sign-in-to-job-sites">The guide to signing in to job sites</a> covers the whole path.</li>
+<li>Start the fill for that site. The app works through one site at a time, so start with the board that carries most of the jobs you want.</li>
+<li>Watch it work, or go and do something else. The app opens the site in its own browser and walks the site's profile pages itself, typing the way a person does, keystroke by keystroke, and reading each box back afterwards to be sure the text landed.</li>
+<li>Let it finish, or press <strong>Stop</strong>, which sits beside the running fill. Stopping makes the app let go at its next step and save nothing more. When the fill ends, a result line tells you how much was filled.</li>
+</ol>
+
+<p>A few things the app does inside those pages are worth knowing, because they are the difference between a profile that looks filled and one that actually works. Before adding anything, the app reads what the page already shows, so entries you already have are not duplicated. Where a box offers suggestions as you type, the fill takes the one that matches, so your employer or your skill lands as the site's own entry rather than loose text. Where a form carries its own Save button that only appears once something is typed, the app types first and presses that Save before moving on. Wellfound's profile is built from many small forms of exactly that kind, and the app walks them one at a time; Glassdoor's profile spans two pages, and the app goes through both.</p>
+
+<h3>What the fill places where</h3>
+
+<p>Each site asks for its own things, and the fill follows the site rather than a fixed script. In practice it covers the ground you would expect: personal and contact details, education, each job in your work history, projects, skills added one by one, and awards. If your profile holds five awards, the app opens the site's add entry form once per award, so each one gets its own entry instead of the first being entered five times.</p>
+
+<p>Lists get the same treatment. A box with its own Add button, the kind Glassdoor uses for job titles, locations and skills, is filled item by item: each item is typed, a matching suggestion is taken where the site offers one, and it is added before the next begins. Boxes that only open a list, such as date of birth or country selectors, are read and picked from, with long lists scrolled as they are read.</p>
+
+<p>Where a site has an about or summary section, the app writes one for you, anchored on the job titles you are searching for in your preferences. The anchoring is the point: the summary describes the work you are looking for, rather than a guess built from your degree or your most recent job title.</p>
+
+<p>One rule runs through all of it: a profile is added to, never taken from. A box that is already ticked stays ticked, an entry the site already shows is left exactly as it is, and the app never unticks or removes anything already there.</p>
+
+<h3>What a fill needs from you</h3>
+
+<p>Two things, and both are already in place from setup. The first is a signed-in session on that site, because the fill works on your profile behind your account. The second is a profile in the app that actually holds your details, because the app fills from what you gave it and does not invent the rest. If a site's profile insists on a record the app does not hold, such as an employer you never added, the fill does not paper over the gap with a placeholder. On an application form a missing record can be marked N/A; on a job site's own profile it never is.</p>
+
+<h2>What to check after a fill</h2>
+
+<p>The result line tells you how much was filled. Then spend a few minutes on the site itself, because the profile now lives there, and the site is where recruiters will see it. Open the profile pages the app walked and skim what was placed. It is a skim, not an audit, and it catches the small share of things worth catching.</p>
+
+<ul>
+<li><strong>Matched entries.</strong> Where the fill took a site's suggestion, check that what the site matched is genuinely you: the right employer, the right school, the right skill. Suggestions are usually right, and this is the half minute that finds the rare one that is not.</li>
+<li><strong>Ticked boxes.</strong> The app leaves a box that is already ticked exactly as it found it, and it does not untick job alert or marketing opt-ins on a site's profile pages. If a site pre-ticked those for you, uncheck the ones you do not want.</li>
+<li><strong>The summary.</strong> Read the about section the app wrote. If it does not sound like the work you want, adjust the titles in your preferences and run the fill again.</li>
+<li><strong>The numbers that move.</strong> Notice period, current and expected salary, and whether you are willing to relocate. Boards in India ask for these directly, and they follow you into applications, so a stale one misleads in both directions.</li>
+<li><strong>Contact details and links.</strong> The email recruiters will reach you on, the phone number, and the links to your LinkedIn, GitHub or portfolio.</li>
+</ul>
+
+<p>Do this once per site, after the first fill and after any re-run that followed a real change. After that, the profile holds until your details do.</p>
+
+<h2>Keeping the profiles current</h2>
+
+<p>Profiles go stale quietly. You start a new job, learn a skill, move cities, and the site keeps presenting the person who signed up. The habit that prevents it is short: every change starts in the app profile, and the fill carries it out to the sites.</p>
+
+<h3>Moments that call for a re-run</h3>
+
+<ul>
+<li>A new job, or a change of role inside the same employer: add it to your experience in the app.</li>
+<li>A new skill or certification: add it, along with the years you actually have behind it.</li>
+<li>A move to a new city: update your contact details and the locations you are searching in.</li>
+<li>A change in what you want: different job titles, a different level, remote instead of on-site.</li>
+<li>A notice period that has changed, or salary expectations that no longer fit.</li>
+<li>A new project or award worth a recruiter's attention.</li>
+</ul>
+
+<p>After any of these, update the app profile first, then run the fill again for each site you care about. The fill adds what the page does not show yet, so a re-run places the new details and leaves everything already there untouched. It takes a couple of minutes per site, and there is no schedule to keep beyond your own changes.</p>
+
+<p>One boundary to know: the fill does not prune. If a site still lists an employer you would rather drop, or an old salary range you have moved past, that edit is yours to make on the site itself. The app adds and never subtracts, so tidying up stays with you.</p>
+
+<p>The same logic points the other way. When you keep the app profile current, everything downstream stays current with it: the profiles on the boards, the applications the app fills, and the resume it attaches. One edit at the source replaces the same edit on every site, and keeping the profiles up to date stops being a chore you remember and becomes something the app does with you.</p>
+
+<h2>What the app leaves for you</h2>
+
+<p><strong>Passwords and anything like them.</strong> The app never types a password into any field, and it never types government ID, tax, bank or card numbers either, profile pages included. If a site's profile asks for something in that family, that field stays yours to fill or to leave alone.</p>
+
+<p><strong>Deletions and rewrites.</strong> Restating the rule as its own line, because it is the one people ask about: the app adds to a site profile and never takes from it. Ticked boxes stay ticked, existing entries stay as they are, and anything you want removed is removed by you, on the site.</p>
+
+<p><strong>LinkedIn.</strong> The fill list is the seven boards above, and LinkedIn is not on it. GMAFJ applies on LinkedIn through Easy Apply, which draws on the details your LinkedIn account already holds, so keeping that profile current is something you do on LinkedIn itself. <a href="/tips/linkedin-profile-for-recruiters">The guide to optimizing your LinkedIn profile</a> covers what is worth putting there.</p>
+
+<p><strong>Checks and puzzles.</strong> If a site puts a captcha or a human check in the way, the app stops and leaves it to you. It never attempts to solve or bypass one, on a profile fill or anywhere else.</p>
+
+<p><strong>Employer accounts.</strong> Company career pages are not profiles you keep. The app fills each employer's form when it applies there, job by job, and where an employer wants an account opened first, that decision stays with you.</p>
+
+<p><strong>Lapsed sessions.</strong> If a site has signed you out since your last visit, the fill cannot run until you are back in. Sign in again from Profile on Job Sites, the same door as always, and run the fill once more. Nothing is lost by it.</p>
+
+<h2>A checklist for profiles on job sites</h2>
+
+<p>Everything above, compressed into a list you can run through whenever your details change.</p>
+
+<ul>
+<li>My profile in the app is complete and current, because it is the source for everything else.</li>
+<li>I am signed in to every board whose profile I want filled.</li>
+<li>I ran the fill for each signed-in board and read the result line.</li>
+<li>I opened each site's profile once afterwards and skimmed what was placed.</li>
+<li>I unchecked the promotional or job alert boxes the sites had pre-ticked.</li>
+<li>I read the summary the app wrote, and it describes the work I want.</li>
+<li>Notice period, salary expectations and preferred titles on the sites match what I actually want.</li>
+<li>My LinkedIn profile is current on LinkedIn itself.</li>
+<li>Whenever something real changes (a job, a skill, a city), I update the app profile and re-run the fills.</li>
+</ul>
+
+<p>That is the whole arrangement. You keep one profile in the app, sign in to the boards you want, and send the fill whenever your details change. Your profiles stay current, recruiters find the person you are today rather than the person you were last year, and every application GMAFJ submits carries those same current details. When the profiles are in shape, <a href="/guide/apply-through-job-sites">the guide to applying through job sites</a> shows what a run looks like from the queue to a submitted application.</p>
 <!-- ARTICLE END -->
 </article>
 <aside class="tip-cta"><p>Apply to more jobs, faster. The GMAFJ desktop app finds jobs that match your profile and applies to them for you, for free.</p><div class="cta"><a href="/download"><span>Download GMAFJ</span><svg class="arrow" viewBox="0 0 17 14" fill="none" aria-hidden="true"><path stroke="currentColor" d="M1 7h15M10 1l6 6-6 6"/></svg></a></div></aside>
-
+<nav class="more-tips" aria-label="More from the guide"><h2>More from the guide</h2><ul><li><a href="/guide/settings-and-pacing">GMAFJ Settings: Pacing, Employer Accounts and More</a></li><li><a href="/guide/get-the-most-out-of-gmafj">How to Get the Most Out of GMAFJ</a></li><li><a href="/guide/troubleshooting">Troubleshooting GMAFJ</a></li><li><a href="/guide/getting-started">Getting Started With GMAFJ</a></li></ul></nav>
 </div></div>
 </main>
 <footer><div class="c fc"><div class="fg">
 <div class="fcol"><h3 class="fh">Contact</h3><a class="fmail sys" href="mailto:support@givemeafuckingjob.com">support@givemeafuckingjob.com</a><p class="fcopy sys">© 2026 GiveMeAFuckingJ*b.<br>All rights reserved.</p></div>
 <div class="fnav"><h3 class="fh">Navigate</h3><a class="flink sys" href="/blog/">Blog</a><a class="flink sys" href="/download">Download</a><a class="flink sys" href="/faq">FAQ</a><a class="flink sys" href="/privacy">Privacy Policy</a><a class="flink sys" href="/terms">Terms of Use</a><a class="flink sys" href="/ai-disclosure">AI Disclosure</a></div>
 <div class="fnav ftips"><h3 class="fh"><a href="/tips/">Tips to get a better job</a></h3><a class="flink sys" href="/tips/resume-that-gets-interviews">Write a resume that gets interviews</a><a class="flink sys" href="/tips/tailor-resume-to-job-description">Tailor your resume to each job</a><a class="flink sys" href="/tips/beat-applicant-tracking-systems">Get past applicant tracking systems</a><a class="flink sys" href="/tips/cover-letter-that-gets-read">Write a cover letter that gets read</a><a class="flink sys" href="/tips/answer-application-questions">Answer application questions well</a><a class="flink sys" href="/tips/how-many-jobs-to-apply-to">How many jobs to apply to</a><a class="flink sys" href="/tips/cold-email-recruiters">Cold email recruiters</a><a class="flink sys" href="/tips/linkedin-profile-for-recruiters">Optimize your LinkedIn profile</a><a class="flink sys all" href="/tips/">All tips</a></div>
+<div class="fnav ftips"><h3 class="fh"><a href="/guide/">How to use GMAFJ</a></h3><a class="flink sys" href="/guide/getting-started">Getting started</a><a class="flink sys" href="/guide/build-your-profile">Build your profile</a><a class="flink sys" href="/guide/your-resume-in-gmafj">Your resume in GMAFJ</a><a class="flink sys" href="/guide/sign-in-to-job-sites">Sign in to job sites</a><a class="flink sys" href="/guide/apply-through-job-sites">Apply through job sites</a><a class="flink sys" href="/guide/search-jobs-and-one-click-apply">Search jobs and One click apply</a><a class="flink sys" href="/guide/review-your-answers">Review your answers</a><a class="flink sys" href="/guide/when-a-job-needs-you">When a job needs you</a><a class="flink sys all" href="/guide/">The full guide</a></div>
 </div></div></footer>
 </body>
 </html>

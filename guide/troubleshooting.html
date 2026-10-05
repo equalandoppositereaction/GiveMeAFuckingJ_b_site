@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Troubleshooting GMAFJ | GMAFJ</title>
 <meta name="description" content="What to do when a job site signs you out, a run stops early, a check appears, or the app cannot reach its server.">
-<meta name="robots" content="noindex,follow">
+<meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large,max-video-preview:-1">
 <link rel="canonical" href="https://givemeafuckingjob.com/guide/troubleshooting">
 <meta name="theme-color" content="#151515">
 <meta name="application-name" content="GMAFJ">
@@ -49,17 +49,178 @@
 <div class="white"><div class="c doc">
 <article class="tip">
 <!-- ARTICLE START (write the article between this line and ARTICLE END; see docs/blog-prompt.md) -->
-<p>TIP-PLACEHOLDER: this article has not been written yet. See docs/blog-prompt.md.</p>
+<p>Most GMAFJ runs finish without you touching anything, and this guide is about the times one does not. It takes the problems you are most likely to meet, one at a time, and for each one shows you how to recognise it, why it happens, and what to do. Work through the section that matches what you are seeing, and the checklist at the end gathers every fix into one place.</p>
+
+<h2>When a job site signs you out</h2>
+
+<p>The sign is a banner above the Dashboard telling you a site needs signing in to, or a site that has gone greyed out on the Apply through job sites card. If it happens in the middle of a run, the entire queue pauses behind it, because pushing more applications at a site that has stopped listening is exactly the wrong response.</p>
+
+<p>This is not a malfunction. Job sites end sessions for ordinary reasons: time passing, a password change on your side, a security decision on theirs. GMAFJ is deliberately strict about it too. It counts a session as good only when the site has actually served results through it, so it will not tell you that you are signed in while the site disagrees.</p>
+
+<p>What to do:</p>
+
+<ol>
+<li>Open <strong>Profile on Job Sites</strong> in the sidebar and choose the site that signed out.</li>
+<li>The app opens its own browser at that site's sign-in page. Sign in yourself, exactly as you did the first time, and complete whatever the site asks for on the way in: a code, a confirmation email, a puzzle.</li>
+<li>That is all. The app notices the sign-in on its own and marks the site as available again. There is nothing to press and nothing to tell it.</li>
+<li>If a run was paused, start the queue again. It picks up where it stopped.</li>
+</ol>
+
+<p>Nothing is lost in the pause. When you resume, the app reopens the posting it was working on and refills the form from your profile and saved answers, so no half-filled form is left behind on the site. The rest of the queue then continues in order.</p>
+
+<p>One variation to expect before a run starts: if a site you picked looks signed out, the app tells you and offers to open that site's sign-in page, but it still lets you start, because the site may accept the session after all. Treat that warning as information rather than a wall. If the site does refuse the session, the run pauses at that point and the fix is the one above.</p>
+
+<p>Codes, puzzles and second steps during sign-in are covered step by step in <a href="/guide/sign-in-to-job-sites">the guide to signing in to job sites</a>, along with why your passwords never reach the app.</p>
+
+<h2>When a run stops early or seems stuck</h2>
+
+<p>The symptom is a Now running card that has not moved in a while, or a run that ended having sent fewer applications than the queue held. A run almost never stops without saying why, so before assuming the worst, look at what the app is showing. The reason is nearly always on the screen already.</p>
+
+<h3>Where the reason shows up</h3>
+
+<p>Check four places, in this order:</p>
+
+<ol>
+<li><strong>The top of the Dashboard.</strong> A card there means a question is waiting for you, and nothing else in the queue will start until it is answered.</li>
+<li><strong>The banner above the Dashboard.</strong> A full-width banner means a check paused the entire queue: a captcha, a signed-out site, or a site asking for a slower pace.</li>
+<li><strong>The Applications board.</strong> A yellow outline means the application is frozen on a question and waiting on you. Green means sent.</li>
+<li><strong>The skip reasons.</strong> Postings the app passed over do not appear on the board. Their reasons are shown together in plain sentences, so one glance tells you whether the same thing keeps happening.</li>
+</ol>
+
+<p>The usual causes, roughly in the order they turn up:</p>
+
+<ul>
+<li><strong>A required question is waiting.</strong> The queue is stopped behind a card. This is the most common stop of all, and the next section covers it.</li>
+<li><strong>A session expired.</strong> A site signed you out mid-run. The fix is in the section above.</li>
+<li><strong>A form the app could not read.</strong> A posting whose form the app genuinely cannot make sense of fails on its own, the reason is recorded, and the queue carries on. One odd form does not cost you the rest of the queue. If it keeps happening on the same site, the app pauses and waits for you rather than working through the rest of the queue blindly.</li>
+<li><strong>The site refused the form.</strong> Sites check what they are given and simply stay put when something is wrong. The app does not hammer a refusing form: when a site's own validation complains, the card names the field the site objected to, so you know exactly what to fix.</li>
+<li><strong>It is not stuck at all.</strong> The app types at a natural pace and reads back what it typed to be sure each field took it, and an answer to a brand new question is written on our server, which can take a little while. Press <strong>Watch live</strong> on the Now running card and the strip above the page names exactly what the run is doing.</li>
+</ul>
+
+<p>One case worth knowing in advance: an application counts as sent only when the site itself shows its confirmation, never from the click alone. If a site stays quiet after the button was pressed, the app records why rather than counting the application as sent. A missing application on the board is honest information, not a false success.</p>
+
+<h3>How to get going again</h3>
+
+<p>Clear whatever the app is waiting on, then start the queue again the same way you started the run. You can also pause and resume from the command palette, which opens from the search bar at the top of the window. Neither pause nor stop cuts an application off midway: the application in flight finishes, and nothing new starts behind it.</p>
+
+<p>If a run will not start at all, the app refuses before anything is opened and names what is missing: usually a profile detail that every posting asks for, or your resume, which goes out with every application. Fill in what it names and it will start. That refusal is deliberate, because an application without those details would stop at the first page with no explanation.</p>
+
+<h2>When a check appears and waits for you</h2>
+
+<p>A check is the app's word for a moment a job needs a person. The run freezes exactly where it stands, the reason appears on a card at the top of the Dashboard, and the job sits on the Applications board with a yellow outline. Nothing is guessed at behind your back: the whole point of the stop is that the answer must come from you.</p>
+
+<p>Each kind of check wants something different:</p>
+
+<ul>
+<li><strong>A question only you can answer</strong> arrives as a Boost card, with the question as real text beside a screenshot of that part of the form. It wants an answer, and you have three choices: answer it yourself, let the AI draft one, or skip this job.</li>
+<li><strong>An agreement or consent</strong>, such as a site's terms or a background-check consent, wants you to accept it. The app never accepts agreements on your behalf.</li>
+<li><strong>An account gate</strong> means the employer wants an account on their own site before you can apply. The app parks the posting and keeps the link for you, and creating the account is your decision to make.</li>
+<li><strong>A captcha</strong> wants you to solve it in the app's browser. The app never attempts to solve or bypass one.</li>
+<li><strong>A slow-down</strong> means a site has asked for a pause. The app names the site and suggests a wait, and resumes only when you say so.</li>
+</ul>
+
+<h3>Answering a Boost card, step by step</h3>
+
+<ol>
+<li>Open the Dashboard. The card sits at the top, with the job's title and company, the question itself, and the screenshot.</li>
+<li>Press <strong>Answer manually</strong>. The app brings its browser view forward, scrolls to the question, and draws a highlight ring around it. Everything else on the form is already filled in.</li>
+<li>Type your answer, or pick from the options. Take whatever time you need; the run is not going anywhere.</li>
+<li>Press the done button on the strip above the page. A button to skip the job sits beside it if you would rather drop the application.</li>
+<li>The app reads the field back before it believes you, and tells you plainly if the field is still blank.</li>
+<li>Answer the reuse question, whether the same answer will do for other jobs, and the run resumes exactly where it stopped.</li>
+</ol>
+
+<p>Marking an answer reusable when it truly describes you is the single best way to make checks rarer: the next form that asks the same question fills itself without stopping. And a card has no deadline. Close the app, come back tomorrow, and the card is rebuilt exactly as it was, screenshot included.</p>
+
+<p>The full anatomy of every kind of check, including what the app will never type on your behalf, is in <a href="/guide/when-a-job-needs-you">the guide to when a job needs you</a>.</p>
+
+<h2>When the app cannot reach its server</h2>
+
+<p>The symptom is a card saying the AI could not be reached, drafts that never arrive, or your GMAFJ account refusing to sign in. The cause is simple: the AI work in GMAFJ, drafting answers to questions nothing on file can fill, writing cover letters, and researching and drafting cold mail, happens on our server rather than on your computer. Your own internet connection can be the reason, and so can the server itself, which is one small machine and does restart now and then.</p>
+
+<p>Plenty keeps working while the connection is out, because it lives on your machine:</p>
+
+<ul>
+<li>Everything filled straight from your profile: contact details, education, experience, work eligibility and pay.</li>
+<li>Every saved answer in the Answers library, reused exactly as always.</li>
+<li>Your sign-ins to job sites, and the record of your applications on the board.</li>
+<li>Runs themselves. You can keep applying, answering cards yourself instead of letting the AI draft.</li>
+</ul>
+
+<p>To fix it, check that your own connection is up, then give it a few minutes and try again. A question the server has taken on is not lost while you wait: it is answered once the server is back, or returned to you as a card if it cannot be answered after repeated tries. It is never dropped silently and never guessed at. Signing in to your GMAFJ account needs the server too, so the same advice applies there: wait a little and try again.</p>
+
+<p>One consequence to expect: a posting that needs a cover letter may be passed over, with the reason recorded, while the AI is out of reach, because the app will not send an application with a required answer missing. The queue carries on with the postings it can complete honestly, and once drafts are working again, everything goes back to normal.</p>
+
+<h2>When answers look wrong</h2>
+
+<p>The symptom is usually found in the Answers library: an answer that is out of date, an AI draft you would not send, or an answer saved for every job that should have been for one job only. Sometimes it is worse and you spot it after an application has gone out. Either way the fix has the same shape: find which source produced the answer, and correct that source.</p>
+
+<p>Answers come from three places, tried in a fixed order: your profile first, then saved answers, then a fresh AI draft. So:</p>
+
+<ol>
+<li><strong>If the wrong answer is a fact</strong>, such as a phone number, a set of dates or a work eligibility detail, fix it in your profile. A fact corrected there is answered correctly on every future application, wherever the question comes up. This is why the profile matters more than anything else in the app.</li>
+<li><strong>If the wrong answer is a saved one</strong>, open the Answers library and search for the question text. Edit or delete the answer there, and if the mistake was the scope, flip it between every job and this job only.</li>
+<li><strong>If the wrong answer came from the AI</strong>, filter the library to AI answers first, since those are the only ones you did not write yourself. Edit or delete anything you would not send. The app does not let the AI invent facts about you, no new employers, qualifications or contact details, so a draft that reads like it did is one to delete, and worth mentioning if you write to us.</li>
+</ol>
+
+<p>The library also shows how many times each answer has been used and when it was last used, which tells you how far a wrong answer has travelled. That is the honest measure of how urgent the fix is.</p>
+
+<p>One hard truth: correcting the source fixes every future application, but it does not pull back one already sent. If an employer received something wrong, the useful moves are fixing the source immediately so nothing repeats it, and, if it matters to you, a short correction from your own email. The app applies as you, so a correction from you lands as from you too.</p>
+
+<p>Everything about the library's columns, filters and scope decisions is covered in <a href="/guide/review-your-answers">the guide to reviewing your answers</a>.</p>
+
+<h2>Updating or reinstalling the app</h2>
+
+<p>GMAFJ checks for a newer version every time it starts, so the first thing to try when something behaves oddly is simply restarting the app. Job sites change their pages constantly, and staying current is the cheapest troubleshooting there is: a newer version carries the fixes for the sites' latest changes.</p>
+
+<p>If a problem survives a restart and an update, a reinstall is a fair next step, and it is designed not to hurt. Your profile is kept in your GMAFJ account, so it is not lost with the install: sign back in and your details are there. Your sign-ins to job sites live on your computer rather than in your account, so after a fresh install you sign in to your sites again, about a minute each. If you would rather start completely clean, the app has an <strong>Erase all local data</strong> action that clears what it kept on your machine.</p>
+
+<p>The app runs on Windows and installs from the Microsoft Store, and <a href="/download">the download page on this site</a> points you there.</p>
+
+<h2>When to write to support</h2>
+
+<p>If none of the fixes above sorted it, or the app shows something this guide does not describe, write to us at <strong>support@givemeafuckingjob.com</strong>. Every message is read, and the details you include decide how quickly it gets sorted.</p>
+
+<p>What helps most:</p>
+
+<ul>
+<li>What you were doing when it happened: starting a run, answering a card, signing in to a site.</li>
+<li>Which job site was involved, if any.</li>
+<li>What the app showed, as close to the exact words as you can remember. The wording of a banner or a card narrows the cause down quickly.</li>
+<li>Roughly when it happened.</li>
+<li>The email address on your GMAFJ account, so we can find the right profile.</li>
+</ul>
+
+<p>One thing never to include: a password for any job site. The app never sees your job site passwords, and nobody at GMAFJ will ever ask for one. If anything claiming to be us ever does, that is not us.</p>
+
+<h2>A troubleshooting checklist</h2>
+
+<p>Everything above, compressed into one list to run through when something looks wrong:</p>
+
+<ul>
+<li><strong>Read what is on the screen first.</strong> A run almost never stops without naming a reason.</li>
+<li><strong>Banner above the Dashboard?</strong> The whole queue is paused: sign in again, solve the captcha yourself, or give the site the wait it asked for.</li>
+<li><strong>Card at the top of the Dashboard?</strong> A question is waiting: answer it manually, let the AI draft it, or skip the job. Mark reusable answers reusable.</li>
+<li><strong>Yellow outline on the Applications board?</strong> That application is frozen on a question and waiting on you. Green means sent.</li>
+<li><strong>A site greyed out on the Apply through job sites card?</strong> Sign in again on Profile on Job Sites. It takes about a minute.</li>
+<li><strong>A run that ended short?</strong> Read the grouped skip reasons, and close a profile gap once rather than answering the same question by hand again and again.</li>
+<li><strong>Answers gone wrong?</strong> Fix facts in your profile, fix saved answers in the Answers library, and audit the AI answers first.</li>
+<li><strong>The AI could not be reached?</strong> Check your connection, wait a few minutes, and try again. Profile facts and saved answers keep working in the meantime.</li>
+<li><strong>Still odd after all of this?</strong> Restart the app to pick up any update, then write to support@givemeafuckingjob.com with what you saw.</li>
+</ul>
+
+<p>Most of these take a minute, and most of them end the same way: the app tells you what it needs, you give it, and the applications go out again. That is deliberate. A tool that applies under your name would rather stop and ask than guess, and every pause it hands you is a pause worth having.</p>
 <!-- ARTICLE END -->
 </article>
 <aside class="tip-cta"><p>Apply to more jobs, faster. The GMAFJ desktop app finds jobs that match your profile and applies to them for you, for free.</p><div class="cta"><a href="/download"><span>Download GMAFJ</span><svg class="arrow" viewBox="0 0 17 14" fill="none" aria-hidden="true"><path stroke="currentColor" d="M1 7h15M10 1l6 6-6 6"/></svg></a></div></aside>
-
+<nav class="more-tips" aria-label="More from the guide"><h2>More from the guide</h2><ul><li><a href="/guide/getting-started">Getting Started With GMAFJ</a></li><li><a href="/guide/build-your-profile">How to Build a Complete Profile in GMAFJ</a></li><li><a href="/guide/your-resume-in-gmafj">Your Resume in GMAFJ: Upload One or Build One</a></li><li><a href="/guide/sign-in-to-job-sites">How to Sign In to Job Sites in GMAFJ</a></li></ul></nav>
 </div></div>
 </main>
 <footer><div class="c fc"><div class="fg">
 <div class="fcol"><h3 class="fh">Contact</h3><a class="fmail sys" href="mailto:support@givemeafuckingjob.com">support@givemeafuckingjob.com</a><p class="fcopy sys">© 2026 GiveMeAFuckingJ*b.<br>All rights reserved.</p></div>
 <div class="fnav"><h3 class="fh">Navigate</h3><a class="flink sys" href="/blog/">Blog</a><a class="flink sys" href="/download">Download</a><a class="flink sys" href="/faq">FAQ</a><a class="flink sys" href="/privacy">Privacy Policy</a><a class="flink sys" href="/terms">Terms of Use</a><a class="flink sys" href="/ai-disclosure">AI Disclosure</a></div>
 <div class="fnav ftips"><h3 class="fh"><a href="/tips/">Tips to get a better job</a></h3><a class="flink sys" href="/tips/resume-that-gets-interviews">Write a resume that gets interviews</a><a class="flink sys" href="/tips/tailor-resume-to-job-description">Tailor your resume to each job</a><a class="flink sys" href="/tips/beat-applicant-tracking-systems">Get past applicant tracking systems</a><a class="flink sys" href="/tips/cover-letter-that-gets-read">Write a cover letter that gets read</a><a class="flink sys" href="/tips/answer-application-questions">Answer application questions well</a><a class="flink sys" href="/tips/how-many-jobs-to-apply-to">How many jobs to apply to</a><a class="flink sys" href="/tips/cold-email-recruiters">Cold email recruiters</a><a class="flink sys" href="/tips/linkedin-profile-for-recruiters">Optimize your LinkedIn profile</a><a class="flink sys all" href="/tips/">All tips</a></div>
+<div class="fnav ftips"><h3 class="fh"><a href="/guide/">How to use GMAFJ</a></h3><a class="flink sys" href="/guide/getting-started">Getting started</a><a class="flink sys" href="/guide/build-your-profile">Build your profile</a><a class="flink sys" href="/guide/your-resume-in-gmafj">Your resume in GMAFJ</a><a class="flink sys" href="/guide/sign-in-to-job-sites">Sign in to job sites</a><a class="flink sys" href="/guide/apply-through-job-sites">Apply through job sites</a><a class="flink sys" href="/guide/search-jobs-and-one-click-apply">Search jobs and One click apply</a><a class="flink sys" href="/guide/review-your-answers">Review your answers</a><a class="flink sys" href="/guide/when-a-job-needs-you">When a job needs you</a><a class="flink sys all" href="/guide/">The full guide</a></div>
 </div></div></footer>
 </body>
 </html>

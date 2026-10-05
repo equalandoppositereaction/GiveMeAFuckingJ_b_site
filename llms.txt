@@ -37,6 +37,35 @@
 - [How to Answer “Tell Me About Yourself”](https://givemeafuckingjob.com/tips/tell-me-about-yourself): A simple present, past and future structure for the most common interview opener, with examples for different careers.
 - [How to Negotiate Your Salary Offer](https://givemeafuckingjob.com/tips/negotiate-salary-offer): How to research your market rate, when to name a number, and how to ask for more without risking the offer.
 - [How to Get Your First Job as a Fresher or Student](https://givemeafuckingjob.com/tips/first-job-as-fresher): Internships, projects, and campus and off-campus hiring: how to stand out with little or no work experience.
+- [How to Make a Strong Start in Your First 90 Days at a New Job](https://givemeafuckingjob.com/tips/first-90-days-new-job): How to learn fast, build the right relationships and show early results in your first three months at a new company.
+- [How to Write Professional Emails at Work](https://givemeafuckingjob.com/tips/professional-email-etiquette): Subject lines, structure, tone, replies and follow-ups: how to write work emails that get read and acted on.
+- [How to Ask for a Raise or a Promotion](https://givemeafuckingjob.com/tips/ask-for-raise-or-promotion): How to build your case, pick the right moment and handle the conversation when you ask for more pay or a bigger role.
+- [How to Prepare for Your Performance Review](https://givemeafuckingjob.com/tips/prepare-for-performance-review): Writing your self-assessment, gathering evidence of your work, taking feedback well and setting goals for the next cycle.
+- [How to Speak Up in Meetings and Be Heard at Work](https://givemeafuckingjob.com/tips/speak-up-in-meetings): Practical ways to contribute in meetings, present your ideas clearly and communicate with confidence at work.
+- [How to Build a Good Relationship With Your Manager](https://givemeafuckingjob.com/tips/work-well-with-your-manager): Understanding what your manager needs, running useful one-on-ones, asking for feedback and managing expectations.
+- [How to Handle Office Politics Without Losing Yourself](https://givemeafuckingjob.com/tips/handle-office-politics): How to read the unwritten rules at work, build allies, stay out of gossip and protect your reputation.
+- [How to Switch Careers Without Starting From Scratch](https://givemeafuckingjob.com/tips/switch-careers): Finding your transferable skills, testing a new field, closing the gaps and telling your story to employers.
+- [How to Resign From a Job Professionally](https://givemeafuckingjob.com/tips/resign-from-job-professionally): Telling your manager, the resignation letter, notice period, handover, counter offers and leaving on good terms.
+- [How to Choose a College Course With Your Career in Mind](https://givemeafuckingjob.com/tips/choose-college-course-for-career): How to weigh interests, job prospects, costs and flexibility when choosing a degree or a course for your career.
+- [How to Use Your College Years to Build Your Career](https://givemeafuckingjob.com/tips/use-college-years-to-build-career): Clubs, projects, internships, grades and people: what to do in each year of college to graduate ready for work.
+- [How to Prepare for Campus Placements](https://givemeafuckingjob.com/tips/prepare-for-campus-placements): Aptitude tests, group discussions, technical rounds and HR interviews: a preparation plan for campus hiring.
+- [How to Turn an Internship Into a Full-Time Job Offer](https://givemeafuckingjob.com/tips/internship-to-full-time-offer): How to make your internship count: great work, being visible, asking for feedback and raising the full-time question.
+
+## How to use GMAFJ
+
+- [Getting Started With GMAFJ](https://givemeafuckingjob.com/guide/getting-started): Install GMAFJ, create your account, build your profile from your resume and sign in to your first job site.
+- [How to Build a Complete Profile in GMAFJ](https://givemeafuckingjob.com/guide/build-your-profile): What the profile holds, why each part matters, and how a complete profile means every application is filled in properly.
+- [Your Resume in GMAFJ: Upload One or Build One](https://givemeafuckingjob.com/guide/your-resume-in-gmafj): How GMAFJ uses your resume, how to upload your own, and how to build a clean PDF resume from your profile.
+- [How to Sign In to Job Sites in GMAFJ](https://givemeafuckingjob.com/guide/sign-in-to-job-sites): Which job sites GMAFJ works with, how to sign in to them inside the app, and why your sign-ins stay on your computer.
+- [How to Apply Through Job Sites With GMAFJ](https://givemeafuckingjob.com/guide/apply-through-job-sites): Choosing your job sites, titles and locations, starting a run, watching it work, and stopping it.
+- [How to Search Jobs and Use One Click Apply](https://givemeafuckingjob.com/guide/search-jobs-and-one-click-apply): Finding jobs on the dashboard, opening them to apply yourself, and letting GMAFJ apply for you with one click.
+- [How GMAFJ Answers Application Questions, and How to Review Them](https://givemeafuckingjob.com/guide/review-your-answers): Where every answer comes from, how to check and edit your saved answers, and how to make the next ones better.
+- [What to Do When a Job Needs You](https://givemeafuckingjob.com/guide/when-a-job-needs-you): Questions only you can answer, terms to accept, sign-ups and checks: how GMAFJ asks for your help, and how to give it.
+- [How to Email Recruiters With Cold Mail](https://givemeafuckingjob.com/guide/cold-mail-with-gmafj): Connecting your Gmail, choosing whom to write to, reviewing each draft and sending personal emails from your own account.
+- [How to Keep Your Profiles on Job Sites Up to Date](https://givemeafuckingjob.com/guide/profiles-on-job-sites): Filling in your profiles on job sites from the one profile you keep in GMAFJ, and keeping them current.
+- [GMAFJ Settings: Pacing, Employer Accounts and More](https://givemeafuckingjob.com/guide/settings-and-pacing): What each setting does, how to choose your pacing, and how employer account details help on company career sites.
+- [How to Get the Most Out of GMAFJ](https://givemeafuckingjob.com/guide/get-the-most-out-of-gmafj): Habits and settings that lead to more applications, more replies and more interviews with GMAFJ.
+- [Troubleshooting GMAFJ](https://givemeafuckingjob.com/guide/troubleshooting): What to do when a job site signs you out, a run stops early, a check appears, or the app cannot reach its server.
 
 ## Optional
 
