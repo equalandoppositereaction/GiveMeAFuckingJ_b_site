@@ -23,6 +23,21 @@
 - [Terms of Use](https://givemeafuckingjob.com/terms): the rules for using GMAFJ
 - [AI Disclosure](https://givemeafuckingjob.com/ai-disclosure): how GMAFJ uses AI and its limits
 
+## Tips to get a better job
+
+- [How to Write a Resume That Gets Interviews](https://givemeafuckingjob.com/tips/resume-that-gets-interviews): What recruiters look for in the first few seconds, and how to build every section of your resume to earn the interview.
+- [How to Tailor Your Resume to Every Job Description](https://givemeafuckingjob.com/tips/tailor-resume-to-job-description): A fast, repeatable way to match your resume to a job posting without rewriting it from scratch every time.
+- [How to Get Your Resume Past Applicant Tracking Systems](https://givemeafuckingjob.com/tips/beat-applicant-tracking-systems): How ATS software reads your resume, which formats break it, and how to use the right keywords honestly.
+- [How to Write a Cover Letter That Actually Gets Read](https://givemeafuckingjob.com/tips/cover-letter-that-gets-read): A simple structure for short, specific cover letters, with examples for freshers and for experienced professionals.
+- [How to Answer Common Job Application Questions](https://givemeafuckingjob.com/tips/answer-application-questions): Notice period, expected salary, work authorization, why this company: what each question is really asking, and how to answer.
+- [How Many Jobs Should You Apply To?](https://givemeafuckingjob.com/tips/how-many-jobs-to-apply-to): Why a job search is partly a numbers game, how to plan your weekly volume, and how to keep quality high while applying widely.
+- [How to Cold Email a Recruiter or Hiring Manager](https://givemeafuckingjob.com/tips/cold-email-recruiters): Finding the right person, writing a short email that gets a reply, and following up without being annoying.
+- [How to Optimize Your LinkedIn Profile for Recruiters](https://givemeafuckingjob.com/tips/linkedin-profile-for-recruiters): Headline, About section, skills and activity: how recruiters search LinkedIn, and how to show up in their results.
+- [How to Prepare for a Job Interview](https://givemeafuckingjob.com/tips/prepare-for-job-interview): A step by step plan for the week before an interview: research, stories, practice, and the questions to ask.
+- [How to Answer “Tell Me About Yourself”](https://givemeafuckingjob.com/tips/tell-me-about-yourself): A simple present, past and future structure for the most common interview opener, with examples for different careers.
+- [How to Negotiate Your Salary Offer](https://givemeafuckingjob.com/tips/negotiate-salary-offer): How to research your market rate, when to name a number, and how to ask for more without risking the offer.
+- [How to Get Your First Job as a Fresher or Student](https://givemeafuckingjob.com/tips/first-job-as-fresher): Internships, projects, and campus and off-campus hiring: how to stand out with little or no work experience.
+
 ## Optional
 
 - [Everything on one page](https://givemeafuckingjob.com/llms-full.txt): the facts and every question and answer from the FAQ

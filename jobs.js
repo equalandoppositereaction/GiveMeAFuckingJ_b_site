@@ -1,19 +1,38 @@
 /**
  * The job search on the home page (the owner, 2026-10-05).
  *
- * jobs/index.txt holds every job's title, location, countries, type, level, remote flag, posting day and
- * salary (its format is in scripts/build-jobs.mjs). It is read as it streams in, so the newest jobs show
- * while the rest load, and then searched here as you type. A job's link and details are in its chunk,
- * jobs/<chunk>.json, fetched when the job is opened. Apply goes through /apply, which reads the same
- * chunk and forwards to the job's page, so no link is ever shown here.
+ * Until somebody searches, the page shows a fixed few jobs from jobs/home.json, in English, and nothing
+ * else is fetched: the full list, jobs/index.txt (several megabytes), is read only on a search, Enter or
+ * the arrow, to keep what each visit costs down. It streams in, and the first results show while the
+ * rest load. After that the filters apply as they change; the words still wait for Enter.
+ *
+ * A job's link and details are in its chunk, jobs/<chunk>.json, fetched when the job is opened, or as
+ * the pointer reaches its Apply. Apply opens the job's page itself in a new tab; no link is ever shown.
+ * Formats: scripts/build-jobs.mjs.
  */
 ;(() => {
-  const PAGE = 30 // tiles per "Show more"
+  // Boxes, ads included: six at first (the owner, 2026-10-05), then twelve for each "Show more jobs".
+  const FIRST = 6
+  const MORE = 12
   const EARLY = 3000 // jobs read before the first results are shown
+  /*
+   * The ad unit in every sixth box. With only a slot it is a responsive display ad; give it the in-feed
+   * unit's slot and layout key (AdSense: Ads, By ad unit, In-feed ads; the code it shows has both) and
+   * it becomes an in-feed ad styled like the jobs.
+   */
+  const FEED_SLOT = '2714256184'
+  const FEED_LAYOUT = ''
   const TYPE = { F: 'Full time', P: 'Part time', C: 'Contract', I: 'Internship', T: 'Temporary', L: 'Freelance', A: 'Apprenticeship' }
   const LEVEL = { E: 'Entry level', M: 'Mid level', S: 'Senior level', X: 'Executive level' }
   const SYMBOL = { USD: '$', EUR: '€', GBP: '£', INR: '₹', JPY: '¥', CAD: 'CA$', AUD: 'A$', SGD: 'S$', NZD: 'NZ$', HKD: 'HK$', BRL: 'R$', MXN: 'MX$', CNY: 'CN¥', KRW: '₩', ILS: '₪', PHP: '₱' }
   const ARROW = '<svg class="arrow" viewBox="0 0 17 14" fill="none" aria-hidden="true"><path stroke="currentColor" d="M1 7h15M10 1l6 6-6 6"/></svg>'
+  const NICHE = 'Ultra niche jobs were extracted directly from the employer’s career page and usually don’t have many applicants to compete with.'
+  const AD = `<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9726750731585284" data-ad-slot="${FEED_SLOT}" ${
+    FEED_LAYOUT ? `data-ad-format="fluid" data-ad-layout-key="${FEED_LAYOUT}"` : 'data-ad-format="auto"'
+  }></ins>`
+  // The fifth box of every six is an ad, in a job's frame; until AdSense fills it, or when it cannot, it offers the app.
+  const AD_TILE = `<div class="ad-tile"><span class="ad-label mono">Advertisement</span>${AD}<div class="house"><p>Find more jobs and apply to them with one click, from our desktop app.</p><a class="apply" href="/download">Download free${ARROW}</a></div></div>`
+  const LATIN = /^[\p{Script=Latin}\p{N}\p{P}\p{S}\s]+$/u
   const DAY = 864e5
   const today = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / DAY)
 
@@ -32,16 +51,35 @@
     return v
   }
 
-  // ── The index, column by column
+  /**
+   * Every ad on screen not yet asked for. A push fills the FIRST unfilled adsbygoogle unit in the page, not a
+   * chosen one, so a unit that is hidden must never be in the page unpushed.
+   */
+  function ads(root) {
+    for (const ins of root.querySelectorAll('ins.adsbygoogle:not([data-pushed])')) {
+      if (!ins.offsetWidth) continue // hidden at this width: an ad there would have no size
+      ins.dataset.pushed = '1'
+      try {
+        ;(window.adsbygoogle = window.adsbygoogle || []).push({})
+      } catch {
+        /* blocked, or not approved yet: the space stays empty */
+      }
+    }
+  }
+
+  // ── The full list, column by column, read on the first search
   let head = null
   let n = 0
-  let ids, days, titles, locs, ccs, flags, pays, chunkOf
+  let ids, days, titles, locs, ccs, flags, pays, chunkOf, latin
   let loaded = false
+  let loading = null
+  let searched = false
 
   function start(line) {
     head = JSON.parse(line)
     ids = new Int32Array(head.count)
     days = new Int32Array(head.count)
+    latin = new Uint8Array(head.count)
     titles = new Array(head.count)
     locs = new Array(head.count)
     ccs = new Array(head.count)
@@ -65,6 +103,7 @@
     days[n] = +f[5]
     pays[n] = f[6]
     chunkOf[n] = chunk
+    latin[n] = LATIN.test(f[1]) ? 1 : 0
     n++
   }
 
@@ -73,30 +112,30 @@
     if (!res.ok || !res.body) throw new Error(String(res.status))
     const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
     let rest = ''
-    let shown = false
+    let early = false
     for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       const lines = (rest + value).split('\n')
       rest = lines.pop()
       for (const line of lines) head ? add(line) : start(line)
-      if (!shown && n >= EARLY) {
-        shown = true
+      if (!early && n >= EARLY) {
+        early = true
         search()
       }
     }
     if (rest) head ? add(rest) : start(rest)
     loaded = true
     places()
-    // The full list may order the first page differently; leave it be while someone is reading an open job.
-    if (grid.querySelector('.open')) stale = true
-    else search()
   }
 
+  /** The job at position i of the full list, as a tile needs it. */
+  const jobAt = (i) => ({ id: ids[i], title: titles[i], loc: locs[i], flags: flags[i], day: days[i], pay: pays[i], chunk: chunkOf[i], detail: null })
+
   // ── Searching
-  let found = []
-  let shownCount = 0
-  let stale = false
+  let found = [] // jobs, as tiles need them
+  let shown = 0 // jobs on screen
+  let boxes = 0 // and boxes, the ads among them
 
   /** A test for the location box: the text at a word's start in the location, or a country whose name starts with it. */
   function placeTest(text) {
@@ -113,14 +152,13 @@
     return (i) => normed(locs[i]).includes(q) || (codes.size > 0 && ccs[i] !== '' && ccs[i].split(' ').some((c) => codes.has(c)))
   }
 
+  /** Runs the search on what has loaded. Postings in a Latin script first, so a search for everything does not open on a wall of Chinese. */
   function search() {
-    if (!head) return
-    stale = false
     const words = norm(qIn.value).split(' ').filter(Boolean).map((w) => ' ' + w)
     const place = placeTest(locIn.value)
     const mode = modeIn.value, type = typeIn.value, level = levelIn.value
     const since = +postedIn.value ? today - +postedIn.value : 0
-    const byDay = new Map()
+    const byDay = [new Map(), new Map()]
     for (let i = 0; i < n; i++) {
       const f = flags[i]
       if (type && f[0] !== type) continue
@@ -132,29 +170,67 @@
         if (!words.every((w) => t.includes(w))) continue
       }
       if (place && !place(i)) continue
-      const list = byDay.get(days[i])
+      const by = byDay[latin[i]]
+      const list = by.get(days[i])
       if (list) list.push(i)
-      else byDay.set(days[i], [i])
+      else by.set(days[i], [i])
     }
-    // Newest first: by the day posted, and within a day by id, which the index already runs down.
-    found = [...byDay.keys()].sort((a, b) => b - a).flatMap((d) => byDay.get(d))
-    shownCount = 0
-    grid.textContent = ''
-    page()
-    const total = `${found.length.toLocaleString('en')} ${found.length === 1 ? 'job' : 'jobs'}`
-    count.textContent = loaded ? total : `${total} so far. Loading ${(head.count - n).toLocaleString('en')} more…`
+    // Newest first: by the day posted, and within a day by id, which the list already runs down.
+    const order = (by) => [...by.keys()].sort((a, b) => b - a).flatMap((d) => by.get(d))
+    found = [...order(byDay[1]), ...order(byDay[0])].map(jobAt)
+    render()
+    tell(`${found.length.toLocaleString('en')} ${found.length === 1 ? 'job' : 'jobs'}${loaded ? '' : ` so far, ${(head.count - n).toLocaleString('en')} more loading…`}`)
+  }
+
+  /** The line above the tiles: how many, and that the app has more. */
+  function tell(text) {
+    count.innerHTML = `${esc(text)} <a class="more-app" href="/download">(more on our desktop app)</a>`
+  }
+
+  async function run() {
+    searched = true
     remember()
+    if (!loaded) {
+      if (!loading) {
+        tell('Searching…')
+        loading = load().catch((e) => {
+          loading = null
+          throw e
+        })
+      }
+      try {
+        await loading
+      } catch {
+        count.textContent = 'The jobs could not be loaded. Check your connection and search again.'
+        return
+      }
+    }
+    search()
+  }
+
+  function render() {
+    shown = 0
+    boxes = 0
+    grid.textContent = ''
+    byKey.clear()
+    page()
   }
 
   function page() {
     const html = []
-    for (const i of found.slice(shownCount, shownCount + PAGE)) html.push(tile(i))
+    const until = boxes + (boxes ? MORE : FIRST)
+    while (boxes < until && shown < found.length) {
+      // An ad only with a job still to come after it, so a short list never ends on one.
+      html.push(boxes % 6 === 4 ? AD_TILE : tile(found[shown++]))
+      boxes++
+    }
     grid.insertAdjacentHTML('beforeend', html.join(''))
-    shownCount = Math.min(found.length, shownCount + PAGE)
-    more.hidden = shownCount >= found.length
+    more.hidden = shown >= found.length
+    ads(grid)
   }
 
   // ── Tiles
+  const byKey = new Map() // tile's job id -> the job, for its buttons
 
   /** "EUR75-86~" -> "€75K-86K a year (estimated)"; rupees in lakhs. */
   function salary(s) {
@@ -166,16 +242,18 @@
     return `${sym ?? cur + ' '}${amount(+lo)}${hi ? '-' + amount(+hi) : ''} a year${est ? ' (estimated)' : ''}`
   }
 
-  function tile(i) {
-    const f = flags[i]
+  function tile(job) {
+    byKey.set(job.id, job)
+    const f = job.flags
     const tags = [f[2] === 'R' ? 'Remote' : 'On-site', TYPE[f[0]]].filter(Boolean).join(' · ')
-    return `<article class="job" data-i="${i}">
+    return `<article class="job" data-id="${job.id}">
+<span class="niche mono" tabindex="0">Ultra niche<span class="tip" role="tooltip">${NICHE}</span></span>
 <div class="top">
-<h3><button type="button" aria-expanded="false">${esc(titles[i])}</button></h3>
-<p class="mono">${esc(locs[i] || 'Location not listed')}</p>
+<h3><button type="button" aria-expanded="false">${esc(job.title)}</button></h3>
+<p class="mono">${esc(job.loc || 'Location not listed')}</p>
 <p class="mono">${tags}</p>
-<p class="mono">${esc(salary(pays[i]))}</p>
-<a class="apply" href="apply?j=${ids[i]}&amp;c=${chunkOf[i]}&amp;v=${head.build}" target="_blank" rel="noopener">Apply${ARROW}</a>
+<p class="mono">${esc(salary(job.pay))}</p>
+<button class="apply" type="button">Apply${ARROW}</button>
 </div>
 <div class="more" hidden></div>
 <a class="app mono" href="/download">Apply with one click from our desktop app for free${ARROW}</a>
@@ -183,17 +261,19 @@
   }
 
   const chunks = new Map()
-  function fetchChunk(name) {
-    if (!chunks.has(name)) {
-      const p = fetch(`jobs/${name}.json?v=${head.build}`)
+  /** The job's link and details: [url, years, tasks, perks, skills, roles, education, language]. */
+  function detail(job) {
+    if (job.detail) return Promise.resolve(job.detail)
+    if (!chunks.has(job.chunk)) {
+      const p = fetch(`jobs/${job.chunk}.json?v=${head.build}`)
         .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
         .catch((e) => {
-          chunks.delete(name)
+          chunks.delete(job.chunk)
           throw e
         })
-      chunks.set(name, p)
+      chunks.set(job.chunk, p)
     }
-    return chunks.get(name)
+    return chunks.get(job.chunk).then((c) => (job.detail = c[job.id] || null))
   }
 
   const languages = new Intl.DisplayNames(['en'], { type: 'language' })
@@ -213,11 +293,11 @@
     return `Posted on ${new Date(d * DAY).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}`
   }
 
-  function details(i, d) {
-    const f = flags[i]
+  function details(job, d) {
+    const f = job.flags
     const [, years = 0, tasks = [], perks = [], skills = [], roles = [], education = [], lang = ''] = d || []
     const experience = [LEVEL[f[1]], years ? `about ${years} ${years === 1 ? 'year' : 'years'} of experience` : ''].filter(Boolean).join(', ')
-    const facts = [posted(days[i]), experience, education.length ? `Education: ${education.join(', ')}` : '', lang ? `The posting is in ${language(lang)}` : '']
+    const facts = [posted(job.day), experience, education.length ? `Education: ${education.join(', ')}` : '', lang ? `The posting is in ${language(lang)}` : '']
       .filter(Boolean)
       .map((t) => `<p>${esc(t[0].toUpperCase() + t.slice(1))}</p>`)
     const list = (title, items) => (items.length ? `<h4>${title}</h4><ul class="mono">${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : '')
@@ -231,48 +311,76 @@
     return html + (tasks.length || skills.length ? '' : '<p class="mono note">Apply to read the full job description on the job’s page.</p>')
   }
 
-  async function toggle(job) {
-    const open = !job.classList.contains('open')
-    job.classList.toggle('open', open)
-    job.querySelector('h3 button').setAttribute('aria-expanded', String(open))
-    const box = job.querySelector('.more')
+  async function toggle(el) {
+    const job = byKey.get(+el.dataset.id)
+    const open = !el.classList.contains('open')
+    el.classList.toggle('open', open)
+    el.querySelector('h3 button').setAttribute('aria-expanded', String(open))
+    const box = el.querySelector('.more')
     box.hidden = !open
-    if (!open) {
-      if (stale) search()
-      return
-    }
-    job.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    if (!open) return
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     if (box.dataset.filled) return
     box.dataset.filled = '1'
-    const i = +job.dataset.i
-    box.innerHTML = '<p class="mono">Loading the details…</p>'
+    if (!job.detail) box.innerHTML = '<p class="mono">Loading the details…</p>'
     try {
-      box.innerHTML = details(i, (await fetchChunk(chunkOf[i]))[ids[i]])
+      box.innerHTML = details(job, await detail(job))
     } catch {
       delete box.dataset.filled
       box.innerHTML = '<p class="mono">The details could not be loaded. Close the job and open it again to retry.</p>'
     }
   }
 
-  // Anywhere on a tile's top part opens or closes it, except its links; a drag to select text does not.
+  /**
+   * Straight to the job's page, in a new tab. A tab can only be opened in the click itself, so when the
+   * link has not arrived yet the tab opens empty and is sent on once it has.
+   */
+  async function apply(job, button) {
+    if (job.detail) return void window.open(job.detail[0], '_blank', 'noopener')
+    const tab = window.open('', '_blank')
+    if (tab) tab.opener = null
+    try {
+      const d = await detail(job)
+      if (d && /^https?:\/\//i.test(d[0])) {
+        if (tab) tab.location.replace(d[0])
+        else window.open(d[0], '_blank', 'noopener')
+        return
+      }
+    } catch {
+      /* said below */
+    }
+    tab?.close()
+    button.textContent = 'No longer listed'
+    button.disabled = true
+  }
+
   grid.addEventListener('click', (e) => {
-    if (e.target.closest('a') || String(getSelection()).length) return
-    const top = e.target.closest('.top')
-    if (top) toggle(top.parentElement)
+    const t = e.target
+    if (t.closest('a, .niche')) return
+    const job = t.closest('.job')
+    if (!job) return
+    const button = t.closest('.apply')
+    if (button) return void apply(byKey.get(+job.dataset.id), button)
+    // Anywhere else on a tile's top part opens or closes it; a drag to select text does not.
+    if (t.closest('.top') && !String(getSelection()).length) toggle(job)
   })
+  // The link is fetched as the pointer reaches Apply, so the click can open the page at once.
+  const early = (e) => {
+    const job = e.target.closest?.('.apply') && e.target.closest('.job')
+    if (job) detail(byKey.get(+job.dataset.id)).catch(() => {})
+  }
+  grid.addEventListener('pointerover', early)
+  grid.addEventListener('focusin', early)
   more.addEventListener('click', page)
 
-  // ── The search box and filters
-  let timer = 0
-  form.addEventListener('input', () => {
-    clearTimeout(timer)
-    timer = setTimeout(search, 150)
-  })
+  // ── The search box and filters: nothing is searched until Enter or the arrow; after that the filters apply as they change.
   form.addEventListener('submit', (e) => {
     e.preventDefault()
-    clearTimeout(timer)
-    search()
+    void run()
     if (matchMedia('(hover: none)').matches) document.activeElement.blur()
+  })
+  form.addEventListener('change', (e) => {
+    if (searched && e.target.tagName === 'SELECT') void run()
   })
 
   /** The search in the address, so it can be shared, bookmarked and reloaded. */
@@ -282,10 +390,8 @@
     const q = p.toString()
     history.replaceState(null, '', q ? `?${q}` : location.pathname)
   }
-  const asked = new URLSearchParams(location.search)
-  for (const el of fields) if (asked.has(el.name)) el.value = asked.get(el.name)
 
-  /** Suggestions for the location box: the countries with the most jobs, then the most common cities. */
+  /** Suggestions for the location box, once the full list is in: the countries with the most jobs, then the most common cities. */
   function places() {
     const byCountry = new Map()
     const byCity = new Map()
@@ -300,7 +406,21 @@
     $('places').innerHTML = [...countries, ...cities].map((p) => `<option value="${esc(p)}"></option>`).join('')
   }
 
-  load().catch(() => {
-    count.textContent = 'The jobs could not be loaded. Check your connection and refresh the page.'
-  })
+  // ── First paint: the home page's own few, or the search in the address.
+  ads(document)
+  const asked = new URLSearchParams(location.search)
+  for (const el of fields) if (asked.has(el.name)) el.value = asked.get(el.name)
+  if (fields.some((el) => el.value)) void run()
+  else
+    fetch('jobs/home.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((home) => {
+        if (searched) return
+        found = home.jobs.map(([id, title, loc, , fl, day, pay, ...d]) => ({ id, title, loc, flags: fl, day, pay, detail: d }))
+        render()
+        tell(`${home.total.toLocaleString('en')} jobs`)
+      })
+      .catch(() => {
+        if (!searched) count.textContent = 'The jobs could not be loaded. Check your connection and refresh the page.'
+      })
 })()

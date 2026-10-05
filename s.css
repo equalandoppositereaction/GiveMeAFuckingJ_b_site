@@ -19,10 +19,13 @@ sup{font-size:.6em;line-height:0}
 @media(min-width:1573px){.c{max-width:1573px;min-width:calc(100% - 10em)}}
 
 .nav{position:absolute;top:0;left:0;right:0;z-index:50;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;height:150px;color:#fff;user-select:none}
-.logo{display:flex;align-items:center;gap:.35em;width:fit-content;font-size:min(34px,6vw);font-weight:700;line-height:1;letter-spacing:-.035em;white-space:nowrap}
-.logo img{flex:none;width:1.2em;height:1.2em;filter:invert(1)}
-.links{display:none;justify-self:end;gap:4rem;font-size:24px;font-weight:300;letter-spacing:.05em}
-.burger{justify-self:end;display:flex}
+.links{position:relative;grid-column:2;display:none;justify-self:end;align-items:center;gap:4rem;font-size:24px;font-weight:300;letter-spacing:.05em}
+.dl{padding:.2rem 1rem;border:2px solid #fff;transition:background .15s,color .15s}
+.dl:hover{background:#fff;color:#151515}
+/* The pencilled note under the bar, its arrow up at Download (the owner, 2026-10-05). Wide screens only. */
+.penned{position:absolute;top:100%;right:11.3rem;display:none;margin-top:2.9rem;font-family:Caveat,cursive;font-size:26px;font-weight:500;line-height:1;letter-spacing:0;white-space:nowrap;color:#d4d4d4;transform:rotate(-2deg);pointer-events:none}
+.scribble{position:absolute;left:100%;bottom:.5em;width:72px;height:50px;margin-left:.2rem;color:#e8e8e8;overflow:visible}
+.burger{grid-column:2;justify-self:end;display:flex}
 .burger svg,.close svg{width:50px;height:50px}
 .menu{position:fixed;inset:0;z-index:60;background:#151515;color:#fff;transform:translateY(100%);visibility:hidden;transition:transform .45s cubic-bezier(.3,1.15,.4,1),visibility 0s .45s}
 .open .menu{transform:none;visibility:visible;transition:transform .45s cubic-bezier(.3,1.15,.4,1)}
@@ -63,18 +66,39 @@ sup{font-size:.6em;line-height:0}
 .filters option{background:#151515;color:#fff}
 .filters input:focus,.filters select:focus{border-color:#fff}
 
-.results{padding-block:2.5rem 4rem}
+.results{min-width:0;padding-block:2.5rem 4rem}
 .count{margin-bottom:1.5rem;font-size:18px}
+.more-app{margin-left:.35rem;color:#666;border-bottom:1px solid #bbb}
+.more-app:hover{color:#000}
+/*
+ * The fifth of every six boxes is an ad, the size and frame of a job (the owner, 2026-10-05), at every
+ * width. Until AdSense fills it, and when it cannot, the box offers the desktop app instead, so the
+ * grid never shows a hole.
+ */
+.ad-tile{position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden;border:2px solid #000;background:#fff}
+.ad-label{position:absolute;top:-2px;left:-2px;z-index:1;padding:.2rem .6rem;background:#ededed;color:#666;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.ad-tile ins{flex:1;min-height:0;margin-top:1.6rem}
+.house{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:.9rem;padding:1.25rem}
+.house p{font-size:22px;line-height:1.3}
+.house .apply{margin-top:0}
+.ad-tile:has(ins[data-ad-status="filled"]) .house{display:none}
+.ad-tile:has(ins[data-ad-status="filled"]) .ad-label{background:#fff}
 /* Every tile is one row tall; an open one takes two more, and the grid flows the rest around it. */
-.jobs{--row:17.75rem;--strip:2.5rem;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:var(--row);gap:1.25rem}
-.job{display:flex;flex-direction:column;min-width:0;border:2px solid #000;background:#fff}
+.jobs{--row:17.75rem;--strip:2.5rem;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:var(--row);grid-auto-flow:row dense;gap:1.25rem}
+.job{position:relative;display:flex;flex-direction:column;min-width:0;border:2px solid #000;background:#fff}
+/* "Ultra niche", a tab on every job's top right, explained on hover or focus (the owner, 2026-10-05). */
+.niche{position:absolute;top:-.8rem;right:.9rem;z-index:5;padding:.25rem .7rem;background:#000;color:#fff;font-size:13px;letter-spacing:.04em;line-height:1.2;cursor:help;outline:none}
+.niche .tip{position:absolute;top:calc(100% + .4rem);right:0;display:none;width:min(17rem,80vw);padding:.7rem .85rem;background:#151515;color:#fff;font-size:14px;line-height:1.45;letter-spacing:0;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.niche:hover .tip,.niche:focus .tip{display:block}
 .job.open{grid-row:span 3}
 .top{display:flex;flex:none;flex-direction:column;gap:.3rem;height:calc(var(--row) - var(--strip) - 4px);padding:1.25rem 1.25rem 1.1rem;cursor:pointer}
-.top h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin-bottom:.35rem;font-size:22px;font-weight:360;line-height:1.3}
-.top h3 button{text-align:left}
+.top h3{margin-bottom:.35rem;font-size:22px;font-weight:360;line-height:1.3}
+/* Two lines at most: the clamp has to be on the button, whose text it is. */
+.top h3 button{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;text-align:left}
 .top h3 button:focus-visible,.apply:focus-visible,.app:focus-visible{outline:2px solid #000;outline-offset:3px}
 .top p{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:16px;color:#333}
 .apply{display:flex;align-items:center;align-self:flex-start;margin-top:auto;padding:.5rem 1rem;background:#000;color:#fff;font-size:18px}
+.apply:disabled{background:#999;cursor:default}
 .apply .arrow,.app .arrow,.moreb .arrow{align-self:center;width:.85em;height:.85em;margin:0 0 0 .6rem}
 .apply:hover .arrow,.app:hover .arrow{transform:translateX(.35rem)}
 .more{flex:1;min-height:0;overflow:auto;padding:1rem 1.25rem 1.25rem;border-top:1px solid #ddd;font-size:15px;animation:drop .25s ease-out}
@@ -99,6 +123,28 @@ footer{background:#ededed}
 .fmail{width:fit-content;height:35px;border-bottom:1px solid #999;font-size:min(24px,5.6vw)}
 .fcopy{font-size:18px}
 .flink{width:fit-content;height:33px;border-bottom:1px solid #999;font-size:21px}
+/* The footer's third column, the tips (the owner, 2026-10-05): many links, so smaller ones. */
+.ftips .flink{height:auto;padding-bottom:.1rem;font-size:17px;line-height:1.45}
+.fh a:hover{border-bottom:1px solid #999}
+
+/* Tips to get a better job: long reads, in the site's sans rather than its mono, for comfort. */
+.tip{max-width:46rem;font-size:19px;line-height:1.7}
+.tip>*+*{margin-top:1.15rem}
+.tip h2{margin-top:3rem;font-size:30px;font-weight:360;line-height:1.25}
+.tip h3{margin-top:2rem;font-size:22px;font-weight:500;line-height:1.3}
+.tip ul,.tip ol{padding-left:1.4em}
+.tip li+li{margin-top:.45rem}
+.tip a{border-bottom:1px solid #999}
+.tip blockquote{padding-left:1.25rem;border-left:3px solid #000;color:#333}
+.tip strong{font-weight:600}
+.tip-cta{max-width:46rem;padding:2.25rem 2rem 2rem;background:#151515;color:#fff}
+.tip-cta p{font-size:22px;line-height:1.4}
+.tip-cta .cta{margin-top:1.75rem}
+.more-tips{max-width:46rem}
+.more-tips h2{font-size:26px;font-weight:360}
+.more-tips ul{display:flex;flex-direction:column;gap:.7rem;margin-top:1rem;list-style:none}
+.more-tips a{border-bottom:1px solid #999;font-size:19px}
+a.qi:hover .q{text-decoration:underline;text-underline-offset:4px}
 
 .title{display:flex;min-height:655px;background:#151515;color:#fff}
 @supports(min-height:100svh){.title{min-height:clamp(655px,100svh,1000px)}}
@@ -123,14 +169,15 @@ footer{background:#ededed}
 .cta{width:270px;margin-top:100px;border-top-width:3px}.cta a{font-size:28px}
 .cta:hover .arrow{transform:translateX(1rem)}
 .q{font-size:26px}
-footer{height:400px}.fc{padding-block:0}.fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+footer{min-height:400px}.fc{padding-block:4rem}.fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 .menu ul{margin-top:30%}}
 @media(min-width:768px){.headline,.title h1{font-size:80px}.jobs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:1024px){
+.penned{display:block}.find.hero{padding-top:175px}
 .headline{max-width:1024px}.headline,.title h1{font-size:98px}.cta{height:65px}
 .find .headline{max-width:none}
 .filters{grid-template-columns:1.6fr repeat(4,minmax(0,1fr))}.filters #loc{grid-column:auto}
 .seen,.doc{padding-block:150px}
 .qa{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
-.fc{padding-inline:3rem}}
+.fc{padding-inline:3rem}.fg{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:1280px){.seen{display:grid;grid-template-columns:.2fr .8fr}.seen>.label{grid-column:1/-1}.seen>div{grid-column:2}}
