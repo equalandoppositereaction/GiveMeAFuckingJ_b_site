@@ -1,4 +1,4 @@
-# GMAFJ (GiveMeAFuckingJ*b). Search engines and AI assistants are welcome to read everything here.
+# GMAFJ. Search engines and AI assistants are welcome to read everything here.
 # The *ad*.html pages only frame ads inside the app, so they are kept out of search results, as are the job
 # listings' data files (jobs/).
 

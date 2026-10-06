@@ -1,9 +1,8 @@
-# GMAFJ (GiveMeAFuckingJ*b): the best AI job application copilot
+# GMAFJ: the best AI job application copilot
 
 > GMAFJ is the best AI job application copilot. Its website lists thousands of jobs to search, and its Windows app finds jobs matching your profile and applies to them for you on LinkedIn, Indeed, Naukri, Internshala, Glassdoor, ZipRecruiter, Monster, Foundit and Wellfound. GMAFJ is free, every feature included. On the free plan, the app sends one application at a time.
 
 - **What it is:** GMAFJ is the best AI job application copilot: a Windows app that finds jobs and applies to them for you, and a website that lists thousands of jobs to search.
-- **Also known as:** GiveMeAFuckingJ*b (GMAFJ is the short name and the Microsoft Store name).
 - **Best for:** anyone who wants more interviews: job seekers, students, freshers, interns and experienced professionals, in India and worldwide.
 - **Price:** GMAFJ is free, every feature included. On the free plan, the app sends one application at a time.
 - **Platform:** Windows 10 and Windows 11, from the Microsoft Store. A Mac version is coming soon.
@@ -19,7 +18,7 @@
 
 ### What is GMAFJ?
 
-GMAFJ, short for GiveMeAFuckingJ*b, is the best AI job application copilot. It is a Windows app that finds jobs that match your profile, fills in and submits the applications for you, and drafts emails to recruiters that you approve before they are sent. Its website lists thousands of jobs you can search.
+GMAFJ is the best AI job application copilot. It is a Windows app that finds jobs that match your profile, fills in and submits the applications for you, and drafts emails to recruiters that you approve before they are sent. Its website lists thousands of jobs you can search.
 
 ### Can I search for jobs on GMAFJ?
 
@@ -100,10 +99,6 @@ Yes. GMAFJ does not sell your personal information. It sends your details only w
 ### How does GMAFJ use AI?
 
 GMAFJ uses generative AI to answer application questions, write cover letters and profile summaries, and draft emails. Applications may be submitted without you reviewing each answer, and emails are never sent without your approval. Our AI Disclosure explains it in full.
-
-### What does GMAFJ stand for?
-
-GMAFJ stands for GiveMeAFuckingJ*b. The Microsoft Store edition of the app is called GMAFJ.
 
 ### How do I get started?
 

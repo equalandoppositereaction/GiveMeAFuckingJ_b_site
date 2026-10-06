@@ -23,8 +23,6 @@ sup{font-size:.6em;line-height:0}
 .dl{padding:.2rem 1rem;border:2px solid #fff;transition:background .15s,color .15s}
 .dl:hover{background:#fff;color:#151515}
 /* The pencilled note under the bar, its arrow up at Download (the owner, 2026-10-05). Wide screens only. */
-.penned{position:absolute;top:100%;right:11.3rem;display:none;margin-top:2.9rem;font-family:Caveat,cursive;font-size:26px;font-weight:500;line-height:1;letter-spacing:0;white-space:nowrap;color:#d4d4d4;transform:rotate(-2deg);pointer-events:none}
-.scribble{position:absolute;left:100%;bottom:.5em;width:72px;height:50px;margin-left:.2rem;color:#e8e8e8;overflow:visible}
 .burger{grid-column:2;justify-self:end;display:flex}
 .burger svg,.close svg{width:50px;height:50px}
 .menu{position:fixed;inset:0;z-index:60;background:#151515;color:#fff;transform:translateY(100%);visibility:hidden;transition:transform .45s cubic-bezier(.3,1.15,.4,1),visibility 0s .45s}
@@ -44,6 +42,8 @@ sup{font-size:.6em;line-height:0}
 .cta:hover .arrow{transform:translateX(.5rem)}
 
 .white{background:#fff}
+/* Behind the job boxes: a shade off their white, so they stand out (the owner, 2026-10-07). */
+.ground{background:#f1f1ee}
 .label{font-size:34px;font-weight:360;line-height:1.5;text-wrap:balance;user-select:none}
 .seen{display:flex;flex-direction:column;row-gap:3rem;padding-block:4rem;border-bottom:1px solid #eee}
 
@@ -175,7 +175,7 @@ footer{min-height:400px}.fc{padding-block:4rem}.fg{display:grid;grid-template-co
 .menu ul{margin-top:30%}}
 @media(min-width:768px){.headline,.title h1{font-size:80px}.jobs{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:1024px){
-.penned{display:block}.find.hero{padding-top:175px}
+.find.hero{padding-top:175px}
 .headline{max-width:1024px}.headline,.title h1{font-size:98px}.cta{height:65px}
 .find .headline{max-width:none}
 .filters{grid-template-columns:1.6fr repeat(4,minmax(0,1fr))}.filters #loc{grid-column:auto}

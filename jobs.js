@@ -1,20 +1,21 @@
 /**
  * The job search on the home page (the owner, 2026-10-05).
  *
- * Until somebody searches, the page shows a fixed few jobs from jobs/home.json, in English, and nothing
- * else is fetched: the full list, jobs/index.txt (several megabytes), is read only on a search, Enter or
- * the arrow, to keep what each visit costs down. It streams in, and the first results show while the
- * rest load. After that the filters apply as they change; the words still wait for Enter.
+ * Until somebody searches, the page shows a fixed few jobs from jobs/home.json, in English. Results come
+ * as the words are typed and the filters picked (the owner, 2026-10-07). The first search fetches the
+ * full list, jobs/index.txt (several megabytes), in one request; it is searched on the visitor's own
+ * device as it streams in, the first results showing at once, and the count is exact once it is all in.
+ * Twelve boxes at a time, ads included.
  *
  * A job's link and details are in its chunk, jobs/<chunk>.json, fetched when the job is opened, or as
  * the pointer reaches its Apply. Apply opens the job's page itself in a new tab; no link is ever shown.
  * Formats: scripts/build-jobs.mjs.
  */
 ;(() => {
-  // Boxes, ads included: six at first (the owner, 2026-10-05), then twelve for each "Show more jobs".
-  const FIRST = 6
-  const MORE = 12
-  const EARLY = 3000 // jobs read before the first results are shown
+  // Twelve boxes at a time, the ads among them (the owner, 2026-10-07).
+  const BOXES = 12
+  const EARLY = 3000 // jobs read before the first results show
+  const TYPING = 300 // ms after the last key before the search runs
   /*
    * The ad unit in every sixth box. With only a slot it is a responsive display ad; give it the in-feed
    * unit's slot and layout key (AdSense: Ads, By ad unit, In-feed ads; the code it shows has both) and
@@ -73,7 +74,6 @@
   let ids, days, titles, locs, ccs, flags, pays, chunkOf, latin
   let loaded = false
   let loading = null
-  let searched = false
 
   function start(line) {
     head = JSON.parse(line)
@@ -107,6 +107,7 @@
     n++
   }
 
+  /** The whole list, in one request: the search runs once enough has arrived to show something, and again when all of it has. */
   async function load() {
     const res = await fetch('jobs/index.txt', { cache: 'no-cache' })
     if (!res.ok || !res.body) throw new Error(String(res.status))
@@ -121,7 +122,7 @@
       for (const line of lines) head ? add(line) : start(line)
       if (!early && n >= EARLY) {
         early = true
-        search()
+        search(true)
       }
     }
     if (rest) head ? add(rest) : start(rest)
@@ -152,8 +153,12 @@
     return (i) => normed(locs[i]).includes(q) || (codes.size > 0 && ccs[i] !== '' && ccs[i].split(' ').some((c) => codes.has(c)))
   }
 
-  /** Runs the search on what has loaded. Postings in a Latin script first, so a search for everything does not open on a wall of Chinese. */
-  function search() {
+  /**
+   * Searches what has loaded, newest posting day first, Latin-script titles first so a search does not
+   * open on a wall of Chinese. `keep`: the same search with more of the list in, so the boxes already on
+   * screen stay that many.
+   */
+  function search(keep = false) {
     const words = norm(qIn.value).split(' ').filter(Boolean).map((w) => ' ' + w)
     const place = placeTest(locIn.value)
     const mode = modeIn.value, type = typeIn.value, level = levelIn.value
@@ -175,21 +180,18 @@
       if (list) list.push(i)
       else by.set(days[i], [i])
     }
-    // Newest first: by the day posted, and within a day by id, which the list already runs down.
     const order = (by) => [...by.keys()].sort((a, b) => b - a).flatMap((d) => by.get(d))
     found = [...order(byDay[1]), ...order(byDay[0])].map(jobAt)
-    render()
+    render(keep ? Math.max(boxes, BOXES) : BOXES)
     tell(`${found.length.toLocaleString('en')} ${found.length === 1 ? 'job' : 'jobs'}${loaded ? '' : ` so far, ${(head.count - n).toLocaleString('en')} more loading…`}`)
   }
 
-  /** The line above the tiles: how many, and that the app has more. */
-  function tell(text) {
-    count.innerHTML = `${esc(text)} <a class="more-app" href="/download">(more on our desktop app)</a>`
-  }
-
+  /** Runs the search in the boxes, fetching the list first if this is the first search. Empty boxes go back to the home page's few. */
   async function run() {
-    searched = true
     remember()
+    if (!fields.some((el) => el.value.trim())) return void showHome()
+    // A new search starts at twelve boxes, unless the list was still coming in: then what is on screen stays.
+    const waited = !loaded
     if (!loaded) {
       if (!loading) {
         tell('Searching…')
@@ -204,29 +206,63 @@
         count.textContent = 'The jobs could not be loaded. Check your connection and search again.'
         return
       }
+      // Cleared while the list was loading: the home page's few stay.
+      if (!fields.some((el) => el.value.trim())) return
     }
-    search()
+    search(waited)
   }
 
-  function render() {
+  /** The line above the tiles: how many, and that the app has more. */
+  function tell(text) {
+    count.innerHTML = `${esc(text)} <a class="more-app" href="/download">(more on our desktop app)</a>`
+  }
+
+  function render(upTo) {
     shown = 0
     boxes = 0
     grid.textContent = ''
     byKey.clear()
-    page()
+    page(upTo)
   }
 
-  function page() {
+  /** Draws boxes up to `upTo` (twelve more by default). An ad only with a job after it, so a list never ends on one. */
+  function page(upTo = boxes + BOXES) {
     const html = []
-    const until = boxes + (boxes ? MORE : FIRST)
-    while (boxes < until && shown < found.length) {
-      // An ad only with a job still to come after it, so a short list never ends on one.
-      html.push(boxes % 6 === 4 ? AD_TILE : tile(found[shown++]))
+    while (boxes < upTo && shown < found.length) {
+      if (boxes % 6 === 4) {
+        html.push(AD_TILE)
+        boxes++
+        if (boxes >= upTo) break
+      }
+      html.push(tile(found[shown++]))
       boxes++
     }
     grid.insertAdjacentHTML('beforeend', html.join(''))
+    // Gone once every job found is on screen: a button that does nothing is worse than none.
     more.hidden = shown >= found.length
     ads(grid)
+  }
+
+  // ── The home page's own few, before any search
+  let homeJobs = null
+  let homeTotal = 0
+  function showHome() {
+    if (!homeJobs) return void loadHome()
+    found = homeJobs
+    render(BOXES)
+    tell(`${homeTotal.toLocaleString('en')} jobs`)
+  }
+  function loadHome() {
+    fetch('jobs/home.json', { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((h) => {
+        homeJobs = h.jobs.map(([id, title, loc, , fl, day, pay, ...d]) => ({ id, title, loc, flags: fl, day, pay, detail: d }))
+        homeTotal = h.total
+        if (!fields.some((el) => el.value.trim())) showHome()
+      })
+      .catch(() => {
+        count.textContent = 'The jobs could not be loaded. Check your connection and refresh the page.'
+      })
   }
 
   // ── Tiles
@@ -371,16 +407,23 @@
   }
   grid.addEventListener('pointerover', early)
   grid.addEventListener('focusin', early)
-  more.addEventListener('click', page)
+  more.addEventListener('click', () => page())
 
-  // ── The search box and filters: nothing is searched until Enter or the arrow; after that the filters apply as they change.
-  form.addEventListener('submit', (e) => {
-    e.preventDefault()
-    void run()
-    if (matchMedia('(hover: none)').matches) document.activeElement.blur()
+  // ── The search box and filters: results as they are typed and picked, a moment after the last key.
+  let typing = 0
+  form.addEventListener('input', (e) => {
+    if (e.target.tagName === 'SELECT') return
+    clearTimeout(typing)
+    typing = setTimeout(() => void run(), TYPING)
   })
   form.addEventListener('change', (e) => {
-    if (searched && e.target.tagName === 'SELECT') void run()
+    if (e.target.tagName === 'SELECT') void run()
+  })
+  form.addEventListener('submit', (e) => {
+    e.preventDefault()
+    clearTimeout(typing)
+    void run()
+    if (matchMedia('(hover: none)').matches) document.activeElement.blur()
   })
 
   /** The search in the address, so it can be shared, bookmarked and reloaded. */
@@ -391,7 +434,7 @@
     history.replaceState(null, '', q ? `?${q}` : location.pathname)
   }
 
-  /** Suggestions for the location box, once the full list is in: the countries with the most jobs, then the most common cities. */
+  /** Suggestions for the location box, once the whole list has been read: the countries with the most jobs, then the most common cities. */
   function places() {
     const byCountry = new Map()
     const byCity = new Map()
@@ -411,16 +454,5 @@
   const asked = new URLSearchParams(location.search)
   for (const el of fields) if (asked.has(el.name)) el.value = asked.get(el.name)
   if (fields.some((el) => el.value)) void run()
-  else
-    fetch('jobs/home.json', { cache: 'no-cache' })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((home) => {
-        if (searched) return
-        found = home.jobs.map(([id, title, loc, , fl, day, pay, ...d]) => ({ id, title, loc, flags: fl, day, pay, detail: d }))
-        render()
-        tell(`${home.total.toLocaleString('en')} jobs`)
-      })
-      .catch(() => {
-        if (!searched) count.textContent = 'The jobs could not be loaded. Check your connection and refresh the page.'
-      })
+  else showHome()
 })()
