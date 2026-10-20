@@ -1,0 +1,547 @@
+/*
+ * GMAFJ, the social network (the owner, 2026-10-08): LinkedIn's functionality and Instagram's layout. Since
+ * 2026-10-20 in the desktop app's look (the owner: "make the theme like the desktop app's modernistic theme"),
+ * after src/renderer/styles/globals.css and its shadcn components: Source Serif 4 for everything, a warm
+ * off-white ground, white cards with a hairline border and 16px corners, black for the thing to press, and
+ * blue as the only hue used for its own sake (links, focus, what is waiting on you). Green, amber and red
+ * only where they mean something. Light by default; Dark mode is in the More menu (html.dark), as the app's
+ * account menu has it. No em dashes in anything shown.
+ *
+ * The menu is a rail of icons on the left; hovered or tabbed into, it opens over the page with every name
+ * (the owner, 2026-10-08). On phones, a bar on top and tabs along the bottom.
+ */
+:root{
+  --radius:12px;--radius-xl:16px;
+  --bg:#fcfcfb;--card:#fff;--fg:#0a0a0a;--soft:#3d3d3d;--muted:#646464;--faint:#8f8f8f;
+  --primary:#171717;--primary-fg:#fafafa;--secondary:#ececec;--hover:#f0efec;--accent:#edece8;
+  --border:#e1e1e1;--input:#d4d4d4;--blue:#155dfc;--blue-fg:#fafafa;--ring:rgb(21 93 252/.25);
+  --ok:#1b8a4c;--wait:#8a6400;--bad:#e7000b;
+  --sidebar:#fbfbf9;--sidebar-fg:#3b3b3b;--strip:#f3f2ef;
+  --shadow-card:0 1px 2px rgb(0 0 0/.05);--shadow:0 10px 30px rgb(0 0 0/.12),0 2px 6px rgb(0 0 0/.06);
+  /* Older names, still used: */
+  --line:var(--border);--line-2:var(--input);--text:var(--fg);--night:var(--sidebar);--frame:1px solid var(--border);
+  --rail:64px;--rail-open:248px;--top:0px;--tabs:0px;color-scheme:light
+}
+html.dark{
+  --bg:#151515;--card:#1a1a19;--fg:#fafafa;--soft:#d0d0d0;--muted:#a1a1a1;--faint:#7a7a7a;
+  --primary:#e5e5e5;--primary-fg:#171717;--secondary:#262626;--hover:#232323;--accent:#343434;
+  --border:rgb(255 255 255/.1);--input:rgb(255 255 255/.15);--blue:#51a2ff;--blue-fg:#171717;--ring:rgb(81 162 255/.3);
+  --ok:#3fc37a;--wait:#e0b13a;--bad:#ff6467;
+  --sidebar:#111;--sidebar-fg:#d4d4d4;--strip:#232323;
+  --shadow-card:0 1px 2px rgb(0 0 0/.3);--shadow:0 10px 30px rgb(0 0 0/.5);color-scheme:dark
+}
+*,::before,::after{box-sizing:border-box;margin:0;padding:0;border:0 solid var(--border)}
+html{font-family:"Source Serif 4",Georgia,serif;font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%;background:var(--bg);color:var(--fg)}
+body{min-height:100vh;background:var(--bg);color:var(--fg);font-size:15px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit;background:none}
+button{cursor:pointer}
+button:disabled{cursor:default;opacity:.5}
+img,svg,video,iframe{display:block;max-width:100%}
+b,strong{font-weight:600}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+::selection{background:color-mix(in srgb,var(--blue) 25%,transparent)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{border:2px solid transparent;border-radius:9px;background:color-mix(in srgb,var(--muted) 35%,transparent) padding-box}
+::-webkit-scrollbar-thumb:hover{background-color:color-mix(in srgb,var(--muted) 55%,transparent)}
+[hidden]{display:none!important}
+.mono{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.link,.textbtn{color:var(--blue);font-weight:500}
+.link:hover,.textbtn:hover{text-decoration:underline;text-underline-offset:3px}
+h1{font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.01em}
+h2{font-size:20px;font-weight:600;line-height:1.25}
+h3{font-size:16px;font-weight:600;line-height:1.35}
+
+/* Who sees what: html.in is set once the session is known (boot.js guesses first, app.js decides). */
+html:not(.in) [data-in],html.in [data-out]{display:none!important}
+/* A member opening the home page is sent on to their Feed, so its jobs are not flashed first. */
+html.in:not(.shown) body[data-page=landing] .main{visibility:hidden}
+[data-me-av]{display:flex}
+
+/* ── The shell */
+.shell{display:flex;min-height:100vh}
+.main{flex:1;min-width:0;margin-left:var(--rail);padding-bottom:var(--tabs)}
+.topbar,.tabbar{display:none}
+.brand{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:600;letter-spacing:.02em}
+.brand img{flex:none;width:24px;height:24px}
+html.dark .brand img{filter:invert(1)}
+/* The rail: icons, and every name once it is hovered or tabbed into. It opens over the page, which stays where it is. */
+.rail{position:fixed;inset:0 auto 0 0;z-index:40;display:flex;flex-direction:column;gap:2px;width:var(--rail);padding:16px 12px 12px;overflow:hidden;background:var(--sidebar);color:var(--sidebar-fg);border-right:1px solid var(--border);transition:width .22s cubic-bezier(.4,0,.2,1),box-shadow .22s}
+.rail:hover,.rail:focus-within{width:var(--rail-open);box-shadow:var(--shadow)}
+.rail .brand{gap:16px;height:40px;margin-bottom:14px;padding:0 8px;white-space:nowrap;color:var(--fg)}
+.nav-i{position:relative;display:flex;align-items:center;gap:14px;width:100%;min-height:40px;padding:0 10px;border-radius:var(--radius);color:color-mix(in srgb,var(--sidebar-fg) 85%,transparent);font-size:15px;white-space:nowrap;text-align:left;transition:background .15s,color .15s}
+.nav-i svg{flex:none;width:20px;height:20px;stroke-width:1.8}
+.nav-i:hover{background:var(--hover);color:var(--fg)}
+.rail .nav-i>span:not(.badge):not([data-me-av]),.rail .brand>span{opacity:0;transition:opacity .12s}
+.rail:hover .nav-i>span:not(.badge):not([data-me-av]),.rail:focus-within .nav-i>span:not(.badge):not([data-me-av]),.rail:hover .brand>span,.rail:focus-within .brand>span{opacity:1;transition-delay:.08s}
+.nav-i[aria-current=page]{background:var(--accent);color:var(--fg);font-weight:600}
+.nav-i[aria-current=page] svg{stroke-width:2.2}
+.nav-i [data-me-av]{flex:none;width:20px;justify-content:center}
+.nav-i .av{width:22px;height:22px;font-size:9px!important}
+.rail .av.i,.topbar .av.i,.tabbar .av.i{background:var(--primary);color:var(--primary-fg)}
+.nav-i[aria-current=page] .av{box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--fg)}
+/* A count waiting on you: blue, the app's colour for attention. */
+.badge{position:absolute;left:24px;top:3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--blue);color:var(--blue-fg);font-size:11px;font-weight:700;line-height:17px;text-align:center;font-variant-numeric:tabular-nums}
+.badge:empty{display:none}
+.rail-foot{display:flex;flex-direction:column;gap:2px;margin-top:auto;padding-top:10px;border-top:1px solid var(--border)}
+/* Phones: a bar along the top, tabs along the bottom, in the rail's grey. */
+@media(max-width:767px){
+  :root{--rail:0px;--top:56px;--tabs:calc(56px + env(safe-area-inset-bottom))}
+  .rail{display:none}
+  .main{padding-top:var(--top)}
+  .topbar{position:fixed;inset:0 0 auto 0;z-index:40;display:flex;align-items:center;gap:2px;height:var(--top);padding:0 8px 0 16px;background:var(--sidebar);border-bottom:1px solid var(--border);color:var(--fg)}
+  .topbar .brand{margin-right:auto;font-size:18px}
+  .topbar .brand img{width:22px;height:22px}
+  .tabbar{position:fixed;inset:auto 0 0 0;z-index:40;display:flex;justify-content:space-around;align-items:center;height:var(--tabs);padding-bottom:env(safe-area-inset-bottom);background:var(--sidebar);border-top:1px solid var(--border);color:var(--fg)}
+  .topbar .nav-i,.tabbar .nav-i{width:44px;min-height:44px;justify-content:center;padding:0}
+  .topbar .badge,.tabbar .badge{left:24px;top:4px}
+  .tabbar .nav-i{color:var(--muted)}
+  .tabbar .nav-i[aria-current=page],.topbar .nav-i[aria-current=page]{background:none;color:var(--fg)}
+  .topbar .btn,.tabbar .btn{min-height:32px}
+}
+
+/* ── Things to press: black (white in the dark), or outlined; as the app's Button. */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 16px;border-radius:var(--radius);background:var(--primary);color:var(--primary-fg);font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgb(0 0 0/.05);transition:background .15s,color .15s,opacity .15s,transform .1s}
+.btn:hover{opacity:.85}
+.btn:active{transform:scale(.98)}
+.btn.ghost,.btn.line{background:var(--card);color:var(--fg);box-shadow:inset 0 0 0 1px var(--border),0 1px 2px rgb(0 0 0/.05)}
+.btn.ghost:hover,.btn.line:hover{background:var(--hover);opacity:1}
+.btn.danger{background:var(--bad);color:#fff}
+.btn.small{min-height:32px;padding:0 12px;font-size:13px}
+.btn.wide{width:100%}
+.act{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 .75rem;border-radius:var(--radius);color:var(--soft);font-size:14px;font-weight:500}
+.act:hover{background:var(--hover);color:var(--fg)}
+.act.on{color:var(--fg);font-weight:700}
+.menu-b{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;color:var(--muted);font-size:18px}
+.menu-b:hover{background:var(--hover);color:var(--fg)}
+
+/* ── Fields, as the app's Input: a hairline box, and a blue ring when you are in it. */
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-size:14px;font-weight:600}
+.input,.field input:not([type=checkbox]):not([type=file]),.field select,.field textarea,.textarea{width:100%;min-height:40px;padding:.45rem .75rem;border:1px solid var(--input);border-radius:var(--radius);background:var(--card);outline:none;font-size:15px;box-shadow:0 1px 2px rgb(0 0 0/.04);transition:border-color .15s,box-shadow .15s}
+html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),html.dark .field select,html.dark .field textarea,html.dark .textarea{background:rgb(255 255 255/.045)}
+.field textarea,.textarea{min-height:110px;resize:vertical;line-height:1.5}
+.input:focus,.field input:focus,.field select:focus,.field textarea:focus,.textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--ring)}
+::placeholder{color:var(--muted);opacity:1}
+.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}
+.check{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.check input{width:16px;height:16px;margin-top:4px;accent-color:var(--primary);flex:none}
+.err{color:var(--bad);font-size:14px}
+.okay{color:var(--ok);font-size:14px}
+.row{display:flex;align-items:center;gap:10px}
+.row.wrap{flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+.stack{display:flex;flex-direction:column;gap:16px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.span2{grid-column:1/-1}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+
+/* ── People: round faces, ringed green when open to work and black when hiring. */
+.av{flex:none;width:44px;height:44px;border-radius:50%;object-fit:cover;background:var(--secondary)}
+.av.i{display:inline-flex;align-items:center;justify-content:center;color:var(--soft);font-weight:600;text-transform:uppercase;user-select:none}
+.av.xs{width:24px;height:24px}
+.av.s{width:34px;height:34px}
+.av.l{width:60px;height:60px}
+.av.xl{width:152px;height:152px}
+.av.ring-open{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ok)}
+.av.ring-hiring{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--primary)}
+.who{display:flex;align-items:center;gap:12px;min-width:0}
+.who-t{min-width:0}
+.who-n{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:15px;font-weight:600;line-height:1.3}
+.who-n a:hover{text-decoration:underline;text-underline-offset:3px}
+.who-h{color:var(--muted);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.deg{color:var(--muted);font-size:13.5px}
+/* "Example": quiet grey words beside the name, there for anyone who looks (the owner, 2026-10-20). */
+.tag{display:inline-flex;align-items:center;color:var(--muted);font-size:12.5px;font-weight:400;white-space:nowrap}
+.person{display:flex;align-items:center;gap:12px;padding:12px 0}
+.person .who{flex:1}
+/* The faces of your connections on an update or a job, overlapping, as Instagram shows who liked. */
+.faces{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--soft)}
+.faces .stack-av{display:flex}
+.faces .av{width:24px;height:24px;box-shadow:0 0 0 2px var(--card)}
+.faces .av+.av{margin-left:-8px}
+.faces b{color:var(--fg);font-weight:600}
+
+/* ── Pages: the heading over a rule, as the app's PageHeader; cards as its Card. */
+.page{width:100%;max-width:1000px;margin:0 auto;padding:32px 24px 80px}
+.page.narrow{max-width:720px}
+.page-h{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.card{border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:var(--shadow-card)}
+.card.pad{padding:20px 24px}
+.sec{padding:20px 24px;border-bottom:1px solid var(--border)}
+.sec:last-child{border-bottom:0}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.empty{padding:56px 20px;text-align:center;color:var(--muted)}
+.empty h2{margin-bottom:8px;color:var(--fg)}
+.empty .btn{margin-top:18px}
+.center{display:flex;justify-content:center}
+.spin{width:22px;height:22px;margin:36px auto;border:2px solid var(--border);border-top-color:var(--fg);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
+/* Tabs over a list: For you and Following, People and Updates, My items, Admin. The open one in the selected grey. */
+.feed-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.feed-tabs button{flex:none;min-height:34px;padding:0 14px;border-radius:var(--radius);color:var(--muted);font-size:14px;font-weight:500}
+.feed-tabs button:hover{background:var(--hover);color:var(--fg)}
+.feed-tabs button[aria-selected=true]{background:var(--accent);color:var(--fg);font-weight:600}
+
+/* ── The Feed, and a column beside it on wide screens */
+.feed-wrap{display:flex;justify-content:center;gap:40px;padding:32px 20px 80px}
+.feed{width:100%;max-width:600px;display:flex;flex-direction:column;gap:16px}
+.aside{width:320px;flex:none;display:flex;flex-direction:column;gap:16px}
+@media(max-width:1100px){.aside{display:none}}
+.start{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.start button{flex:1;min-height:42px;padding:0 16px;border:1px solid var(--input);border-radius:999px;color:var(--muted);text-align:left;font-size:15px;transition:background .15s}
+.start button:hover{background:var(--hover);color:var(--fg)}
+.aside-h{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;color:var(--fg)}
+.aside-h .textbtn{font-size:14px}
+.foot-links{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--muted)}
+.foot-links a:hover{color:var(--fg);text-decoration:underline}
+.app-state{display:flex;align-items:center;gap:8px;font-size:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.dot.on{background:var(--ok)}
+
+/* ── An update */
+.post{overflow:hidden}
+.via{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted)}
+.via b{color:var(--fg)}
+.post-h{display:flex;align-items:center;gap:10px;padding:14px 16px}
+.post-h .who{flex:1}
+.post-t{padding:0 16px 14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
+.post-t a{color:var(--blue)}
+.post-t a:hover{text-decoration:underline}
+/* Its space below as margin: padding would sit inside the clipped box and show the fifth line's top. */
+.post-t.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;padding-bottom:0;margin-bottom:14px;cursor:pointer}
+.post-i{width:100%;max-height:720px;object-fit:cover;background:var(--strip);border-block:1px solid var(--border)}
+.post-s{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px 0;font-size:13px;color:var(--muted)}
+.post-a{display:flex;flex-wrap:wrap;gap:2px;margin-top:10px;padding:4px 8px;border-top:1px solid var(--border)}
+@media(max-width:600px){.post-a{flex-wrap:nowrap;padding:4px}.post-a .act{flex:1;justify-content:center;padding:0 .3rem;font-size:13px}}
+.link-quiet{color:var(--muted)}
+.link-quiet:hover{color:var(--fg);text-decoration:underline;text-underline-offset:3px}
+.rxs{display:flex}
+.rx{font-size:15px;line-height:1}
+.rxs .rx+.rx{margin-left:-3px}
+.embed-wrap{padding:0 16px 14px}
+.embed{display:block;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius)}
+.embed:hover{background:var(--hover)}
+.embed-h{display:flex;align-items:center;gap:10px;padding:12px}
+.embed .post-t{padding:0 12px 12px}
+.comments{display:flex;flex-direction:column;gap:14px;padding:16px}
+.comment{display:flex;gap:10px}
+.comment-b{flex:1;min-width:0;padding:10px 14px;border-radius:var(--radius);background:var(--strip)}
+.comment-b p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
+.comment-b p a{color:var(--blue)}
+.comment-h{display:flex;align-items:flex-start;gap:8px}
+.comment-h .menu-b{width:28px;height:28px;margin:-4px -8px 0 0}
+.comment-m{display:flex;align-items:center;gap:10px;margin-top:4px;padding-left:14px;font-size:13px;color:var(--muted)}
+.comment.reply{margin-top:12px}
+.replies{display:flex;flex-direction:column}
+.say{display:flex;gap:10px;align-items:flex-end;padding:14px 16px;border-top:1px solid var(--border)}
+.say textarea{flex:1;min-height:40px;max-height:160px;padding:9px 14px;border:1px solid var(--input);border-radius:20px;background:var(--card);resize:none;outline:none;transition:border-color .15s,box-shadow .15s}
+.say textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--ring)}
+.reply-say{padding:12px 0 0;border-top:0}
+.textbtn.quiet{color:var(--muted);font-size:13px;font-weight:500}
+.textbtn.quiet:hover{color:var(--fg)}
+.textbtn.quiet.on{color:var(--fg);font-weight:700}
+
+/* ── Menus, dialogs and notes, as the app's popovers and Dialog */
+.pop{position:absolute;z-index:60;min-width:210px;padding:5px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
+.pop button,.pop a{display:block;width:100%;padding:8px 10px;border-radius:8px;text-align:left;font-size:14px}
+.pop button:hover,.pop a:hover{background:var(--hover)}
+.pop .bad{color:var(--bad)}
+.rx-pop{display:flex;gap:2px;min-width:0;padding:6px;border-radius:999px}
+.rx-pop button{width:44px;height:44px;padding:0;border-radius:50%;font-size:26px;text-align:center;transition:transform .12s}
+.rx-pop button:hover{background:none;transform:scale(1.25) translateY(-3px)}
+.veil{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;background:rgb(0 0 0/.5);animation:fade .12s}
+@keyframes fade{from{opacity:0}}
+.dialog{width:100%;max-width:580px;max-height:calc(100vh - 40px);overflow:auto;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:var(--shadow);animation:pop .14s ease-out}
+@keyframes pop{from{opacity:0;transform:scale(.97)}}
+.dialog.small{max-width:420px}
+.dialog-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.dialog-b{padding:20px}
+.dialog-f{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--border)}
+.compose textarea{width:100%;min-height:160px;padding:4px 0;font-size:17px;resize:vertical;outline:none;border:0;background:none}
+.compose .aud{margin-top:2px;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:12.5px}
+.compose .embed-wrap{padding:12px 0 0}
+.preview{position:relative;margin-top:12px}
+.preview img{width:100%;max-height:360px;object-fit:contain;border-radius:var(--radius);background:var(--strip)}
+.preview button{position:absolute;top:8px;right:8px}
+.toast{position:fixed;left:50%;bottom:calc(var(--tabs) + 24px);z-index:90;max-width:min(92vw,560px);padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);font-size:14px;box-shadow:var(--shadow);transform:translateX(-50%);animation:rise .18s}
+.toast a{color:var(--blue);font-weight:600}
+@keyframes rise{from{opacity:0;transform:translate(-50%,8px)}}
+@media(prefers-reduced-motion:reduce){.dialog,.toast,.veil{animation:none}.btn:active{transform:none}}
+
+/* ── Profiles, laid out as LinkedIn's: the main column of boxes, a narrow one beside it. */
+.li{display:flex;align-items:flex-start;gap:24px;width:100%;max-width:1160px;margin:0 auto;padding:32px 20px 80px}
+.li-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:16px}
+.li-aside{width:320px;flex:none;display:flex;flex-direction:column;gap:16px}
+@media(max-width:1023px){.li{flex-direction:column;align-items:stretch}.li-aside{width:100%}}
+@media(max-width:600px){.li{padding:0 0 48px;gap:10px}.li .card{border-inline:0;border-radius:0}}
+.li-top{overflow:hidden}
+.li-cover{height:200px;background:var(--accent) center/cover}
+.li-head{display:flex;flex-direction:column;gap:6px;padding:0 24px 24px}
+.li-photo{margin-top:-104px;margin-bottom:8px}
+.li-photo .av{border:4px solid var(--card)}
+.li-photo .av.i{font-size:52px!important}
+.li-photo .av.ring-open{box-shadow:0 0 0 4px var(--ok)}
+.li-photo .av.ring-hiring{box-shadow:0 0 0 4px var(--primary)}
+.li-name{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.li-name h1{font-size:30px;line-height:1.2}
+.li-headline{font-size:17px}
+.li-meta{color:var(--muted);font-size:14px}
+.li-actions{margin-top:14px;gap:8px}
+@media(max-width:600px){.li-cover{height:120px}.li-photo{margin-top:-60px}.li-photo .av{width:100px;height:100px}.li-photo .av.i{font-size:34px!important}.li-head{padding:0 16px 20px}.li-name h1{font-size:26px}}
+.li-sec{padding:20px 24px}
+.li-sec .sec-h{margin:-20px -24px 14px;padding:16px 24px;border-bottom:1px solid var(--border)}
+.li-sec .sec-h h2{margin-bottom:0}
+.li-aside h2{font-size:18px}
+.sec-h .textbtn{flex:none}
+.li-sec .post{margin-top:12px}
+.li-bar{display:flex;align-items:center;gap:14px;padding:14px 18px}
+.li-bar .li-actions{margin-top:0}
+/* A member's own design takes the page: the boxes beside it go under it. */
+.li.designed{flex-direction:column;align-items:stretch;max-width:1320px}
+.li.designed .li-aside{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:16px}
+.design-box{min-height:120px;border:1px solid var(--border);border-radius:var(--radius-xl);background:#fff;overflow:hidden;box-shadow:var(--shadow-card)}
+.design{display:block;width:100%;border:0;background:transparent}
+@media(max-width:600px){.li-bar{flex-wrap:wrap}.design-box{border-inline:0;border-radius:0}}
+.note-card{color:var(--muted);font-size:14.5px}
+.otw{margin-top:14px;padding:12px 16px;border-radius:var(--radius);background:var(--strip);font-size:14.5px}
+.otw b{color:var(--ok);font-weight:600}
+.otw.hiring b{color:var(--fg)}
+.pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.entry{display:flex;gap:14px;padding:16px 0;border-top:1px solid var(--border)}
+.entry .logo{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:var(--secondary);color:var(--soft);font-weight:600}
+.entry h3{font-size:16px}
+.entry p{font-size:14.5px}
+.entry .sub{color:var(--soft)}
+.entry .when{color:var(--muted);font-size:13.5px}
+.entry .desc{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.entry .url{display:inline-flex;align-items:center;min-height:32px;margin-top:10px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600}
+.entry .url:hover{background:var(--hover)}
+.skill-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--border)}
+.skill-row b{font-weight:600}
+.skill-row .faces{margin-top:4px}
+.rec-row{display:flex;gap:12px;padding:16px 0;border-top:1px solid var(--border)}
+.sec-h+.entry,.sec-h+.skill-row,.sec-h+.rec-row{border-top:0;padding-top:4px}
+.contact-row{display:flex;flex-direction:column;gap:2px}
+
+/* ── Search: the bar, LinkedIn's filters, and people to connect with under it. */
+.input.big{min-height:46px;padding:.5rem 1rem;font-size:16px}
+.filter-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media(max-width:600px){.filter-row{grid-template-columns:1fr}}
+.pymk{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.pymk-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:22px 14px 16px;text-align:center}
+.pymk-av{margin-bottom:8px}
+.pymk-av .av{width:84px;height:84px}
+.pymk-av .av.i{font-size:28px!important}
+.pymk-n{font-size:16px;font-weight:600}
+.pymk-n:hover{text-decoration:underline;text-underline-offset:3px}
+.pymk-h{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:2.9em}
+.pymk-r{margin-bottom:12px;color:var(--muted);font-size:13px}
+.pymk-card [data-rel]{margin-top:auto;justify-content:center}
+
+/* ── Notifications and invitations */
+.invite{padding:4px 0;border-top:1px solid var(--border)}
+.sec-h+.invite{border-top:0}
+blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(--border);border-radius:0 8px 8px 0;background:var(--strip);color:var(--soft);font-size:14.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+.sent-inv summary{cursor:pointer;list-style:none;font-weight:600}
+.sent-inv summary::-webkit-details-marker{display:none}
+.note-row{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:14.5px}
+.note-row:last-child{border-bottom:0}
+.note-row:hover{background:var(--hover)}
+.note-row.unread{background:color-mix(in srgb,var(--blue) 6%,transparent);box-shadow:inset 3px 0 0 var(--blue)}
+.note-row b{font-weight:600}
+.note-thumb{flex:none;width:48px;height:48px;border-radius:8px;object-fit:cover}
+
+/* ── Messages */
+.dm{display:flex;height:calc(100vh - var(--top) - var(--tabs))}
+.dm-list{width:360px;flex:none;border-right:1px solid var(--border);overflow-y:auto;background:var(--card)}
+.dm-list h1{padding:24px 20px 16px;font-size:24px}
+.conv{display:flex;align-items:center;gap:12px;width:100%;padding:12px 20px;text-align:left}
+.conv:hover{background:var(--hover)}
+.conv[aria-current=true]{background:var(--accent)}
+.conv .who-h.unread{color:var(--fg);font-weight:700}
+.conv .badge{position:static}
+.dm-thread{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--card)}
+.dm-head{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border)}
+.dm-head [data-back]{display:none}
+.dm-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:20px;background:var(--bg)}
+.msg{max-width:min(70%,520px);padding:8px 14px;border:1px solid var(--border);border-radius:18px;background:var(--card);white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
+.msg.mine{align-self:flex-end;border-color:var(--primary);background:var(--primary);color:var(--primary-fg)}
+.msg a{text-decoration:underline}
+.msg-t{align-self:center;margin:12px 0 4px;color:var(--muted);font-size:12.5px}
+.msg-card{max-width:min(70%,380px)}
+.msg-card.mine{align-self:flex-end}
+.msg-embed{display:block;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:14.5px}
+.msg-embed:hover{background:var(--hover)}
+.msg-embed p{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg-embed img{margin-top:8px;width:100%;max-height:200px;border-radius:8px;object-fit:cover}
+.clamp-3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.msg-seen{align-self:flex-end;margin:-2px 2px 4px;color:var(--muted);font-size:12.5px}
+@media(max-width:767px){
+  .dm-list{width:100%;border-right:0}
+  .dm.open .dm-list,.dm:not(.open) .dm-thread{display:none}
+  .dm-head [data-back]{display:inline-flex}
+}
+
+/*
+ * ── Jobs: the job display as it was before the social network (the owner, 2026-10-08: "keep the jobs
+ * display the same as before but with the friends applying thing"), its layout kept and dressed as the
+ * app's own job search (JobSearch.tsx): a search box and filters, then tiles that are cards, the title
+ * in semibold and clamped to two lines. Laid out by the room beside the menu (container queries). Added:
+ * Apply needs an account, the grey strip is One click apply, and the faces of your connections who applied
+ * sit beside Apply.
+ */
+.classic{container-type:inline-size;line-height:1.5;color:var(--fg);background:var(--bg)}
+.classic .c{width:100%;max-width:1280px;margin-inline:auto;padding-inline:1.25rem}
+.classic .arrow{flex:none;align-self:flex-end;width:1em;height:1em;margin:0 0 .125em .75rem;transition:transform .15s cubic-bezier(.4,0,.2,1)}
+.classic .hero{padding:2.75rem 0 2rem;border-bottom:1px solid var(--border);background:var(--bg);color:var(--fg)}
+.classic .headline{margin:.25rem auto 0;font-size:min(36px,9vw);font-weight:600;line-height:1.2;letter-spacing:-.015em;text-align:center;text-wrap:balance}
+.classic .search{max-width:1100px;margin:2rem auto 0}
+.classic .q{display:flex;align-items:center;gap:.75rem;min-height:48px;padding:0 .5rem 0 1rem;border:1px solid var(--input);border-radius:var(--radius);background:var(--card);box-shadow:0 1px 2px rgb(0 0 0/.04);transition:border-color .15s,box-shadow .15s}
+.classic .q:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--ring)}
+.classic .q input{flex:1;min-width:0;padding:.45rem 0;border:0;background:none;color:var(--fg);font-size:17px;outline:none}
+.classic .q button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--primary);color:var(--primary-fg)}
+.classic .q .arrow{width:18px;height:18px;margin:0}
+.classic .q button:hover .arrow{transform:translateX(.15rem)}
+.classic .search ::placeholder{color:var(--muted);opacity:1}
+.classic .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin-top:.75rem}
+.classic .filters input,.classic .filters select{width:100%;min-width:0;min-height:40px;padding:.4rem .75rem;border:1px solid var(--input);border-radius:var(--radius);background:var(--card);color:var(--fg);font:inherit;font-size:14.5px;outline:none;appearance:none;-webkit-appearance:none;transition:border-color .15s,box-shadow .15s}
+.classic .filters #loc{grid-column:1/-1}
+.classic .filters select{padding-right:2rem;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23737373' stroke-width='1.4' d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E") no-repeat right .8rem center/11px 7px;cursor:pointer}
+.classic .filters select:has(option[value=""]:checked){color:var(--muted)}
+.classic .filters option{background:var(--card);color:var(--fg)}
+.classic .filters input:focus,.classic .filters select:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--ring)}
+.classic .results{min-width:0;padding-block:2rem 4rem}
+.classic .count{margin-bottom:1.25rem;color:var(--muted);font-size:15px}
+.classic .more-app{margin-left:.35rem;color:var(--blue);font-weight:500}
+.classic .more-app:hover{text-decoration:underline}
+.classic .ad-tile{position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:var(--shadow-card)}
+.classic .ad-label{position:absolute;top:10px;left:12px;z-index:1;padding:1px 8px;border-radius:999px;background:var(--secondary);color:var(--muted);font-size:11px;font-weight:600}
+.classic .ad-tile ins{flex:1;min-height:0;margin-top:2rem}
+.classic .house{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:.9rem;padding:1.25rem}
+.classic .house p{font-size:19px;font-weight:600;line-height:1.3}
+.classic .house .apply{margin-top:0}
+.classic .ad-tile:has(ins[data-ad-status="filled"]) .house{display:none}
+.classic .jobs{--row:15.5rem;--strip:2.5rem;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:var(--row);grid-auto-flow:row dense;gap:1rem}
+.classic .job{position:relative;display:flex;flex-direction:column;min-width:0;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:var(--shadow-card);transition:box-shadow .15s}
+.classic .job:hover{box-shadow:0 4px 14px rgb(0 0 0/.07)}
+.classic .niche{position:absolute;top:-.65rem;right:.9rem;z-index:5;padding:2px 10px;border-radius:999px;background:var(--primary);color:var(--primary-fg);font-size:12px;font-weight:600;line-height:1.4;cursor:help;outline:none}
+.classic .niche .tip{position:absolute;top:calc(100% + .4rem);right:0;display:none;width:min(17rem,80vw);padding:.7rem .85rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);font-size:13.5px;font-weight:400;line-height:1.45;box-shadow:var(--shadow)}
+.classic .niche:hover .tip,.classic .niche:focus .tip{display:block}
+.classic .job.open{grid-row:span 3}
+.classic .top{display:flex;flex:none;flex-direction:column;gap:.25rem;height:calc(var(--row) - var(--strip) - 2px);padding:1rem 1rem .9rem;cursor:pointer}
+.classic .top h3{margin-bottom:.3rem;font-size:18px;font-weight:600;line-height:1.3}
+.classic .top h3 button{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font:inherit;text-align:left}
+.classic .top h3 button:hover{text-decoration:underline;text-underline-offset:3px}
+.classic .top p{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;color:var(--muted)}
+.classic .apply{display:flex;flex:none;align-items:center;align-self:flex-start;min-height:36px;margin-top:auto;padding:0 16px;border-radius:var(--radius);background:var(--primary);color:var(--primary-fg);font-size:14px;font-weight:600;transition:opacity .15s}
+.classic .apply:hover{opacity:.85}
+.classic .apply:disabled{background:var(--secondary);color:var(--muted);cursor:default;opacity:1}
+.classic .apply .arrow,.classic .app .arrow,.classic .moreb .arrow{align-self:center;width:.85em;height:.85em;margin:0 0 0 .5rem}
+.classic .apply:hover .arrow,.classic .app:hover .arrow{transform:translateX(.25rem)}
+/* Apply, and beside it the faces of your connections who applied: they float there as Instagram's do on a post. */
+.classic .apply-row{display:flex;align-items:center;gap:.6rem;min-width:0;margin-top:auto}
+.classic .apply-row .apply{margin-top:0}
+.classic .save{display:flex;flex:none;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+.classic .save svg{width:17px;height:17px}
+.classic .save:hover{background:var(--hover)}
+.classic .save[aria-pressed=true] path{fill:currentColor}
+.classic .apply-row .faces{min-width:0;color:var(--soft)}
+.classic .apply-row .faces>span:last-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.classic .apply-row .faces .av{box-shadow:0 0 0 2px var(--card)}
+.classic .apply-row .faces b{color:var(--fg)}
+.classic .more{flex:1;min-height:0;overflow:auto;padding:.85rem 1rem 1rem;border-top:1px solid var(--border);font-size:14px;animation:drop .25s ease-out}
+@keyframes drop{from{opacity:0;transform:translateY(-.4rem)}}
+@media(prefers-reduced-motion:reduce){.classic .more{animation:none}.classic .arrow{transition:none}}
+.classic .facts p+p{margin-top:.15rem}
+.classic .note{margin-top:1rem;color:var(--muted)}
+.classic .more h4{margin:1rem 0 .4rem;font-size:15px;font-weight:600}
+.classic .more ul{display:flex;flex-direction:column;gap:.3rem;padding-left:1.1rem}
+.classic .chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.classic .chips span{padding:1px 8px;border:1px solid var(--border);border-radius:8px;background:none;font-size:12.5px}
+/* The strip under every job: One click apply, which sends the job to the desktop app (once it was a link to the download). */
+.classic .app{display:flex;flex:none;align-items:center;justify-content:space-between;width:100%;height:var(--strip);margin-top:auto;padding:0 1rem;border-top:1px solid var(--border);border-radius:0 0 calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px);background:var(--strip);color:var(--soft);font-size:13px;font-weight:500;line-height:1.2;text-align:left}
+.classic .app:hover{background:var(--accent);color:var(--fg)}
+.classic .app:disabled{cursor:default;color:var(--muted)}
+.classic .moreb{display:flex;align-items:center;min-height:40px;margin:2rem auto 0;padding:0 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:15px;font-weight:600;box-shadow:0 1px 2px rgb(0 0 0/.05)}
+.classic .moreb:hover{background:var(--hover)}
+.classic .seen{display:flex;flex-direction:column;row-gap:2.5rem;padding-block:3.5rem;border-top:1px solid var(--border);background:var(--card)}
+.classic .label{font-size:26px;font-weight:600;line-height:1.35;letter-spacing:-.01em;text-wrap:balance;user-select:none}
+.classic .foot{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem;padding-block:2rem 3rem;border-top:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:13.5px}
+.classic .foot a:hover{color:var(--fg);text-decoration:underline}
+.classic .top h3 button:focus-visible,.classic .apply:focus-visible,.classic .app:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@container(min-width:640px){
+  .classic .headline{font-size:40px}
+  .classic .q input{font-size:18px}
+}
+@container(min-width:768px){
+  .classic .headline{font-size:48px}
+  .classic .jobs{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@container(min-width:1024px){
+  .classic .hero{padding-top:3.5rem}
+  .classic .headline{font-size:54px}
+  .classic .filters{grid-template-columns:1.4fr repeat(4,minmax(0,1fr))}
+  .classic .filters #loc{grid-column:auto}
+  .classic .seen{padding-block:5rem}
+}
+@container(min-width:1240px){
+  .classic .seen{display:grid;grid-template-columns:.2fr .8fr}
+  .classic .seen>.label{grid-column:1/-1}
+  .classic .seen>div{grid-column:2}
+}
+
+/* ── Settings: the profile editor, the design studio; and Admin */
+.set-nav{display:flex;gap:4px;overflow-x:auto;margin-bottom:20px;scrollbar-width:none}
+.set-nav a{flex:none;min-height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:var(--radius);color:var(--muted);font-size:14px;font-weight:500}
+.set-nav a:hover{background:var(--hover);color:var(--fg)}
+.set-nav a[aria-current=page],.set-nav a.on{background:var(--accent);color:var(--fg);font-weight:600}
+.list-ed{display:flex;flex-direction:column;gap:12px}
+.list-ed .card{position:relative;padding:16px;box-shadow:none}
+.list-ed .rm{position:absolute;top:10px;right:10px}
+.save-bar{position:sticky;bottom:var(--tabs);z-index:5;display:flex;align-items:center;gap:14px;border-top:1px solid var(--border);background:var(--card)}
+.ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media(max-width:900px){.ed{grid-template-columns:1fr}}
+.ed textarea{min-height:280px}
+.prompt{min-height:240px;font-size:12px}
+.state{display:inline-flex;align-items:center;height:22px;padding:0 9px;border:1px solid currentColor;border-radius:999px;font-size:12px;font-weight:600}
+.state.pending{color:var(--wait)}
+.state.approved{color:var(--ok)}
+.state.rejected{color:var(--bad)}
+details.code-v summary{cursor:pointer;margin:8px 0;color:var(--blue);font-size:14px;font-weight:500}
+details.code-v pre{max-height:280px;overflow:auto;padding:12px;border-radius:var(--radius);background:var(--strip);white-space:pre-wrap;overflow-wrap:anywhere}
+.meter{height:8px;border-radius:4px;background:var(--secondary);overflow:hidden}
+.meter span{display:block;width:0;height:100%;border-radius:4px;background:var(--primary);transition:width .2s}
+.meter.over span{background:var(--bad)}
+.pics{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.pic{display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid var(--border);border-radius:var(--radius)}
+.pic img{width:100%;height:110px;border-radius:8px;object-fit:cover;background:var(--strip)}
+.pic.add{align-items:center;justify-content:center;min-height:160px;border:1px dashed var(--input);color:var(--muted);font-size:14.5px;cursor:pointer}
+.pic.add:hover{background:var(--hover);color:var(--fg)}
+.dprev{border:1px solid var(--border);border-radius:var(--radius);background:var(--strip);overflow:hidden}
+.rec-ed{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--border)}
+h3+.rec-ed{border-top:0;padding-top:0}
+
+/* ── My items, and who viewed your profile */
+.job-row{display:flex;align-items:center;gap:10px;padding:14px 0;border-top:1px solid var(--border)}
+.job-row:first-child{border-top:0}
+h3+.job-row{border-top:0}
+.job-row b{font-weight:600}
+.stats{display:flex;gap:48px;margin-bottom:12px}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-size:36px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.viewer{display:flex;align-items:center;gap:12px}
+.viewer .person{flex:1;min-width:0}
+
+/* ── Sign in: a card on the ground, as the app's sign-in */
+.auth{display:flex;min-height:calc(100vh - var(--top) - var(--tabs));align-items:center;justify-content:center;padding:32px 16px;background:var(--bg)}
+.auth .card{width:100%;max-width:400px;padding:32px 28px}
+.auth .brand{justify-content:center;margin:0 0 8px;font-size:28px}
+.auth .sub{margin-bottom:24px;color:var(--muted);text-align:center}
+.auth form{display:flex;flex-direction:column;gap:10px}
+.auth .alt{margin-top:18px;text-align:center;font-size:14px}
+.legal{margin-top:16px;color:var(--muted);font-size:12.5px;text-align:center}
+.legal a{color:var(--blue)}

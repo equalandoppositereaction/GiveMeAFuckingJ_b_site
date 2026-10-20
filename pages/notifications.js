@@ -1,0 +1,96 @@
+/**
+ * Notifications. Invitations to connect come first, with their notes, answered here (as Instagram answers
+ * follow requests; GMAFJ has no separate My Network page). Then what happened: reactions, comments,
+ * replies, mentions, reposts, accepted invitations, new followers, endorsements, recommendations, and an
+ * admin's word on a profile design. Opening the list reads it.
+ */
+import { $, ago, api, avatar, esc, me, media, on, personRow, plural, profileUrl, REACTIONS, refreshBadges } from '/app.js'
+
+export default async function ({ main }) {
+  if (!me) return void location.replace('/login?next=/notifications')
+  main.innerHTML = '<div class="page narrow"><div class="page-h"><h1>Notifications</h1></div><div id="requests"></div><div class="card" id="list"><div class="spin"></div></div><div id="more"></div></div>'
+  const requests = $('#requests', main)
+  const list = $('#list', main)
+  const more = $('#more', main)
+  let before = null
+
+  async function drawRequests() {
+    try {
+      const r = await api('GET', '/social/network')
+      const invite = (p) => `<div class="invite">${personRow(p, 'received', [p.headline, p.mutual ? plural(p.mutual, 'mutual connection') : '', ago(p.at)].filter(Boolean).join(' · '))}${
+        p.note ? `<blockquote class="note">${esc(p.note)}</blockquote>` : ''
+      }</div>`
+      requests.innerHTML =
+        (r.received.length
+          ? `<section class="card" style="margin-bottom:16px"><div class="sec"><div class="sec-h"><h2>Invitations</h2><span class="muted small">${r.received.length}</span></div>${r.received.map(invite).join('')}</div></section>`
+          : '') +
+        (r.sent.length
+          ? `<details class="card sent-inv" style="margin-bottom:16px"><summary class="sec">Sent invitations <span class="muted small">${r.sent.length}</span></summary><div class="sec">${r.sent.map((p) => personRow(p, 'sent', `Sent ${ago(p.at)}`)).join('')}</div></details>`
+          : '')
+    } catch {
+      requests.innerHTML = ''
+    }
+  }
+
+  const quote = (t) => (t ? `: “${esc(t.slice(0, 100))}${t.length > 100 ? '…' : ''}”` : '')
+  const line = (n) => {
+    const who = n.actor ? `<b>${esc(n.actor.name)}</b>` : ''
+    const post = n.update ? `/p?id=${n.update.id}` : '/feed'
+    switch (n.kind) {
+      case 'like':
+        return [`${who} reacted ${REACTIONS[n.text]?.mark ?? ''} to your update${quote(n.update?.text)}`, post]
+      case 'comment':
+        return [`${who} commented on your update${quote(n.text)}`, `${post}#say`]
+      case 'reply':
+        return [`${who} replied to your comment${quote(n.text)}`, `${post}#say`]
+      case 'mention':
+        return [`${who} mentioned you${quote(n.text)}`, post]
+      case 'repost':
+        return [`${who} reposted your update${quote(n.text)}`, post]
+      case 'comment_like':
+        return [`${who} liked your comment${quote(n.text)}`, post]
+      case 'accepted':
+        return [`${who} accepted your invitation to connect.`, n.actor ? profileUrl(n.actor) : '/search']
+      case 'follow':
+        return [`${who} started following you.`, n.actor ? profileUrl(n.actor) : '/search']
+      case 'endorse':
+        return [`${who} endorsed you for ${esc(n.text ?? 'a skill')}.`, profileUrl(me)]
+      case 'recommend':
+        return [`${who} wrote you a recommendation. Choose whether it shows on your profile.`, '/settings#recommendations']
+      case 'design_approved':
+        return ['Your profile design was approved. It is on your profile now.', profileUrl(me)]
+      case 'design_rejected':
+        return [`Your profile design was not approved${n.text ? `: ${esc(n.text)}` : '.'}`, '/settings#design']
+      default:
+        return ['Something happened on GMAFJ.', '/feed']
+    }
+  }
+
+  async function load() {
+    try {
+      const r = await api('GET', `/social/notifications${before ? `?before=${before}` : ''}`)
+      if (!before) list.innerHTML = ''
+      list.insertAdjacentHTML(
+        'beforeend',
+        r.notifications
+          .map((n) => {
+            const [text, href] = line(n)
+            return `<a class="note-row${n.read ? '' : ' unread'}" href="${href}">${n.actor ? avatar(n.actor) : '<span class="av i" aria-hidden="true" style="font-size:15px">G</span>'}<span class="grow">${text} <span class="muted small">${ago(n.at)}</span></span>${
+              n.update?.image ? `<img src="${esc(media(n.update.image))}" alt="" class="note-thumb">` : ''
+            }</a>`
+          })
+          .join('')
+      )
+      before = r.notifications.at(-1)?.id ?? before
+      if (!list.children.length) list.innerHTML = '<div class="empty"><h2>Nothing yet</h2><p>When people react to or comment on your updates, follow you, or accept your invitations, it shows here.</p></div>'
+      more.innerHTML = r.more ? '<div class="center" style="margin-top:16px"><button class="btn ghost" type="button">Show older</button></div>' : ''
+      refreshBadges()
+    } catch (e) {
+      list.innerHTML = `<p class="empty">${esc(e.message)}</p>`
+    }
+  }
+  more.addEventListener('click', (e) => e.target.closest('button') && void load())
+  // Accepted, ignored or withdrawn: the invitations follow.
+  on('relation', () => void drawRequests())
+  await Promise.all([drawRequests(), load()])
+}
