@@ -116,13 +116,16 @@ export function toggleTheme() {
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#1c1c1c' : '#ffffff')
 }
 
+/** The owner's logo, both supplied variants: the black mark in the light, the white one in the dark (app.css). */
+export const LOGO = '<img class="logo" src="/favicon.png" alt=""><img class="logo on-dark" src="/logo-dark.png" alt="">'
+
 /** Signed in, or a dialog asking them to: false when they are not. */
 export function requireLogin(why = 'Log in to continue.') {
   if (me) return true
   const next = encodeURIComponent(location.pathname + location.search)
   dialog(
     `<div class="dialog-b stack" style="text-align:center;padding:30px 26px">
-<div class="brand" style="justify-content:center;margin:0"><span class="mark" aria-hidden="true">O</span><span>Oporch</span></div>
+<div class="brand" style="justify-content:center;margin:0">${LOGO}<span>Oporch</span></div>
 <h2>${esc(why)}</h2>
 <p class="muted">Join Oporch to apply to jobs with one click, follow people and share updates. It is free.</p>
 <a class="btn wide" href="/login?next=${next}">Log in</a>
@@ -149,7 +152,13 @@ export const emit = (name, detail) => bus.dispatchEvent(new CustomEvent(name, { 
 function paintMe() {
   document.documentElement.classList.toggle('in', !!me)
   for (const a of $$('[data-me-link]')) a.href = me ? profileUrl(me) : '/login'
-  for (const slot of $$('[data-me-av]')) slot.innerHTML = me ? avatar(me, 'xs') : ''
+  // Jobs is a visitor's home page; a member's home page is their Feed, so theirs is /explore.
+  for (const a of $$('[data-nav=jobs]')) a.href = me ? '/explore' : '/'
+  // Your face on Profile; a visitor keeps the person drawn there.
+  for (const slot of $$('[data-me-av]')) {
+    slot.dataset.icon ??= slot.innerHTML
+    slot.innerHTML = me ? avatar(me, 'xs') : slot.dataset.icon
+  }
 }
 
 async function badges() {
@@ -269,25 +278,29 @@ export const linkify = (text) =>
 
 // ── Updates
 
-/** LinkedIn's six reactions. */
-export const REACTIONS = {
-  like: { mark: '👍', label: 'Like' },
-  celebrate: { mark: '👏', label: 'Celebrate' },
-  support: { mark: '🤝', label: 'Support' },
-  love: { mark: '❤️', label: 'Love' },
-  insightful: { mark: '💡', label: 'Insightful' },
-  funny: { mark: '😂', label: 'Funny' }
+/*
+ * An update's actions, as Instagram draws them (the owner, 2026-10-21: "Change the like comment repost and
+ * send button interface to what instagram has"): a heart, a speech bubble, the repost arrows and the paper
+ * plane, each with its count, and the bookmark on the right; then "Liked by" someone you follow, "View all
+ * comments", and a box to add one. A like is the heart; reactions of LinkedIn's other kinds, from before,
+ * still count as likes.
+ */
+const ICON = {
+  heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3s-7.6-4.6-9.3-9.5C1.5 7.4 3.8 4 7.3 4c2 0 3.7 1.1 4.7 2.8C13 5.1 14.7 4 16.7 4c3.5 0 5.8 3.4 4.6 6.8-1.7 4.9-9.3 9.5-9.3 9.5z"/></svg>',
+  comment: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 16.4A9 9 0 1 0 17 19.8l4.5 1.7z"/></svg>',
+  repost: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2.5 20.5 6 17 9.5"/><path d="M3.5 11.5V9.8A3.8 3.8 0 0 1 7.3 6h13.2"/><path d="M7 21.5 3.5 18 7 14.5"/><path d="M20.5 12.5v1.7a3.8 3.8 0 0 1-3.8 3.8H3.5"/></svg>',
+  send: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 2.5 10.2 13.8"/><path d="m21.5 2.5-6.9 19-4.4-7.7-7.7-4.4z"/></svg>',
+  save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5.2L5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5z"/></svg>'
 }
+export { ICON }
 const posts = new Map() // id -> the update as last drawn, for redrawing it
 
-/** The reactions line: the top kinds, how many, and the faces of people you follow first. */
-export function reactionLine(u) {
-  const r = u.reactions || { total: 0, top: [] }
-  if (!r.total) return '<button type="button" class="link-quiet" data-reactions hidden></button>'
-  const marks = r.top.map((k) => `<span class="rx">${REACTIONS[k]?.mark ?? ''}</span>`).join('')
+/** "Liked by" the first person you follow who liked it, and how many others, as Instagram says it. */
+function likedBy(u) {
+  const r = u.reactions || { total: 0 }
   const f = u.faces || []
-  const text = f.length ? `${esc(f[0].name)}${r.total > 1 ? ` and ${plural(r.total - 1, 'other')}` : ''}` : plural(r.total, 'reaction')
-  return `<button type="button" class="link-quiet faces" data-reactions><span class="rxs">${marks}</span>${f.length ? `<span class="stack-av">${f.map((p) => avatar(p, 'xs')).join('')}</span>` : ''}<span>${text}</span></button>`
+  if (!f.length) return ''
+  return `<button type="button" class="ig-by" data-likes><span class="stack-av">${f.map((p) => avatar(p, 'xs')).join('')}</span><span>Liked by <b>${esc(f[0].name)}</b>${r.total > 1 ? ` and ${plural(r.total - 1, 'other')}` : ''}</span></button>`
 }
 
 const VIA = { reacted: 'reacted to this', commented: 'commented on this' }
@@ -303,8 +316,8 @@ function reviewNote(u) {
   return ''
 }
 
-/** An update as every list shows it, LinkedIn's: who and why, the text, a picture, a repost, the counts, the actions. */
-export function postHtml(u) {
+/** An update as every list shows it: who and why, the text, a picture, a repost, then Instagram's actions. `opts.solo`: on its own page. */
+export function postHtml(u, opts = {}) {
   posts.set(u.id, u)
   const a = u.author || { name: 'Deleted account', handle: '' }
   const line = [a.headline, `${ago(u.at)}${u.edited ? ' · Edited' : ''} · ${AUDIENCE[u.audience] ?? ''}`].filter(Boolean)
@@ -331,79 +344,102 @@ ${u.text ? `<div class="post-t clamp">${linkify(u.text)}</div>` : ''}
 ${u.image ? `<a href="/p?id=${u.id}"><img class="post-i" src="${esc(media(u.image))}" alt="" loading="lazy"></a>` : ''}
 ${repost ? `<div class="embed-wrap">${inner(repost)}</div>` : ''}`
   const shown = plain && !repost.gone ? repost : u
-  const counts = [shown.comments ? `<a class="link-quiet" href="/p?id=${shown.id}#say">${plural(shown.comments, 'comment')}</a>` : '', shown.reposts ? `<span>${plural(shown.reposts, 'repost')}</span>` : '']
-    .filter(Boolean)
-    .join(' · ')
-  const mine = shown.reactions?.mine
-  return `<article class="card post" data-post="${shown.id}"${plain ? ` data-wrapper="${u.id}"` : ''}>
+  if (shown !== u) posts.set(shown.id, shown)
+  return `<article class="card post" data-post="${shown.id}"${plain ? ` data-wrapper="${u.id}"` : ''}${opts.solo ? ' data-solo="1"' : ''}>
 ${head}
 ${body}
-<div class="post-s">${reactionLine(shown)}<span>${counts}</span></div>
-<div class="post-a">
-<button class="act${mine ? ' on' : ''}" type="button" data-like aria-pressed="${!!mine}">${mine ? `${REACTIONS[mine].mark} ${REACTIONS[mine].label}` : 'Like'}</button>
-<a class="act" href="/p?id=${shown.id}#say">Comment</a>
-<button class="act" type="button" data-repost>Repost</button>
-<button class="act" type="button" data-send>Send</button>
-</div>
+${actions(shown, opts.solo)}
 </article>`
 }
 
-/** Redraw an update's reactions after a change. */
-function redrawReactions(card, u) {
-  const btn = $('[data-like]', card)
-  const mine = u.reactions.mine
-  btn.classList.toggle('on', !!mine)
-  btn.setAttribute('aria-pressed', String(!!mine))
-  btn.textContent = mine ? `${REACTIONS[mine].mark} ${REACTIONS[mine].label}` : 'Like'
-  $('.post-s', card).firstElementChild.outerHTML = reactionLine(u)
+const count = (n) => (n ? `<span class="ig-n">${Number(n).toLocaleString('en')}</span>` : '')
+/**
+ * The row of actions, then "Liked by", the comments and a box for one: Instagram's, under every update.
+ * `solo`: the update's own page, whose comments and box are below it, so neither is repeated here.
+ */
+function actions(u, solo = false) {
+  const liked = !!u.reactions?.mine
+  const n = u.reactions?.total ?? 0
+  return `<div class="post-a">
+<button class="ig${liked ? ' on' : ''}" type="button" data-like aria-pressed="${liked}" aria-label="${liked ? 'Unlike' : 'Like'}">${ICON.heart}</button>${n ? `<button class="ig-n" type="button" data-likes aria-label="See who liked it">${n.toLocaleString('en')}</button>` : ''}
+<a class="ig" href="/p?id=${u.id}#say" aria-label="Comment">${ICON.comment}${count(u.comments)}</a>
+<button class="ig" type="button" data-repost aria-label="Repost">${ICON.repost}${count(u.reposts)}</button>
+<button class="ig" type="button" data-send aria-label="Send">${ICON.send}</button>
+<span class="grow"></span>
+<button class="ig${u.saved ? ' on' : ''}" type="button" data-save aria-pressed="${!!u.saved}" aria-label="${u.saved ? 'Remove from saved' : 'Save'}">${ICON.save}</button>
+</div>
+${likedBy(u)}
+${!solo && u.comments ? `<a class="ig-more" href="/p?id=${u.id}#comments">${u.comments === 1 ? 'View 1 comment' : `View all ${u.comments.toLocaleString('en')} comments`}</a>` : ''}
+${!solo && me ? `<form class="ig-say" data-say><input maxlength="2000" placeholder="Add a comment…" aria-label="Add a comment" autocomplete="off"><button class="textbtn" type="submit" disabled>Post</button></form>` : ''}`
 }
 
-async function react(card, kind) {
-  if (!requireLogin('Log in to react to updates.')) return
+/** Every card of this update on the page, its actions drawn again after a change (the box keeps what is typed in it). */
+function redrawActions(u) {
+  for (const card of $$(`[data-post="${u.id}"]`)) {
+    const say = $('[data-say] input', card)?.value ?? ''
+    const html = actions(u, !!card.dataset.solo)
+    for (const el of [...card.querySelectorAll(':scope > .post-a, :scope > .ig-by, :scope > .ig-more, :scope > .ig-say')]) el.remove()
+    card.insertAdjacentHTML('beforeend', html)
+    const box = $('[data-say] input', card)
+    if (box && say) {
+      box.value = say
+      $('[data-say] button', card).disabled = false
+    }
+    const mineIn = card.querySelector(':scope > .ig-mine')
+    if (mineIn) card.querySelector(':scope > .ig-say')?.before(mineIn)
+  }
+}
+
+/** The heart: liked, or not any more. Any reaction from before counts as the like. */
+async function like(card, only = false) {
+  if (!requireLogin('Log in to like updates.')) return
   const u = posts.get(+card.dataset.post)
   if (!u) return
-  const undo = kind === null || (kind === 'like' && u.reactions.mine === 'like')
+  const was = !!u.reactions?.mine
+  if (only && was) return
   try {
-    u.reactions = undo ? await api('DELETE', `/social/updates/${u.id}/like`) : await api('POST', `/social/updates/${u.id}/like`, { kind })
-    redrawReactions(card, u)
+    u.reactions = was ? await api('DELETE', `/social/updates/${u.id}/like`) : await api('POST', `/social/updates/${u.id}/like`, { kind: 'like' })
+    redrawActions(u)
   } catch (e) {
     toast(esc(e.message))
   }
 }
 
-/** The reaction picker, as LinkedIn shows it over Like. */
-function reactionPicker(card, anchor) {
-  $('.pop')?.remove()
-  const pop = document.createElement('div')
-  pop.className = 'pop rx-pop'
-  pop.innerHTML = Object.entries(REACTIONS).map(([k, r]) => `<button type="button" data-kind="${k}" title="${r.label}" aria-label="${r.label}">${r.mark}</button>`).join('')
-  document.body.append(pop)
-  const r = anchor.getBoundingClientRect()
-  pop.style.top = `${window.scrollY + r.top - pop.offsetHeight - 6}px`
-  pop.style.left = `${Math.max(8, window.scrollX + r.left)}px`
-  const close = () => {
-    pop.remove()
-    document.removeEventListener('click', outside, true)
-  }
-  const outside = (e) => !pop.contains(e.target) && !anchor.contains(e.target) && close()
-  pop.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-kind]')
-    if (!b) return
-    close()
-    void react(card, b.dataset.kind)
-  })
-  setTimeout(() => document.addEventListener('click', outside, true))
-  return close
-}
-
-/** Who reacted, by kind, the people you follow first. */
-async function reactionsDialog(id) {
-  const { el } = dialog(`<div class="dialog-h"><h2>Reactions</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div><div class="dialog-b"><div class="spin"></div></div>`, 'small')
+/** Who liked it, the people you follow first, each with Follow. */
+async function likesDialog(id) {
+  const { el } = dialog(`<div class="dialog-h"><h2>Likes</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div><div class="dialog-b"><div class="spin"></div></div>`, 'small')
   try {
     const r = await api('GET', `/social/updates/${id}/likes`)
-    $('.dialog-b', el).innerHTML = r.people.map((p) => `<div class="person">${who(p, p.headline)}<span class="rx" title="${REACTIONS[p.kind]?.label ?? ''}">${REACTIONS[p.kind]?.mark ?? ''}</span></div>`).join('') || '<p class="muted">No reactions yet.</p>'
+    $('.dialog-b', el).innerHTML = r.people.map((p) => personRow(p, p.headline)).join('') || '<p class="muted">No likes yet.</p>'
   } catch (e) {
     $('.dialog-b', el).innerHTML = `<p class="err">${esc(e.message)}</p>`
+  }
+}
+
+/** A comment from the box under an update, as Instagram's: shown under it at once, the count moved on. */
+async function commentInline(form) {
+  const card = form.closest('[data-post]')
+  const u = card && posts.get(+card.dataset.post)
+  const input = $('input', form)
+  const text = input.value.trim()
+  if (!u || !text || !requireLogin('Log in to comment.')) return
+  const button = $('button', form)
+  button.disabled = true
+  try {
+    await api('POST', `/social/updates/${u.id}/comments`, { text })
+    u.comments = (u.comments || 0) + 1
+    input.value = ''
+    redrawActions(u)
+    // Yours shows under the update at once, above the box, as Instagram shows it.
+    for (const c of $$(`[data-post="${u.id}"]`)) {
+      c.querySelector(':scope > .ig-mine')?.remove()
+      const line = `<p class="ig-mine"><a href="${profileUrl(me)}"><b>${esc(me.handle)}</b></a> ${linkify(text)}</p>`
+      const box = c.querySelector(':scope > .ig-say')
+      box ? box.insertAdjacentHTML('beforebegin', line) : c.insertAdjacentHTML('beforeend', line)
+    }
+  } catch (e) {
+    button.disabled = false
+    toast(esc(e.message))
   }
 }
 
@@ -454,7 +490,6 @@ function postMenu(card, btn) {
   const u = posts.get(+card.dataset.post)
   if (!u) return
   const items = []
-  if (me) items.push([u.saved ? 'Unsave' : 'Save', () => toggleSave(u)])
   items.push(['Copy link to update', () => share(`/p?id=${u.id}`)])
   if (me && u.mine) {
     if (u.audience === 'anyone') items.push([u.featured ? 'Remove from Featured' : 'Feature on top of profile', () => toggleFeature(u)])
@@ -470,9 +505,11 @@ function postMenu(card, btn) {
 }
 
 async function toggleSave(u) {
+  if (!requireLogin('Log in to save updates.')) return
   try {
     await api(u.saved ? 'DELETE' : 'POST', `/social/updates/${u.id}/save`)
     u.saved = !u.saved
+    redrawActions(u)
     toast(u.saved ? 'Saved. <a href="/items">See your saved items</a>' : 'Removed from your saved items.')
   } catch (e) {
     toast(esc(e.message))
@@ -843,7 +880,7 @@ export function compose(opts = {}) {
 <div class="dialog-b compose">
 <div class="row" style="margin-bottom:12px">${avatar(me)}<div><b>${esc(me.name)}</b><div><select class="aud" aria-label="Who can see this"><option value="anyone">Anyone</option><option value="followers">Followers only</option></select></div></div></div>
 <textarea maxlength="3000" placeholder="${repostOf ? 'Add your thoughts' : 'What do you want to talk about? Use @username to mention someone and #hashtags.'}" aria-label="Your update">${esc(edit?.text ?? '')}</textarea>
-${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="post-a">[\s\S]*?<\/div>\s*<\/article>/, '</article>')}</div>` : ''}
+${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="post-a">[\s\S]*<\/article>/, '</article>')}</div>` : ''}
 <div class="preview" hidden><img alt=""><button class="btn ghost small" type="button" data-unpick>Remove</button></div>
 <p class="muted small">${me.admin ? '' : 'Every update is checked before it reaches the feed. Until then it shows on your profile.'}</p>
 <p class="err" hidden></p>
@@ -990,28 +1027,35 @@ export async function saveJob(id, job, saved) {
 
 // ── Shared clicks, wherever they are on the page
 
-let pressTimer = 0
-document.addEventListener('pointerdown', (e) => {
-  // A long press on Like opens the reactions, as on a phone.
-  const like = e.target.closest?.('[data-like]')
-  if (!like) return
-  clearTimeout(pressTimer)
-  pressTimer = setTimeout(() => {
-    pressTimer = -1
-    reactionPicker(like.closest('[data-post]'), like)
-  }, 450)
+// The box under an update: Post lights up once something is typed, and Enter posts it.
+document.addEventListener('input', (e) => {
+  const box = e.target.closest?.('[data-say] input')
+  if (box) $('button', box.form).disabled = !box.value.trim()
 })
-document.addEventListener('pointerup', () => pressTimer > 0 && clearTimeout(pressTimer))
-let hoverTimer = 0
-document.addEventListener('pointerover', (e) => {
-  const like = e.target.closest?.('[data-like]')
-  clearTimeout(hoverTimer)
-  if (like && matchMedia('(hover: hover)').matches && me) hoverTimer = setTimeout(() => reactionPicker(like.closest('[data-post]'), like), 600)
+document.addEventListener('submit', (e) => {
+  const form = e.target.closest?.('[data-say]')
+  if (!form) return
+  e.preventDefault()
+  void commentInline(form)
+})
+// A double click on an update's picture likes it, as a double tap does on Instagram.
+document.addEventListener('dblclick', (e) => {
+  const pic = e.target.closest?.('.post-i')
+  const card = pic?.closest('[data-post]')
+  if (!card) return
+  e.preventDefault()
+  void like(card, true)
 })
 
 document.addEventListener('click', (e) => {
   const t = e.target
   if (!(t instanceof Element)) return
+  // A visitor sees every menu; all but Jobs ask them to log in first (the owner, 2026-10-21).
+  const gated = !me && t.closest('[data-member]')
+  if (gated) {
+    e.preventDefault()
+    return void requireLogin(gated.dataset.member)
+  }
   if (t.closest('[data-act=create]')) {
     e.preventDefault()
     return compose()
@@ -1063,13 +1107,12 @@ document.addEventListener('click', (e) => {
       ]
     ])
   }
-  if (t.closest('[data-like]')) {
-    if (pressTimer === -1) return void (pressTimer = 0)
-    $('.rx-pop')?.remove()
+  if (t.closest('[data-like]')) return void like(card)
+  if (t.closest('[data-likes]')) return void likesDialog(+card.dataset.post)
+  if (t.closest('[data-save]')) {
     const u = posts.get(+card.dataset.post)
-    return void react(card, u?.reactions?.mine ? null : 'like')
+    return u ? void toggleSave(u) : undefined
   }
-  if (t.closest('[data-reactions]')) return void reactionsDialog(+card.dataset.post)
   if (t.closest('[data-repost]')) return repostMenu(card, t.closest('[data-repost]'))
   if (t.closest('[data-send]')) return void sendDialog(card)
   if (t.closest('[data-post-menu]')) return postMenu(card, t.closest('[data-post-menu]'))

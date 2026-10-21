@@ -2,7 +2,7 @@
  * Log in, create an account, or reset a password: the same accounts as the desktop app, with the same
  * eight-digit codes by email. The session is a cookie the API sets and no script can read.
  */
-import { $, api, esc, me, param } from '/app.js'
+import { $, api, esc, LOGO, me, param } from '/app.js'
 
 /** Where to go afterwards: a path on this site, never another site. */
 const safeNext = (v) => (v && v.startsWith('/') && !v.startsWith('//') && !v.startsWith('/\\') ? v : '/feed')
@@ -61,7 +61,7 @@ export default async function ({ main }) {
   }
 
   function draw() {
-    main.innerHTML = `<div class="auth"><div class="card"><div class="brand"><span class="mark" aria-hidden="true">O</span><span>Oporch</span></div>${forms[mode]()}</div></div>`
+    main.innerHTML = `<div class="auth"><div class="card"><div class="brand">${LOGO}<span>Oporch</span></div>${forms[mode]()}</div></div>`
     $('input', main)?.focus()
   }
 

@@ -1,10 +1,10 @@
 /**
  * Notifications, as Instagram has them. Requests to follow you (a private account's) come first, with
- * Confirm and Delete; then what happened: new followers (with Follow back), reactions, comments, replies,
- * mentions, reposts, endorsements, recommendations, and the owner's review of your updates and your
- * profile design. Opening the list reads it.
+ * Confirm and Delete; then what happened: new followers (with Follow back), likes, comments, replies,
+ * mentions, reposts, endorsements, recommendations, being made a community's admin, and the owner's review
+ * of your updates and your profile design. Opening the list reads it.
  */
-import { $, ago, api, avatar, esc, me, media, on, profileUrl, REACTIONS, refreshBadges, relButtons, toast, who } from '/app.js'
+import { $, ago, api, avatar, esc, LOGO, me, media, on, profileUrl, refreshBadges, relButtons, toast, who } from '/app.js'
 
 export default async function ({ main }) {
   if (!me) return void location.replace('/login?next=/notifications')
@@ -53,7 +53,7 @@ export default async function ({ main }) {
     const person = n.actor ? profileUrl(n.actor) : '/search'
     switch (n.kind) {
       case 'like':
-        return [`${who} reacted ${REACTIONS[n.text]?.mark ?? ''} to your update${quote(n.update?.text)}`, post]
+        return [`${who} liked your update${quote(n.update?.text)}`, post]
       case 'comment':
         return [`${who} commented on your update${quote(n.text)}`, `${post}#say`]
       case 'reply':
@@ -81,6 +81,8 @@ export default async function ({ main }) {
         return ['Your profile design was approved. It is on your profile now.', profileUrl(me)]
       case 'design_rejected':
         return [`Your profile design was not approved${n.text ? `: ${esc(n.text)}` : '.'}`, '/settings#design']
+      case 'group_admin':
+        return [`${who} made you an admin of <b>${esc(n.group?.name ?? n.text ?? 'a community')}</b>.`, n.group ? `/groups?id=${n.group.id}` : '/groups']
       default:
         return ['Something happened on Oporch.', '/feed']
     }
@@ -98,7 +100,7 @@ export default async function ({ main }) {
         r.notifications
           .map((n) => {
             const [text, href] = line(n)
-            const face = n.actor ? avatar(n.actor) : '<span class="av i mark-av" aria-hidden="true">O</span>'
+            const face = n.actor ? avatar(n.actor) : `<span class="av logo-av" aria-hidden="true">${LOGO}</span>`
             return `<div class="note-row${n.read ? '' : ' unread'}"><a class="note-link" href="${href}">${face}<span class="grow">${text} <span class="muted small">${ago(n.at)}</span></span>${
               n.update?.image ? `<img src="${esc(media(n.update.image))}" alt="" class="note-thumb">` : ''
             }</a>${followBack(n)}</div>`

@@ -23,7 +23,7 @@
   --bg:#efeeea;--card:#fff;--fg:#111;--soft:#333;--muted:#575757;--faint:#6a6a6a;
   --primary:#111;--primary-fg:#fff;--secondary:#e8e7e2;--hover:#ebeae5;--accent:#e2e1dc;
   --border:#d6d4ce;--input:#85837e;--blue:#1d4ed8;--blue-fg:#fff;--ring:rgb(29 78 216/.3);
-  --ok:#166534;--wait:#8a5a00;--bad:#b91c1c;--bad-bg:#b91c1c;
+  --ok:#166534;--wait:#8a5a00;--bad:#b91c1c;--bad-bg:#b91c1c;--heart:#ff3040;
   --sidebar:var(--card);--sidebar-fg:var(--soft);--strip:#f3f2ee;
   --shadow-card:0 1px 3px rgb(0 0 0/.07);--shadow:0 10px 30px rgb(0 0 0/.14),0 2px 6px rgb(0 0 0/.08);
   /* Older names, still used: */
@@ -34,7 +34,7 @@ html.dark{
   --bg:#0c0c0c;--card:#1c1c1c;--fg:#f4f4f4;--soft:#d4d4d4;--muted:#a8a8a8;--faint:#8c8c8c;
   --primary:#f4f4f4;--primary-fg:#111;--secondary:#2c2c2c;--hover:#292929;--accent:#353535;
   --border:#3a3a3a;--input:#787878;--blue:#6ea8ff;--blue-fg:#0c0c0c;--ring:rgb(110 168 255/.35);
-  --ok:#5dd48a;--wait:#f0b43c;--bad:#ff7b72;--bad-bg:#c42b2b;
+  --ok:#5dd48a;--wait:#f0b43c;--bad:#ff7b72;--bad-bg:#c42b2b;--heart:#ff3040;
   --sidebar:var(--card);--sidebar-fg:var(--soft);--strip:#252525;
   --shadow-card:0 1px 2px rgb(0 0 0/.4);--shadow:0 10px 30px rgb(0 0 0/.6);color-scheme:dark
 }
@@ -72,10 +72,17 @@ html.in:not(.shown) body[data-page=landing] .main{visibility:hidden}
 .shell{display:flex;min-height:100vh}
 .main{flex:1;min-width:0;margin-left:var(--rail);padding-bottom:var(--tabs)}
 .topbar,.tabbar{display:none}
-/* The name: its initial in a black tile (white in the dark), then the word. Until the owner has artwork for Oporch. */
+/*
+ * The name: the owner's logo as it is, then the word (the owner, 2026-10-21: "The logo is the same, dont
+ * change it"). Its supplied variants, swapped by a class as the desktop app's Logo.tsx swaps them: the black
+ * mark (favicon.png) in the light, the white one (logo-dark.png) in the dark.
+ */
 .brand{display:flex;align-items:center;gap:12px;font-size:20px;font-weight:700;letter-spacing:-.01em}
-.mark{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--primary);color:var(--primary-fg);font-size:19px;font-weight:700;line-height:1;font-variation-settings:"opsz" 60}
-.av.i.mark-av{background:var(--primary);color:var(--primary-fg);font-size:17px;font-weight:700}
+.logo{flex:none;width:28px;height:28px;object-fit:contain}
+.logo.on-dark,html.dark .logo:not(.on-dark){display:none}
+html.dark .logo.on-dark{display:block}
+.av.logo-av{display:inline-flex;align-items:center;justify-content:center;padding:9px;background:var(--card);box-shadow:inset 0 0 0 1px var(--border)}
+.av.logo-av .logo{width:100%;height:100%}
 /* The rail: icons, and every name once it is hovered or tabbed into. It opens over the page, which stays where it is. */
 .rail{position:fixed;inset:0 auto 0 0;z-index:40;display:flex;flex-direction:column;gap:2px;width:var(--rail);padding:18px 12px 12px;overflow:hidden;background:var(--sidebar);color:var(--sidebar-fg);border-right:1px solid var(--border);transition:width .22s cubic-bezier(.4,0,.2,1),box-shadow .22s}
 .rail:hover,.rail:focus-within{width:var(--rail-open);box-shadow:var(--shadow)}
@@ -104,7 +111,7 @@ html.in:not(.shown) body[data-page=landing] .main{visibility:hidden}
   .main{padding-top:var(--top)}
   .topbar{position:fixed;inset:0 0 auto 0;z-index:40;display:flex;align-items:center;gap:2px;height:var(--top);padding:0 8px 0 16px;background:var(--sidebar);border-bottom:1px solid var(--border);color:var(--fg)}
   .topbar .brand{margin-right:auto;font-size:19px}
-  .topbar .mark{width:26px;height:26px;font-size:17px}
+  .topbar .logo{width:24px;height:24px}
   .tabbar{position:fixed;inset:auto 0 0 0;z-index:40;display:flex;justify-content:space-around;align-items:center;height:var(--tabs);padding-bottom:env(safe-area-inset-bottom);background:var(--sidebar);border-top:1px solid var(--border);color:var(--fg)}
   .topbar .nav-i,.tabbar .nav-i{width:44px;min-height:44px;justify-content:center;padding:0}
   .topbar .badge,.tabbar .badge{left:24px;top:4px}
@@ -122,9 +129,6 @@ html.in:not(.shown) body[data-page=landing] .main{visibility:hidden}
 .btn.danger{background:var(--bad-bg);color:#fff}
 .btn.small{min-height:32px;padding:0 12px;font-size:13px}
 .btn.wide{width:100%}
-.act{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 .75rem;border-radius:var(--radius);color:var(--soft);font-size:14px;font-weight:500}
-.act:hover{background:var(--hover);color:var(--fg)}
-.act.on{color:var(--fg);font-weight:700}
 .menu-b{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;color:var(--muted);font-size:18px}
 .menu-b:hover{background:var(--hover);color:var(--fg)}
 
@@ -233,45 +237,83 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 /* Its space below as margin: padding would sit inside the clipped box and show the fifth line's top. */
 .post-t.clamp{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;padding-bottom:0;margin-bottom:14px;cursor:pointer}
 .post-i{width:100%;max-height:720px;object-fit:cover;background:var(--strip);border-block:1px solid var(--border)}
-.post-s{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px 0;font-size:13px;color:var(--muted)}
-.post-a{display:flex;flex-wrap:wrap;gap:2px;margin-top:10px;padding:4px 8px;border-top:1px solid var(--border)}
-@media(max-width:600px){.post-a{flex-wrap:nowrap;padding:4px}.post-a .act{flex:1;justify-content:center;padding:0 .3rem;font-size:13px}}
+/*
+ * Its actions, Instagram's (the owner, 2026-10-21; app.js `actions`): a heart, a speech bubble, the repost
+ * arrows and the paper plane, each with its count beside it, and the bookmark on the right. Black outlines,
+ * a red heart once liked; then "Liked by", "View all comments", and a box to add one.
+ */
+.post-a{display:flex;align-items:center;gap:2px;padding:6px 8px 0}
+.ig{display:inline-flex;align-items:center;gap:6px;min-width:40px;min-height:40px;padding:0 8px;border-radius:var(--radius);color:var(--fg)}
+.ig svg{flex:none;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .12s}
+.ig:hover svg{opacity:.6}
+.ig:active svg{transform:scale(.88)}
+.ig.on[data-like] svg{fill:var(--heart);stroke:var(--heart);opacity:1;animation:beat .3s ease-out}
+.ig.on[data-save] svg{fill:currentColor;opacity:1}
+@keyframes beat{40%{transform:scale(1.25)}}
+@media(prefers-reduced-motion:reduce){.ig.on[data-like] svg{animation:none}}
+.ig-n{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--fg)}
+button.ig-n{min-height:40px;margin-left:-8px;padding:0 8px 0 2px}
+button.ig-n:hover{text-decoration:underline;text-underline-offset:3px}
+.ig-by{display:flex;align-items:center;gap:8px;padding:2px 16px 0;font-size:14px;text-align:left;color:var(--fg)}
+.ig-by .stack-av{display:flex}
+.ig-by .av{width:20px;height:20px;box-shadow:0 0 0 2px var(--card)}
+.ig-by .av+.av{margin-left:-6px}
+.ig-more{display:block;padding:6px 16px 0;font-size:14px;color:var(--muted)}
+.ig-more:hover{color:var(--fg)}
+.ig-mine{padding:6px 16px 0;font-size:14px;overflow-wrap:anywhere}
+.ig-mine a:not(:first-child){color:var(--blue)}
+.ig-say{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 16px;border-top:1px solid var(--border)}
+.ig-say input,.ig-say textarea{flex:1;min-width:0;min-height:36px;padding:7px 0;border:0;background:none;outline:none;font-size:14.5px;resize:none;line-height:1.45}
+.ig-say .textbtn{font-weight:600}
+.ig-say .textbtn:disabled{opacity:.45;cursor:default;text-decoration:none}
+.post>:last-child:is(.post-a,.ig-by,.ig-more,.ig-mine){padding-bottom:12px}
 .link-quiet{color:var(--muted)}
 .link-quiet:hover{color:var(--fg);text-decoration:underline;text-underline-offset:3px}
-.rxs{display:flex}
-.rx{font-size:15px;line-height:1}
-.rxs .rx+.rx{margin-left:-3px}
 .embed-wrap{padding:0 16px 14px}
 .embed{display:block;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius)}
 .embed:hover{background:var(--hover)}
 .embed-h{display:flex;align-items:center;gap:10px;padding:12px}
 .embed .post-t{padding:0 12px 12px}
-.comments{display:flex;flex-direction:column;gap:14px;padding:16px}
-.comment{display:flex;gap:10px}
-.comment-b{flex:1;min-width:0;padding:10px 14px;border-radius:var(--radius);background:var(--strip)}
-.comment-b p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px}
-.comment-b p a{color:var(--blue)}
-.comment-h{display:flex;align-items:flex-start;gap:8px}
-.comment-h .menu-b{width:28px;height:28px;margin:-4px -8px 0 0}
-.comment-m{display:flex;align-items:center;gap:10px;margin-top:4px;padding-left:14px;font-size:13px;color:var(--muted)}
-.comment.reply{margin-top:12px}
-.replies{display:flex;flex-direction:column}
+/*
+ * Comments, Instagram's (pages/post.js): a username then the comment, its age, likes and Reply under it,
+ * a small heart on its right; replies folded under "View replies"; one box at the bottom.
+ */
+.ig-comments{display:flex;flex-direction:column}
+.ig-list{display:flex;flex-direction:column;gap:16px;padding:16px}
+.ig-c{display:flex;align-items:flex-start;gap:12px}
+.ig-c.reply{margin-top:14px}
+.ig-t{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px;line-height:1.45}
+.ig-t a{color:var(--blue)}
+.ig-t a.ig-u{margin-right:4px;color:var(--fg);font-weight:600}
+.ig-cm{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:4px;font-size:12.5px;color:var(--muted)}
+.ig-cm button{font-weight:600;color:var(--muted)}
+.ig-cm button:hover{color:var(--fg)}
+.ig-dots{opacity:0;transition:opacity .12s}
+.ig-c:hover .ig-dots,.ig-dots:focus-visible{opacity:1}
+@media(hover:none){.ig-dots{opacity:1}}
+.ig-view{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.ig-view>span{width:24px;border-top:1px solid var(--muted)}
+.ig-view:hover{color:var(--fg)}
+#earlier .ig-view{margin:14px 16px 0}
+.ig-cl{flex:none;display:inline-flex;margin-top:4px;padding:4px;color:var(--muted)}
+.ig-cl svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.ig-cl:hover{color:var(--fg)}
+.ig-cl.on{color:var(--heart)}
+.ig-cl.on svg{fill:currentColor}
+.ig-none{padding:8px 0;color:var(--muted);font-size:14.5px}
+.ig-bottom{flex-wrap:wrap;margin-top:0;padding:10px 16px}
+.ig-to{display:flex;align-items:center;justify-content:space-between;width:100%;font-size:13px;color:var(--muted)}
+.ig-to .menu-b{width:26px;height:26px;font-size:13px}
+/* The message box of Messages and Communities. */
 .say{display:flex;gap:10px;align-items:flex-end;padding:14px 16px;border-top:1px solid var(--border)}
 .say textarea{flex:1;min-height:40px;max-height:160px;padding:9px 14px;border:1px solid var(--input);border-radius:20px;background:var(--card);resize:none;outline:none;transition:border-color .15s,box-shadow .15s}
 .say textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--ring)}
-.reply-say{padding:12px 0 0;border-top:0}
-.textbtn.quiet{color:var(--muted);font-size:13px;font-weight:500}
-.textbtn.quiet:hover{color:var(--fg)}
-.textbtn.quiet.on{color:var(--fg);font-weight:700}
 
 /* ── Menus, dialogs and notes, as the app's popovers and Dialog */
 .pop{position:absolute;z-index:60;min-width:210px;padding:5px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow)}
 .pop button,.pop a{display:block;width:100%;padding:8px 10px;border-radius:8px;text-align:left;font-size:14px}
 .pop button:hover,.pop a:hover{background:var(--hover)}
 .pop .bad{color:var(--bad)}
-.rx-pop{display:flex;gap:2px;min-width:0;padding:6px;border-radius:999px}
-.rx-pop button{width:44px;height:44px;padding:0;border-radius:50%;font-size:26px;text-align:center;transition:transform .12s}
-.rx-pop button:hover{background:none;transform:scale(1.25) translateY(-3px)}
 .veil{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;background:rgb(0 0 0/.5);animation:fade .12s}
 @keyframes fade{from{opacity:0}}
 .dialog{width:100%;max-width:580px;max-height:calc(100vh - 40px);overflow:auto;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:var(--shadow);animation:pop .14s ease-out}
@@ -470,17 +512,17 @@ blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(
 .classic .top h3 button:hover{text-decoration:underline;text-underline-offset:3px}
 .classic .top p{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;color:var(--muted)}
 /* Apply and One click apply side by side, as the desktop app has them: Apply outlined, One click apply filled. */
-.classic .apply,.classic .oneclick{display:flex;flex:none;align-items:center;gap:.4rem;min-height:36px;padding:0 14px;border-radius:var(--radius);font-size:14px;font-weight:600;white-space:nowrap;transition:opacity .15s,background .15s}
-.classic .apply{background:var(--card);color:var(--fg);box-shadow:inset 0 0 0 1px var(--input)}
-.classic .apply:hover{background:var(--hover)}
-.classic .oneclick{background:var(--primary);color:var(--primary-fg)}
-.classic .oneclick:hover{opacity:.85}
-.classic .oneclick .bolt{flex:none;width:15px;height:15px}
-.classic .apply:disabled,.classic .oneclick:disabled{background:var(--secondary);color:var(--muted);box-shadow:none;cursor:default;opacity:1}
+:is(.classic,.jobcard) .apply,:is(.classic,.jobcard) .oneclick{display:flex;flex:none;align-items:center;gap:.4rem;min-height:36px;padding:0 14px;border-radius:var(--radius);font-size:14px;font-weight:600;white-space:nowrap;transition:opacity .15s,background .15s}
+:is(.classic,.jobcard) .apply{background:var(--card);color:var(--fg);box-shadow:inset 0 0 0 1px var(--input)}
+:is(.classic,.jobcard) .apply:hover{background:var(--hover)}
+:is(.classic,.jobcard) .oneclick{background:var(--primary);color:var(--primary-fg)}
+:is(.classic,.jobcard) .oneclick:hover{opacity:.85}
+:is(.classic,.jobcard) .oneclick .bolt{flex:none;width:15px;height:15px}
+:is(.classic,.jobcard) .apply:disabled,:is(.classic,.jobcard) .oneclick:disabled{background:var(--secondary);color:var(--muted);box-shadow:none;cursor:default;opacity:1}
 .classic .apply .arrow,.classic .moreb .arrow{align-self:center;width:.85em;height:.85em;margin:0 0 0 .1rem}
-.classic .apply:hover .arrow{transform:translateX(.25rem)}
+:is(.classic,.jobcard) .apply:hover .arrow{transform:translateX(.25rem)}
 /* Buttons on one line where they fit, else two; the faces of people you follow who applied under them. */
-.classic .apply-row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;min-width:0;margin-top:auto}
+:is(.classic,.jobcard) .apply-row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;min-width:0;margin-top:auto}
 .classic .faces-slot{display:block;min-width:0;min-height:20px;margin-top:.35rem}
 .classic .faces-slot:empty{display:none}
 /* Save: a bookmark in the top-right corner, as LinkedIn has it, so the two Apply buttons keep their line. */
@@ -496,12 +538,12 @@ blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(
 .classic .more{flex:1;min-height:0;overflow:auto;padding:.85rem 1rem 1rem;border-top:1px solid var(--border);font-size:14px;animation:drop .25s ease-out}
 @keyframes drop{from{opacity:0;transform:translateY(-.4rem)}}
 @media(prefers-reduced-motion:reduce){.classic .more{animation:none}.classic .arrow{transition:none}}
-.classic .facts p+p{margin-top:.15rem}
-.classic .note{margin-top:1rem;color:var(--muted)}
-.classic .more h4{margin:1rem 0 .4rem;font-size:15px;font-weight:600}
-.classic .more ul{display:flex;flex-direction:column;gap:.3rem;padding-left:1.1rem}
-.classic .chips{display:flex;flex-wrap:wrap;gap:.4rem}
-.classic .chips span{padding:1px 8px;border:1px solid var(--border);border-radius:8px;background:none;font-size:12.5px}
+:is(.classic,.jobcard) .facts p+p{margin-top:.15rem}
+:is(.classic,.jobcard) .note{margin-top:1rem;color:var(--muted)}
+:is(.classic,.jobcard) .more h4{margin:1rem 0 .4rem;font-size:15px;font-weight:600}
+:is(.classic,.jobcard) .more ul{display:flex;flex-direction:column;gap:.3rem;padding-left:1.1rem}
+:is(.classic,.jobcard) .chips{display:flex;flex-wrap:wrap;gap:.4rem}
+:is(.classic,.jobcard) .chips span{padding:1px 8px;border:1px solid var(--border);border-radius:8px;background:none;font-size:12.5px}
 .classic .moreb{display:flex;align-items:center;min-height:40px;margin:2rem auto 0;padding:0 20px;border:1px solid var(--input);border-radius:var(--radius);background:var(--card);font-size:15px;font-weight:600;box-shadow:0 1px 2px rgb(0 0 0/.05)}
 .classic .moreb:hover{background:var(--hover)}
 .classic .foot{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem;padding-block:2rem 3rem;border-top:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:13.5px}
@@ -647,3 +689,33 @@ h3+.job-row{border-top:0}
 .auth .alt{margin-top:18px;text-align:center;font-size:14px}
 .legal{margin-top:16px;color:var(--muted);font-size:12.5px;text-align:center}
 .legal a{color:var(--blue)}
+
+/* ── The feed's Jobs tab (pages/feed.js): a job as a card, saying why it is there, with the jobs page's buttons. */
+.jobcard{padding:14px 16px}
+.jc-why{display:flex;align-items:center;gap:8px;min-height:20px;margin-bottom:10px;font-size:13px}
+.jc-why .faces{font-size:13px}
+.jc-h{display:flex;align-items:flex-start;gap:12px}
+.jc-logo{flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:var(--secondary);color:var(--soft);font-weight:600;text-transform:uppercase}
+.jc-h h3{font-size:17px;line-height:1.3}
+.jc-h h3 button{font:inherit;text-align:left}
+.jc-h h3 button:hover{text-decoration:underline;text-underline-offset:3px}
+.jc-h p{margin-top:2px}
+.jobcard .more{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:14px}
+.jobcard .apply-row{margin-top:14px}
+.jobcard .apply .arrow{flex:none;align-self:center;width:.85em;height:.85em;margin:0 0 0 .1rem;transition:transform .15s}
+.jobcard .save{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:var(--radius);color:var(--soft)}
+.jobcard .save svg{width:18px;height:18px}
+.jobcard .save:hover{background:var(--hover)}
+.jobcard .save[aria-pressed=true] path{fill:currentColor}
+
+/* ── Communities (pages/groups.js): Messages' layout; a community's face, its initials on a rounded square. */
+.av.gav{border-radius:14px;background:var(--accent);color:var(--fg)}
+.av.s.gav{border-radius:10px;font-size:12px!important}
+.dm-head .who{min-width:0}
+.dm-head .who-n{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.av.xl.gav{border-radius:36px}
+.g-find{padding:0 16px 10px}
+.g-by{display:flex;align-items:center;gap:8px;margin:8px 0 -2px;font-size:12.5px;color:var(--muted)}
+.g-by a{display:inline-flex;align-items:center;gap:6px;color:var(--soft)}
+.g-by .av{width:20px;height:20px;font-size:8px!important}
+fieldset{margin:0;padding:0;border:0}
