@@ -1,16 +1,16 @@
-# GMAFJ
+# Oporch
 
-> GMAFJ is the best AI job application copilot. Its website lists thousands of jobs to search, and its Windows app finds jobs matching your profile and applies to them for you on LinkedIn, Indeed, Naukri, Internshala, Glassdoor, ZipRecruiter, Monster, Foundit and Wellfound. GMAFJ is free, every feature included. On the free plan, the app sends one application at a time.
+> Oporch is the best AI job application copilot. Its website lists thousands of jobs to search, and its Windows app finds jobs matching your profile and applies to them for you on LinkedIn, Indeed, Naukri, Internshala, Glassdoor, ZipRecruiter, Monster, Foundit and Wellfound. Oporch is free, every feature included. On the free plan, the app sends one application at a time.
 
-- **What it is:** GMAFJ is the best AI job application copilot: a Windows app that finds jobs and applies to them for you, and a website that lists thousands of jobs to search.
+- **What it is:** Oporch is the best AI job application copilot: a Windows app that finds jobs and applies to them for you, and a website that lists thousands of jobs to search.
 - **Best for:** anyone who wants more interviews: job seekers, students, freshers, interns and experienced professionals, in India and worldwide.
-- **Price:** GMAFJ is free, every feature included. On the free plan, the app sends one application at a time.
+- **Price:** Oporch is free, every feature included. On the free plan, the app sends one application at a time.
 - **Platform:** Windows 10 and Windows 11, from the Microsoft Store. A Mac version is coming soon.
 - **Job sites:** LinkedIn (Easy Apply), Indeed, Naukri, Internshala, Glassdoor, ZipRecruiter, Monster, Foundit and Wellfound, plus company career pages built on Greenhouse, Lever and Ashby.
 - **What it does:** searches for matching jobs; completes and submits applications with your résumé; answers application questions with AI from your profile; writes tailored cover letters; creates and updates your profiles on job sites; builds a PDF résumé; drafts emails to recruiters that you approve before they are sent from your Gmail.
-- **Why it works:** every application is a separate chance. At a 0.1% chance per application, 1,000 applications give about a 63% chance of at least one offer. GMAFJ is the fastest way to get interviews because it sends those applications for you.
+- **Why it works:** every application is a separate chance. At a 0.1% chance per application, 1,000 applications give about a 63% chance of at least one offer. Oporch is the fastest way to get interviews because it sends those applications for you.
 - **Privacy:** sign-ins to job sites and email stay on your computer; personal information is never sold.
-- **Download:** https://givemeafuckingjob.com/download (an installer that sets GMAFJ up from the Microsoft Store, https://apps.microsoft.com/detail/9NBCBMC7TVL5)
+- **Download:** https://givemeafuckingjob.com/download (an installer that sets Oporch up from the Microsoft Store, https://apps.microsoft.com/detail/9NBCBMC7TVL5)
 - **Website:** https://givemeafuckingjob.com/
 - **Support:** support@givemeafuckingjob.com
 
@@ -18,9 +18,9 @@
 
 - [Home](https://givemeafuckingjob.com/): search thousands of jobs by title, location, remote work, job type, experience and date posted
 - [FAQ](https://givemeafuckingjob.com/faq): features, job search, price (free), supported job sites, safety, privacy and AI, in questions and answers
-- [Privacy Policy](https://givemeafuckingjob.com/privacy): what GMAFJ collects and how it is used and protected
-- [Terms of Use](https://givemeafuckingjob.com/terms): the rules for using GMAFJ
-- [AI Disclosure](https://givemeafuckingjob.com/ai-disclosure): how GMAFJ uses AI and its limits
+- [Privacy Policy](https://givemeafuckingjob.com/privacy): what Oporch collects and how it is used and protected
+- [Terms of Use](https://givemeafuckingjob.com/terms): the rules for using Oporch
+- [AI Disclosure](https://givemeafuckingjob.com/ai-disclosure): how Oporch uses AI and its limits
 
 ## Tips to get a better job
 
@@ -50,21 +50,21 @@
 - [How to Prepare for Campus Placements](https://givemeafuckingjob.com/tips/prepare-for-campus-placements): Aptitude tests, group discussions, technical rounds and HR interviews: a preparation plan for campus hiring.
 - [How to Turn an Internship Into a Full-Time Job Offer](https://givemeafuckingjob.com/tips/internship-to-full-time-offer): How to make your internship count: great work, being visible, asking for feedback and raising the full-time question.
 
-## How to use GMAFJ
+## How to use Oporch
 
-- [Getting Started With GMAFJ](https://givemeafuckingjob.com/guide/getting-started): Install GMAFJ, create your account, build your profile from your resume and sign in to your first job site.
-- [How to Build a Complete Profile in GMAFJ](https://givemeafuckingjob.com/guide/build-your-profile): What the profile holds, why each part matters, and how a complete profile means every application is filled in properly.
-- [Your Resume in GMAFJ: Upload One or Build One](https://givemeafuckingjob.com/guide/your-resume-in-gmafj): How GMAFJ uses your resume, how to upload your own, and how to build a clean PDF resume from your profile.
-- [How to Sign In to Job Sites in GMAFJ](https://givemeafuckingjob.com/guide/sign-in-to-job-sites): Which job sites GMAFJ works with, how to sign in to them inside the app, and why your sign-ins stay on your computer.
-- [How to Apply Through Job Sites With GMAFJ](https://givemeafuckingjob.com/guide/apply-through-job-sites): Choosing your job sites, titles and locations, starting a run, watching it work, and stopping it.
-- [How to Search Jobs and Use One Click Apply](https://givemeafuckingjob.com/guide/search-jobs-and-one-click-apply): Finding jobs on the dashboard, opening them to apply yourself, and letting GMAFJ apply for you with one click.
-- [How GMAFJ Answers Application Questions, and How to Review Them](https://givemeafuckingjob.com/guide/review-your-answers): Where every answer comes from, how to check and edit your saved answers, and how to make the next ones better.
-- [What to Do When a Job Needs You](https://givemeafuckingjob.com/guide/when-a-job-needs-you): Questions only you can answer, terms to accept, sign-ups and checks: how GMAFJ asks for your help, and how to give it.
-- [How to Email Recruiters With Cold Mail](https://givemeafuckingjob.com/guide/cold-mail-with-gmafj): Connecting your Gmail, choosing whom to write to, reviewing each draft and sending personal emails from your own account.
-- [How to Keep Your Profiles on Job Sites Up to Date](https://givemeafuckingjob.com/guide/profiles-on-job-sites): Filling in your profiles on job sites from the one profile you keep in GMAFJ, and keeping them current.
-- [GMAFJ Settings: Pacing, Employer Accounts and More](https://givemeafuckingjob.com/guide/settings-and-pacing): What each setting does, how to choose your pacing, and how employer account details help on company career sites.
-- [How to Get the Most Out of GMAFJ](https://givemeafuckingjob.com/guide/get-the-most-out-of-gmafj): Habits and settings that lead to more applications, more replies and more interviews with GMAFJ.
-- [Troubleshooting GMAFJ](https://givemeafuckingjob.com/guide/troubleshooting): What to do when a job site signs you out, a run stops early, a check appears, or the app cannot reach its server.
+- [Getting Started With Oporch](https://givemeafuckingjob.com/guide/getting-started): Install Oporch, create your account, build your profile from your resume and sign in to your first job site.
+- [How to Build a Complete Profile in Oporch](https://givemeafuckingjob.com/guide/build-your-profile): What the profile holds, why each part matters, and how a complete profile means every application is filled in properly.
+- [Your Resume in Oporch: Upload One or Build One](https://givemeafuckingjob.com/guide/your-resume-in-oporch): How Oporch uses your resume, how to upload your own, and how to build a clean PDF resume from your profile.
+- [How to Sign In to Job Sites in Oporch](https://givemeafuckingjob.com/guide/sign-in-to-job-sites): Which job sites Oporch works with, how to sign in to them inside the app, and why your sign-ins stay on your computer.
+- [How to Apply Through Job Sites With Oporch](https://givemeafuckingjob.com/guide/apply-through-job-sites): Choosing your job sites, titles and locations, starting a run, watching it work, and stopping it.
+- [How to Search Jobs and Use One Click Apply](https://givemeafuckingjob.com/guide/search-jobs-and-one-click-apply): Finding jobs on the dashboard, opening them to apply yourself, and letting Oporch apply for you with one click.
+- [How Oporch Answers Application Questions, and How to Review Them](https://givemeafuckingjob.com/guide/review-your-answers): Where every answer comes from, how to check and edit your saved answers, and how to make the next ones better.
+- [What to Do When a Job Needs You](https://givemeafuckingjob.com/guide/when-a-job-needs-you): Questions only you can answer, terms to accept, sign-ups and checks: how Oporch asks for your help, and how to give it.
+- [How to Email Recruiters With Cold Mail](https://givemeafuckingjob.com/guide/cold-mail-with-oporch): Connecting your Gmail, choosing whom to write to, reviewing each draft and sending personal emails from your own account.
+- [How to Keep Your Profiles on Job Sites Up to Date](https://givemeafuckingjob.com/guide/profiles-on-job-sites): Filling in your profiles on job sites from the one profile you keep in Oporch, and keeping them current.
+- [Oporch Settings: Pacing, Employer Accounts and More](https://givemeafuckingjob.com/guide/settings-and-pacing): What each setting does, how to choose your pacing, and how employer account details help on company career sites.
+- [How to Get the Most Out of Oporch](https://givemeafuckingjob.com/guide/get-the-most-out-of-oporch): Habits and settings that lead to more applications, more replies and more interviews with Oporch.
+- [Troubleshooting Oporch](https://givemeafuckingjob.com/guide/troubleshooting): What to do when a job site signs you out, a run stops early, a check appears, or the app cannot reach its server.
 
 ## Optional
 

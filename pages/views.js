@@ -1,6 +1,6 @@
 /**
  * Who viewed your profile, as LinkedIn shows it: how many in the past 90 days and this week, and who.
- * Someone who browses privately shows as "Someone on GMAFJ"; a member who browses privately sees only the
+ * Someone who browses privately shows as "Someone on Oporch"; a member who browses privately sees only the
  * numbers. Pro shows everyone who looked; otherwise the three most recent (server: social/people.ts).
  */
 import { $, ago, api, esc, me, personRow, plural } from '/app.js'
@@ -27,8 +27,8 @@ export default async function ({ main }) {
     v.viewers
       .map((x) =>
         x.person
-          ? `<div class="viewer">${personRow(x.person, x.person.degree === 1 ? 'connected' : 'none', x.person.headline)}<span class="muted small">${ago(x.at)}</span></div>`
-          : `<div class="viewer person"><span class="av i" aria-hidden="true" style="font-size:15px">?</span><div class="grow"><b class="small">Someone on GMAFJ</b><div class="who-h">Browsing privately</div></div><span class="muted small">${ago(x.at)}</span></div>`
+          ? `<div class="viewer">${personRow(x.person, x.person.headline)}<span class="muted small">${ago(x.at)}</span></div>`
+          : `<div class="viewer person"><span class="av i" aria-hidden="true" style="font-size:15px">?</span><div class="grow"><b class="small">Someone on Oporch</b><div class="who-h">Browsing privately</div></div><span class="muted small">${ago(x.at)}</span></div>`
       )
       .join('') || (v.limited === 'private' ? '' : '<div class="empty"><p>Nobody has viewed your profile in the past 90 days yet. Share an update to be seen.</p></div>')
   }</div></div>`

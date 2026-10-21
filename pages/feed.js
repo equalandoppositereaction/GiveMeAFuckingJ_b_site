@@ -1,8 +1,8 @@
 /**
  * Feed: the updates (the owner, 2026-10-08; it was "Home" until the owner named it the Feed). "For you" is ranked as X ranks its home timeline
- * (server: social/rank.ts), from everyone's updates a member may see; "Following" is your connections'
- * and the people you follow, newest first. Beside it on wide screens: you, people you may know, and
- * whether your desktop app is open.
+ * (server: social/rank.ts), from the approved updates a member may see; "Following" is the people you
+ * follow, newest first. Your own updates waiting for review show to you, marked. Beside it on wide
+ * screens: you, people to follow, and whether your desktop app is open.
  */
 import { $, api, avatar, esc, me, on, personRow, postHtml, profileUrl, who } from '/app.js'
 
@@ -17,13 +17,13 @@ export default async function ({ main }) {
 </section>
 <aside class="aside">
 <div class="person">${who(me, `@${me.handle}`)}<a class="textbtn" href="${profileUrl(me)}">Profile</a></div>
-<div class="card pad stack"><div class="aside-h"><span>People you may know</span><a class="textbtn" href="/search">See all</a></div><div id="sugg"><div class="spin"></div></div></div>
+<div class="card pad stack"><div class="aside-h"><span>Suggested for you</span><a class="textbtn" href="/search">See all</a></div><div id="sugg"><div class="spin"></div></div></div>
 <div class="card pad stack">
-<div class="app-state"><span class="dot" id="app-dot"></span><span id="app-text">Checking for your GMAFJ app…</span></div>
-<p class="muted small">One click apply sends jobs from this site to the GMAFJ app on your computer, which applies to them for you.</p>
+<div class="app-state"><span class="dot" id="app-dot"></span><span id="app-text">Checking for your desktop app…</span></div>
+<p class="muted small">One click apply sends jobs from this site to the Oporch app on your computer, which applies to them for you.</p>
 <a class="btn ghost small" href="/download">Get the app</a>
 </div>
-<nav class="foot-links"><a href="/explore">Jobs</a><a href="/items">My items</a><a href="/blog/">Blog</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><span>© 2026 GMAFJ</span></nav>
+<nav class="foot-links"><a href="/explore">Jobs</a><a href="/items">My items</a><a href="/blog/">Blog</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><span>© 2026 Oporch</span></nav>
 </aside>
 </div>`
   const list = $('#posts', main)
@@ -56,7 +56,7 @@ export default async function ({ main }) {
       if (!list.querySelector('.post')) {
         list.innerHTML =
           mode === 'following'
-            ? '<div class="card empty"><h2>Nothing here yet</h2><p>Updates from your connections and the people you follow show here.</p><a class="btn" href="/search">Find people</a></div>'
+            ? '<div class="card empty"><h2>Nothing here yet</h2><p>Updates from the people you follow show here.</p><a class="btn" href="/search">Find people</a></div>'
             : '<div class="card empty"><h2>No updates yet</h2><p>Be the first: share what you are working on, or a job you are hiring for.</p><button class="btn" type="button" data-act="create">Share an update</button></div>'
       }
       moreBox.hidden = done
@@ -108,7 +108,7 @@ export default async function ({ main }) {
 
   api('GET', '/social/suggestions?limit=5')
     .then((r) => {
-      $('#sugg', main).innerHTML = r.people.map((p) => personRow(p, 'none', p.reason)).join('') || '<p class="muted small">Nobody new yet. Invite people you know.</p>'
+      $('#sugg', main).innerHTML = r.people.map((p) => personRow(p, p.reason)).join('') || '<p class="muted small">Nobody new yet. Invite people you know.</p>'
     })
     .catch(() => {
       $('#sugg', main).innerHTML = ''
@@ -116,6 +116,6 @@ export default async function ({ main }) {
 
   on('badges', (b) => {
     $('#app-dot', main).classList.toggle('on', b.app)
-    $('#app-text', main).textContent = b.app ? 'Your GMAFJ app is open.' : 'Your GMAFJ app is not open.'
+    $('#app-text', main).textContent = b.app ? 'Your desktop app is open.' : 'Your desktop app is not open.'
   })
 }

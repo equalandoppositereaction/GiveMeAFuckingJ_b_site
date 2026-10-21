@@ -3,7 +3,7 @@
  * edited and deleted. Anyone may open an update for anyone by its link, signed in or not (the owner,
  * 2026-10-08); reacting and commenting need an account.
  */
-import { $, ago, api, avatar, esc, exampleTag, linkify, me, param, popMenu, postHtml, profileUrl, report, requireLogin, toast } from '/app.js'
+import { $, ago, api, avatar, esc, linkify, me, param, popMenu, postHtml, profileUrl, report, requireLogin, toast } from '/app.js'
 
 export default async function ({ main }) {
   const id = Number(param('id'))
@@ -20,12 +20,12 @@ export default async function ({ main }) {
   // A plain repost is the update it reposts: its reactions and comments are that one's.
   if (u.repostOf && !u.text && !u.repostOf.gone) return void location.replace(`/p?id=${u.repostOf.id}`)
   const by = u.author
-  if (by) document.title = `${by.name} on GMAFJ: "${u.text.slice(0, 60)}${u.text.length > 60 ? '…' : ''}"`
+  if (by) document.title = `${by.name} on Oporch: "${u.text.slice(0, 60)}${u.text.length > 60 ? '…' : ''}"`
   const next = encodeURIComponent(location.pathname + location.search)
   main.innerHTML = `<div class="page narrow stack">
 ${
   !me && by
-    ? `<div class="card pad row wrap">${avatar(by)}<div class="grow"><b>${esc(by.name)}</b> is on GMAFJ</div><a class="btn small" href="/login?new=1&next=${next}">Join to connect</a><a class="btn ghost small" href="/login?next=${next}">Log in</a></div>`
+    ? `<div class="card pad row wrap">${avatar(by)}<div class="grow"><b>${esc(by.name)}</b> is on Oporch</div><a class="btn small" href="/login?new=1&next=${next}">Join to follow</a><a class="btn ghost small" href="/login?next=${next}">Log in</a></div>`
     : ''
 }
 <div id="card">${postHtml(u)}</div>
@@ -59,7 +59,7 @@ ${
     return `<div class="comment${reply ? ' reply' : ''}" data-c="${c.id}">
 <a href="${href}" tabindex="-1">${avatar(a, reply ? 'xs' : 's')}</a>
 <div class="grow">
-<div class="comment-b"><div class="comment-h"><div class="grow"><a href="${href}"><b class="small">${esc(a?.name ?? 'Deleted account')}</b></a>${exampleTag(a)}${a?.headline ? `<div class="who-h">${esc(a.headline)}</div>` : ''}</div><span class="muted small">${ago(c.at)}${c.edited ? ' · Edited' : ''}</span>${
+<div class="comment-b"><div class="comment-h"><div class="grow"><a href="${href}"><b class="small">${esc(a?.name ?? 'Deleted account')}</b></a>${a?.headline ? `<div class="who-h">${esc(a.headline)}</div>` : ''}</div><span class="muted small">${ago(c.at)}${c.edited ? ' · Edited' : ''}</span>${
       me ? '<button class="menu-b" type="button" data-cmenu aria-label="More">⋯</button>' : ''
     }</div><p data-text>${linkify(c.text)}</p></div>
 <div class="comment-m"><button class="textbtn quiet${c.liked ? ' on' : ''}" type="button" data-clike aria-pressed="${c.liked}">Like</button>${c.likes ? `<span>${c.likes}</span>` : ''}<span aria-hidden="true">|</span><button class="textbtn quiet" type="button" data-reply="${reply ? c.parentId : c.id}">Reply</button></div>

@@ -6,6 +6,6 @@ try {
   if (localStorage.getItem('gmafj.theme') === 'dark') {
     d.classList.add('dark')
     var m = document.querySelector('meta[name=theme-color]')
-    if (m) m.content = '#111111'
+    if (m) m.content = '#1c1c1c'
   }
 } catch (e) {}

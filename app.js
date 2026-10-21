@@ -1,11 +1,14 @@
 /**
- * GMAFJ on the web (the owner, 2026-10-08): Instagram's layout, LinkedIn's functionality.
+ * Oporch on the web (the owner, 2026-10-08, renamed from GMAFJ 2026-10-21): Instagram's layout,
+ * LinkedIn's functionality, and Instagram's and X's following (the owner, 2026-10-21: "instead of
+ * connections, make it a follower and following system like instagram and x").
  *
  * Every page is the same shell: the menus, built into the page, and a <main> filled in here. This file
- * is what every page shares: the API (api.givemeafuckingjob.com, signed in by an HttpOnly cookie no
- * script can read), who is signed in, the menus' badges, and the pieces pages are made of: people,
- * updates (reactions, comments, reposts, sending), dialogs, pictures, jobs. A member's own profile design
- * is design.js. Each page's own part is /pages/<name>.js, named by <body data-page>.
+ * is what every page shares: the API (api.givemeafuckingjob.com until Oporch's own domain, signed in by an
+ * HttpOnly cookie no script can read), who is signed in, the menus' badges, and the pieces pages are made
+ * of: people and following, updates (reactions, comments, reposts, sending, their review), dialogs,
+ * pictures and cropping them, jobs and One click apply. A member's own profile design is design.js. Each
+ * page's own part is /pages/<name>.js, named by <body data-page>.
  *
  * Everything a person wrote goes through esc() on its way into the page. A profile design is the one
  * thing shown as written, and only inside a sandboxed frame (design.js).
@@ -41,7 +44,6 @@ export const media = (path) => (path ? API + path : '')
 export const param = (key) => new URLSearchParams(location.search).get(key)
 export const profileUrl = (p) => `/u?h=${encodeURIComponent(p.handle)}`
 export const plural = (n, one, many = `${one}s`) => `${Number(n).toLocaleString('en')} ${n === 1 ? one : many}`
-export const DEGREE = { 1: '1st', 2: '2nd', 3: '3rd+' }
 
 // ── Talking to the API
 
@@ -67,7 +69,7 @@ export async function api(method, path, body) {
   try {
     res = await fetch(API + path, init)
   } catch {
-    throw new ApiError('GMAFJ cannot be reached right now. Check your connection and try again.', 0)
+    throw new ApiError('Oporch cannot be reached right now. Check your connection and try again.', 0)
   }
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
@@ -107,10 +109,11 @@ export async function signOut() {
 }
 
 /** Dark mode or Light mode, kept for the next visit (boot.js), as the desktop app's account menu offers it. */
-function toggleTheme() {
+export function toggleTheme() {
   const dark = document.documentElement.classList.toggle('dark')
   store('gmafj.theme', dark ? 'dark' : null)
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#111111' : '#fcfcfb')
+  // The bar on top's colour (--card), so a phone's browser runs on from it.
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#1c1c1c' : '#ffffff')
 }
 
 /** Signed in, or a dialog asking them to: false when they are not. */
@@ -119,9 +122,9 @@ export function requireLogin(why = 'Log in to continue.') {
   const next = encodeURIComponent(location.pathname + location.search)
   dialog(
     `<div class="dialog-b stack" style="text-align:center;padding:30px 26px">
-<div class="brand" style="justify-content:center;margin:0">GMAFJ</div>
+<div class="brand" style="justify-content:center;margin:0"><span class="mark" aria-hidden="true">O</span><span>Oporch</span></div>
 <h2>${esc(why)}</h2>
-<p class="muted">Join GMAFJ to apply to jobs with one click, connect with people and share updates. It is free.</p>
+<p class="muted">Join Oporch to apply to jobs with one click, follow people and share updates. It is free.</p>
 <a class="btn wide" href="/login?next=${next}">Log in</a>
 <a class="btn ghost wide" href="/login?new=1&next=${next}">Create an account</a>
 </div>`,
@@ -156,10 +159,10 @@ async function badges() {
   } catch {
     return
   }
+  // Requests to follow you are answered on the Notifications page, message requests on Messages: they count there.
+  const shown = { notifications: (lastBadges.notifications || 0) + (lastBadges.requests || 0), messages: (lastBadges.messages || 0) + (lastBadges.messageRequests || 0) }
   for (const el of $$('[data-badge]')) {
-    const key = el.dataset.badge
-    // Requests to connect are answered on the Notifications page, so they count on its badge.
-    const n = (lastBadges[key] || 0) + (key === 'notifications' ? lastBadges.requests || 0 : 0)
+    const n = shown[el.dataset.badge] ?? lastBadges[el.dataset.badge] ?? 0
     el.textContent = n ? (n > 99 ? '99+' : String(n)) : ''
   }
   emit('badges', lastBadges)
@@ -167,7 +170,7 @@ async function badges() {
 export const appOpen = () => lastBadges?.app === true
 export const refreshBadges = () => void badges()
 
-// ── People
+// ── People and following
 
 const SIZES = { xs: 9, s: 12, '': 15, l: 20, xl: 52 }
 /** A face: their picture, or their initials; ringed as LinkedIn rings #OpenToWork and #Hiring. */
@@ -179,117 +182,68 @@ export function avatar(p, size = '') {
   return `<span class="${cls} i" style="font-size:${SIZES[size] ?? 15}px" aria-hidden="true">${esc(initials)}</span>`
 }
 
-/** "Example" beside the name of a profile GMAFJ made to show what a profile can be. */
-export const exampleTag = (p) => (p?.example ? '<span class="tag" title="An example profile made by GMAFJ. Not a real person.">Example</span>' : '')
-
-export function who(p, line = p?.headline, degree) {
+/** A person: face, name (and "Follows you", as Instagram marks it), and a line. */
+export function who(p, line = p?.headline) {
   if (!p) return ''
   const href = profileUrl(p)
-  return `<div class="who"><a href="${href}" tabindex="-1">${avatar(p)}</a><div class="who-t"><div class="who-n"><a href="${href}">${esc(p.name)}</a>${exampleTag(p)}${
-    degree ? `<span class="deg">· ${DEGREE[degree] ?? ''}</span>` : ''
-  }</div>${line ? `<div class="who-h">${esc(line)}</div>` : ''}</div></div>`
+  return `<div class="who"><a href="${href}" tabindex="-1">${avatar(p)}</a><div class="who-t"><div class="who-n"><a href="${href}">${esc(p.name)}</a>${p.followsYou ? '<span class="chip">Follows you</span>' : ''}</div>${
+    line ? `<div class="who-h">${esc(line)}</div>` : ''
+  }</div></div>`
 }
 
-/** What can be done with a person, from where they stand with you. Re-drawn in place when it changes. */
+/**
+ * What can be done with a person, from where you stand with them: Follow (Follow back when they follow
+ * you), Following and Requested (a private account's), and on a profile Message, which anyone may send
+ * (it reaches their requests unless you follow each other). Re-drawn in place when it changes.
+ */
 export function relButtons(handle, relation, compact = false, opts = {}) {
   const h = esc(handle)
   const s = compact ? ' small' : ''
-  // An example profile is marked by its name; there is nothing to do with it.
-  if (opts.example) return `<span class="row" data-rel="${h}"></span>`
-  const inner = {
-    self: `<a class="btn ghost${s}" href="/settings">Edit profile</a>`,
-    none: `<button class="btn${s}" type="button" data-connect="${h}">Connect</button>`,
-    sent: `<button class="btn ghost${s}" type="button" data-withdraw="${h}" title="Withdraw the request">Pending</button>`,
-    received: `<button class="btn${s}" type="button" data-accept="${h}">Accept</button><button class="btn ghost${s}" type="button" data-ignore="${h}">Ignore</button>`,
-    connected: `<a class="btn${s}" href="/messages?h=${encodeURIComponent(handle)}">Message</a>${compact ? '' : `<button class="btn ghost${s}" type="button" data-remove="${h}">Connected</button>`}`
+  if (relation === 'self') return compact ? `<span class="row" data-rel="${h}"></span>` : `<span class="row wrap" data-rel="${h}"><a class="btn ghost" href="/settings#edit">Edit profile</a></span>`
+  const follow = {
+    following: `<button class="btn ghost${s}" type="button" data-following="${h}" aria-haspopup="menu">Following</button>`,
+    requested: `<button class="btn ghost${s}" type="button" data-requested="${h}" aria-haspopup="menu">Requested</button>`,
+    none: `<button class="btn${s}" type="button" data-follow="${h}">${opts.followsYou ? 'Follow back' : 'Follow'}</button>`
   }[relation] ?? ''
-  const follow =
-    opts.following === undefined || relation === 'self' || relation === 'connected'
-      ? ''
-      : opts.following
-        ? `<button class="btn ghost${s}" type="button" data-unfollow="${h}">Following</button>`
-        : `<button class="btn line${s}" type="button" data-follow="${h}">Follow</button>`
-  return `<span class="row wrap" data-rel="${h}"${opts.following !== undefined ? ` data-following="${opts.following ? 1 : 0}"` : ''}>${inner}${follow}</span>`
+  const message = compact ? '' : `<a class="btn ghost" href="/messages?h=${encodeURIComponent(handle)}">Message</a>`
+  return `<span class="row wrap" data-rel="${h}"${opts.followsYou ? ' data-follows-you="1"' : ''}>${follow}${message}</span>`
 }
 
-/** A person in a list: face, name and line, and what can be done. */
-export const personRow = (p, relation = p.relation ?? 'none', line) =>
-  `<div class="person">${who(p, line, p.degree)}${relButtons(p.handle, relation, true, { example: p.example })}</div>`
+/** A person in a list: face, name and line, and Follow. */
+export const personRow = (p, line) => `<div class="person">${who(p, line)}${relButtons(p.handle, p.relation ?? 'none', true, { followsYou: p.followsYou })}</div>`
 
-/** Connect, with an optional note (LinkedIn's "Add a note"), from a profile; at once from a list. */
+/** Follow, unfollow, take back a request; from wherever the buttons are. */
 async function relate(btn) {
   const box = btn.closest('[data-rel]')
   const handle = box?.dataset.rel
-  if (!handle || !requireLogin('Log in to connect with people.')) return
+  if (!handle || !requireLogin('Log in to follow people.')) return
   const h = encodeURIComponent(handle)
-  let call
-  if (btn.dataset.connect !== undefined) {
-    let note
-    if (box.closest('.li-head, .li-bar')) {
-      note = await askNote()
-      if (note === null) return
+  const compact = !box.closest('.li-head, .li-bar')
+  const followsYou = box.dataset.followsYou === '1'
+  const change = async (method) => {
+    btn.disabled = true
+    try {
+      const r = await api(method, `/social/follow/${h}`)
+      box.outerHTML = relButtons(handle, r.relation, compact, { followsYou })
+      if (r.relation === 'requested') toast('Requested. Their account is private: you will follow them once they say yes.')
+      emit('relation', { handle, relation: r.relation, followers: r.followers })
+      refreshBadges()
+    } catch (e) {
+      btn.disabled = false
+      toast(esc(e.message))
     }
-    call = ['POST', `/social/connect/${h}`, note ? { note } : undefined]
-  } else if (btn.dataset.accept !== undefined) call = ['POST', `/social/connect/${h}/accept`]
-  else if (btn.dataset.ignore !== undefined || btn.dataset.withdraw !== undefined) call = ['DELETE', `/social/connect/${h}`]
-  else if (btn.dataset.remove !== undefined) {
-    if (!confirm('Remove this connection? You will not be able to message each other.')) return
-    call = ['DELETE', `/social/connect/${h}`]
-  } else if (btn.dataset.follow !== undefined) call = ['POST', `/social/follow/${h}`]
-  else if (btn.dataset.unfollow !== undefined) call = ['DELETE', `/social/follow/${h}`]
-  btn.disabled = true
-  try {
-    const r = await api(...call)
-    const following = r.following ?? (box.dataset.following === undefined ? undefined : box.dataset.following === '1')
-    box.outerHTML = relButtons(handle, r.relation ?? currentRelation(box), !box.closest('.li-head, .li-bar'), { following })
-    if (r.relation === 'sent' && typeof r.left === 'number' && r.left <= 10) toast(`Request sent. You can send ${plural(r.left, 'more request')} today.`)
-    emit('relation', { handle, relation: r.relation })
-    refreshBadges()
-  } catch (e) {
-    btn.disabled = false
-    toast(esc(e.message))
   }
-}
-/** Where a person stands with you, read off their buttons (for a follow, which does not change it). */
-function currentRelation(box) {
-  if (box.querySelector('[data-withdraw]')) return 'sent'
-  if (box.querySelector('[data-accept]')) return 'received'
-  if (box.querySelector('[data-remove], a[href^="/messages"]')) return 'connected'
-  if (box.querySelector('a[href="/settings"]')) return 'self'
-  return 'none'
-}
-/** "Add a note to your invitation?" Null when they closed it. */
-function askNote() {
-  return new Promise((resolve) => {
-    const { el, close } = dialog(`<div class="dialog-h"><h2>Add a note to your invitation?</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
-<div class="dialog-b stack"><p class="muted small">Personalise your request with a note: say how you know them, or why you want to connect.</p>
-<textarea class="textarea" maxlength="300" placeholder="Ex: We know each other from…"></textarea><p class="muted small" data-left>300 characters left</p></div>
-<div class="dialog-f"><button class="btn ghost" type="button" data-plain>Send without a note</button><button class="btn" type="button" data-with>Send</button></div>`)
-    const text = $('textarea', el)
-    text.addEventListener('input', () => ($('[data-left]', el).textContent = `${300 - text.value.length} characters left`))
-    let done = false
-    const finish = (v) => {
-      done = true
-      close()
-      resolve(v)
-    }
-    $('[data-plain]', el).addEventListener('click', () => finish(''))
-    $('[data-with]', el).addEventListener('click', () => finish(text.value.trim()))
-    new MutationObserver((_, obs) => {
-      if (!el.isConnected) {
-        obs.disconnect()
-        if (!done) resolve(null)
-      }
-    }).observe(document.body, { childList: true })
-  })
+  if (btn.dataset.follow !== undefined) return void change('POST')
+  if (btn.dataset.following !== undefined) return popMenu(btn, [[`Unfollow`, () => void change('DELETE'), true]])
+  if (btn.dataset.requested !== undefined) return popMenu(btn, [['Cancel the request', () => void change('DELETE'), true]])
 }
 
-/** Who applied to a job: your connections' faces, then how many applied through GMAFJ. */
+/** Who applied to a job: the faces of people you follow, then how many applied through Oporch. */
 export function appliedLine(sig) {
   if (!sig?.total) return ''
   const f = sig.faces || []
-  const yours = f.length ? `<b>${esc(f[0].name)}</b>${sig.network > 1 ? ` and ${plural(sig.network - 1, 'other')} in your network` : ''} applied` : ''
-  const all = `${plural(sig.total, 'person', 'people')} applied through GMAFJ`
+  const yours = f.length ? `<b>${esc(f[0].name)}</b>${sig.following > 1 ? ` and ${plural(sig.following - 1, 'other')} you follow` : ''} applied` : ''
+  const all = `${plural(sig.total, 'person', 'people')} applied through Oporch`
   return `<div class="faces">${f.length ? `<span class="stack-av">${f.map((p) => avatar(p, 'xs')).join('')}</span>` : ''}<span>${f.length ? yours : all}</span></div>`
 }
 
@@ -326,7 +280,7 @@ export const REACTIONS = {
 }
 const posts = new Map() // id -> the update as last drawn, for redrawing it
 
-/** The reactions line: the top kinds, how many, and your connections' faces first. */
+/** The reactions line: the top kinds, how many, and the faces of people you follow first. */
 export function reactionLine(u) {
   const r = u.reactions || { total: 0, top: [] }
   if (!r.total) return '<button type="button" class="link-quiet" data-reactions hidden></button>'
@@ -337,7 +291,17 @@ export function reactionLine(u) {
 }
 
 const VIA = { reacted: 'reacted to this', commented: 'commented on this' }
-const AUDIENCE = { anyone: 'Anyone', connections: 'Connections only' }
+const AUDIENCE = { anyone: 'Anyone', followers: 'Followers' }
+
+/**
+ * Its review, said to its author only (the server sends it to nobody else): waiting, with what that means,
+ * or turned down, with the owner's reason.
+ */
+function reviewNote(u) {
+  if (u.review === 'pending') return '<div class="review pending"><b>Waiting for review.</b> It is on your profile now, and reaches the feed once it is approved.</div>'
+  if (u.review === 'rejected') return `<div class="review rejected"><b>Not approved.</b> Only you can see it.${u.reviewNote ? ` The reviewer said: “${esc(u.reviewNote)}”` : ''} Edit it and it is checked again.</div>`
+  return ''
+}
 
 /** An update as every list shows it, LinkedIn's: who and why, the text, a picture, a repost, the counts, the actions. */
 export function postHtml(u) {
@@ -355,13 +319,14 @@ export function postHtml(u) {
       : ''
   const inner = (x) =>
     x.gone
-      ? '<div class="card pad muted small">This update is no longer available.</div>'
+      ? '<div class="card pad muted small">This update is not available.</div>'
       : `<a class="embed" href="/p?id=${x.id}"><div class="embed-h">${avatar(x.author, 's')}<div><b>${esc(x.author?.name ?? '')}</b><div class="who-h">${esc(x.author?.headline ?? '')} · ${ago(x.at)}</div></div></div>${
           x.text ? `<div class="post-t clamp">${esc(x.text)}</div>` : ''
         }${x.image ? `<img class="post-i" src="${esc(media(x.image))}" alt="" loading="lazy">` : ''}</a>`
   const body = plain
     ? `<div class="post-h">${who(repost.gone ? a : repost.author, repost.gone ? '' : `${repost.author?.headline ?? ''}`)}</div>${repost.gone ? inner(repost) : `${repost.text ? `<div class="post-t clamp">${linkify(repost.text)}</div>` : ''}${repost.image ? `<a href="/p?id=${repost.id}"><img class="post-i" src="${esc(media(repost.image))}" alt="" loading="lazy"></a>` : ''}`}`
     : `<div class="post-h">${who(a, line.join(' · '))}<button class="menu-b" type="button" data-post-menu aria-label="More actions">⋯</button></div>
+${reviewNote(u)}
 ${u.text ? `<div class="post-t clamp">${linkify(u.text)}</div>` : ''}
 ${u.image ? `<a href="/p?id=${u.id}"><img class="post-i" src="${esc(media(u.image))}" alt="" loading="lazy"></a>` : ''}
 ${repost ? `<div class="embed-wrap">${inner(repost)}</div>` : ''}`
@@ -431,18 +396,18 @@ function reactionPicker(card, anchor) {
   return close
 }
 
-/** Who reacted, by kind, your connections first. */
+/** Who reacted, by kind, the people you follow first. */
 async function reactionsDialog(id) {
   const { el } = dialog(`<div class="dialog-h"><h2>Reactions</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div><div class="dialog-b"><div class="spin"></div></div>`, 'small')
   try {
     const r = await api('GET', `/social/updates/${id}/likes`)
-    $('.dialog-b', el).innerHTML = r.people.map((p) => `<div class="person">${who(p, p.headline, p.degree)}<span class="rx" title="${REACTIONS[p.kind]?.label ?? ''}">${REACTIONS[p.kind]?.mark ?? ''}</span></div>`).join('') || '<p class="muted">No reactions yet.</p>'
+    $('.dialog-b', el).innerHTML = r.people.map((p) => `<div class="person">${who(p, p.headline)}<span class="rx" title="${REACTIONS[p.kind]?.label ?? ''}">${REACTIONS[p.kind]?.mark ?? ''}</span></div>`).join('') || '<p class="muted">No reactions yet.</p>'
   } catch (e) {
     $('.dialog-b', el).innerHTML = `<p class="err">${esc(e.message)}</p>`
   }
 }
 
-export async function share(url, title = 'GMAFJ') {
+export async function share(url, title = 'Oporch') {
   const full = new URL(url, location.origin).href
   if (navigator.share && matchMedia('(hover: none)').matches) {
     try {
@@ -465,7 +430,8 @@ export function popMenu(anchor, items) {
   $('.pop')?.remove()
   const pop = document.createElement('div')
   pop.className = 'pop'
-  pop.innerHTML = items.map(([label, , bad], i) => `<button type="button" data-i="${i}"${bad ? ' class="bad"' : ''}>${esc(label)}</button>`).join('')
+  pop.setAttribute('role', 'menu')
+  pop.innerHTML = items.map(([label, , bad], i) => `<button type="button" role="menuitem" data-i="${i}"${bad ? ' class="bad"' : ''}>${esc(label)}</button>`).join('')
   document.body.append(pop)
   const r = anchor.getBoundingClientRect()
   const below = r.bottom + 4 + pop.offsetHeight <= innerHeight
@@ -493,7 +459,7 @@ function postMenu(card, btn) {
   if (me && u.mine) {
     if (u.audience === 'anyone') items.push([u.featured ? 'Remove from Featured' : 'Feature on top of profile', () => toggleFeature(u)])
     items.push(['Edit update', () => compose({ edit: u })])
-    items.push([u.audience === 'anyone' ? 'Show to connections only' : 'Show to anyone', () => changeAudience(card, u)])
+    items.push([u.audience === 'anyone' ? 'Show to followers only' : 'Show to anyone', () => changeAudience(card, u)])
     items.push(['Delete update', () => removeUpdate(card, u), true])
   } else if (me) {
     items.push(['I don’t want to see this', () => hideUpdate(card, u)])
@@ -523,7 +489,7 @@ async function toggleFeature(u) {
 }
 async function changeAudience(card, u) {
   try {
-    Object.assign(u, await api('PATCH', `/social/updates/${u.id}`, { audience: u.audience === 'anyone' ? 'connections' : 'anyone' }))
+    Object.assign(u, await api('PATCH', `/social/updates/${u.id}`, { audience: u.audience === 'anyone' ? 'followers' : 'anyone' }))
     card.outerHTML = postHtml(u)
   } catch (e) {
     toast(esc(e.message))
@@ -549,7 +515,7 @@ async function hideUpdate(card, u) {
   }
 }
 
-/** Report a profile, update, comment or message: the admins look at it. */
+/** Report a profile, update, comment or message: it goes to the owner's review. */
 export function report(kind, target) {
   if (!requireLogin('Log in to report.')) return
   const { el, close } = dialog(`<div class="dialog-h"><h2>Report</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
@@ -592,46 +558,54 @@ function repostMenu(card, btn) {
   ])
 }
 
-/** Send an update to connections, in a message. */
+/** Send an update to people, in a message: the people you follow, or anyone you search for. */
 async function sendDialog(card) {
   if (!requireLogin('Log in to send updates.')) return
   const u = posts.get(+card.dataset.post)
   if (!u || !me) return
   const { el, close } = dialog(`<div class="dialog-h"><h2>Send</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
-<div class="dialog-b stack"><input class="input" placeholder="Search your connections" data-find><div data-people><div class="spin"></div></div>
+<div class="dialog-b stack"><input class="input" placeholder="Search people" data-find><div data-people><div class="spin"></div></div>
 <textarea class="textarea" maxlength="4000" placeholder="Write a message (optional)" style="min-height:60px"></textarea></div>
 <div class="dialog-f"><button class="btn" type="button" data-go disabled>Send</button></div>`)
-  let people = []
-  const picked = new Set()
+  const picked = new Map()
+  let following = []
+  let found = null
   const draw = () => {
-    const q = $('[data-find]', el).value.trim().toLowerCase()
+    const list = found ?? following
     $('[data-people]', el).innerHTML =
-      people
-        .filter((p) => !q || p.name.toLowerCase().includes(q) || p.handle.includes(q))
+      list
         .slice(0, 50)
         .map((p) => `<label class="person check" style="align-items:center"><input type="checkbox" value="${esc(p.handle)}"${picked.has(p.handle) ? ' checked' : ''}>${who(p)}</label>`)
-        .join('') || '<p class="muted small">No connections to send to yet.</p>'
+        .join('') || `<p class="muted small">${found ? 'Nobody by that name.' : 'Search for someone to send it to.'}</p>`
   }
   try {
-    people = (await api('GET', `/social/u/${encodeURIComponent(me.handle)}/connections`)).connections
-  } catch (e) {
-    $('[data-people]', el).innerHTML = `<p class="err">${esc(e.message)}</p>`
-    return
+    following = (await api('GET', `/social/u/${encodeURIComponent(me.handle)}/following`)).people
+  } catch {
+    following = []
   }
   draw()
-  $('[data-find]', el).addEventListener('input', draw)
+  let typing = 0
+  $('[data-find]', el).addEventListener('input', (e) => {
+    clearTimeout(typing)
+    const q = e.target.value.trim()
+    typing = setTimeout(async () => {
+      found = q ? (await api('GET', `/social/search?q=${encodeURIComponent(q)}`).catch(() => ({ people: [] }))).people : null
+      draw()
+    }, 250)
+  })
   el.addEventListener('change', (e) => {
     const box = e.target.closest('input[type=checkbox]')
     if (!box) return
-    box.checked ? picked.add(box.value) : picked.delete(box.value)
+    const p = [...following, ...(found ?? [])].find((x) => x.handle === box.value)
+    box.checked ? picked.set(box.value, p) : picked.delete(box.value)
     $('[data-go]', el).disabled = !picked.size
   })
   $('[data-go]', el).addEventListener('click', async () => {
     const text = $('textarea', el).value
     try {
-      for (const h of picked) await api('POST', `/social/messages/${encodeURIComponent(h)}`, { text, updateId: u.id })
+      for (const h of picked.keys()) await api('POST', `/social/messages/${encodeURIComponent(h)}`, { text, updateId: u.id })
       close()
-      toast(`Sent to ${plural(picked.size, 'connection')}.`)
+      toast(`Sent to ${plural(picked.size, 'person', 'people')}.`)
     } catch (e) {
       toast(esc(e.message))
     }
@@ -653,9 +627,20 @@ export function dialog(html, cls = '') {
   veil.addEventListener('mousedown', (e) => e.target === veil && close())
   veil.addEventListener('click', (e) => e.target.closest('[data-close]') && close())
   document.addEventListener('keydown', onKey)
-  setTimeout(() => $('textarea, input:not([type=file]):not([type=radio]):not([type=checkbox]), .btn', veil)?.focus())
+  setTimeout(() => $('textarea, input:not([type=file]):not([type=radio]):not([type=checkbox]):not([type=range]), .btn', veil)?.focus())
   return { el: veil.firstElementChild, close }
 }
+
+/** Resolves when a dialog leaves the page, however it was closed. */
+const closed = (el) =>
+  new Promise((resolve) => {
+    new MutationObserver((_, obs) => {
+      if (!el.isConnected) {
+        obs.disconnect()
+        resolve()
+      }
+    }).observe(document.body, { childList: true })
+  })
 
 let toastTimer = 0
 /** A note at the bottom for a few seconds. HTML: escape anything a person wrote. */
@@ -674,47 +659,178 @@ export function toast(html, ms = 4500) {
 
 /**
  * A picture made in the browser before it is sent: a JPEG (a PNG when it has transparency to keep) of
- * at most `max` pixels a side, with nothing but the picture in it. `square` crops the middle (an avatar).
+ * at most `max` pixels a side, with nothing but the picture in it.
  */
-export async function toImage(file, max = 1600, square = false) {
+export async function toImage(file, max = 1600) {
   if (!/^image\/(jpeg|png|webp|bmp)$/.test(file.type)) throw new ApiError('Choose a JPEG or PNG picture.', 400)
   const img = await createImageBitmap(file).catch(() => null)
   if (!img) throw new ApiError('That picture could not be opened. Try another.', 400)
-  let sx = 0
-  let sy = 0
-  let sw = img.width
-  let sh = img.height
-  if (square) {
-    const side = Math.min(sw, sh)
-    sx = (sw - side) / 2
-    sy = (sh - side) / 2
-    sw = sh = side
-  }
-  const scale = Math.min(1, max / Math.max(sw, sh))
+  const scale = Math.min(1, max / Math.max(img.width, img.height))
   const c = document.createElement('canvas')
-  c.width = Math.round(sw * scale)
-  c.height = Math.round(sh * scale)
+  c.width = Math.round(img.width * scale)
+  c.height = Math.round(img.height * scale)
   const g = c.getContext('2d')
-  const png = file.type === 'image/png' && !square
+  const png = file.type === 'image/png'
   if (!png) {
     g.fillStyle = '#fff'
     g.fillRect(0, 0, c.width, c.height)
   }
-  g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height)
+  g.drawImage(img, 0, 0, c.width, c.height)
   return new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new ApiError('That picture could not be prepared.', 400))), png ? 'image/png' : 'image/jpeg', 0.86))
 }
 
 /**
- * Upload a chosen file for `purpose` (post, avatar, cover, design): JPEG and PNG remade here first; a
- * GIF (posts and designs only) sent as it is, for the server to check.
+ * Upload a chosen file for `purpose` (post, design): JPEG and PNG remade here first; a GIF sent as it
+ * is, for the server to check. A photo or cover goes through `cropImage` first and arrives as a Blob.
  */
-export async function upload(file, purpose = 'post', max = 1600, square = false) {
+export async function upload(file, purpose = 'post', max = 1600) {
+  if (!(file instanceof File)) return api('POST', `/social/media?purpose=${purpose}`, file)
   if (file.type === 'image/gif') {
     if (purpose === 'avatar' || purpose === 'cover') throw new ApiError('A photo or cover is a JPEG or PNG.', 400)
     if (file.size > 5 * 1024 * 1024) throw new ApiError('A GIF can be up to 5 MB.', 400)
     return api('POST', `/social/media?purpose=${purpose}`, new Blob([await file.arrayBuffer()], { type: 'image/gif' }))
   }
-  return api('POST', `/social/media?purpose=${purpose}`, await toImage(file, max, square))
+  return api('POST', `/social/media?purpose=${purpose}`, await toImage(file, max))
+}
+
+/**
+ * Crop a picture before it is sent (the owner, 2026-10-21: "there is no option to crop the profile
+ * picture or the cover image"): drag it into place and zoom it, inside a frame the shape it will have, a
+ * circle for a photo and a wide band for a cover, as LinkedIn's editor does. Resolves to a JPEG of
+ * `width` by `height`, or null when it is closed.
+ */
+export async function cropImage(file, { width, height, round = false, title = 'Crop your picture' }) {
+  if (!/^image\/(jpeg|png|webp|bmp)$/.test(file.type)) {
+    toast(file.type === 'image/gif' ? 'A photo or cover is a JPEG or PNG.' : 'Choose a JPEG or PNG picture.')
+    return null
+  }
+  const img = await createImageBitmap(file).catch(() => null)
+  if (!img) {
+    toast('That picture could not be opened. Try another.')
+    return null
+  }
+  const { el, close } = dialog(
+    `<div class="dialog-h"><h2>${esc(title)}</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
+<div class="dialog-b stack"><div class="crop${round ? ' round' : ''}" style="aspect-ratio:${width}/${height}"><canvas></canvas></div>
+<label class="zoom"><span class="muted small">Zoom</span><input type="range" min="1" max="4" step="0.01" value="1" aria-label="Zoom"></label>
+<p class="muted small">Drag the picture to place it. Scroll or use the slider to zoom.</p></div>
+<div class="dialog-f"><button class="btn ghost" type="button" data-close>Cancel</button><button class="btn" type="button" data-apply>Apply</button></div>`,
+    round ? 'small' : ''
+  )
+  const frame = $('.crop', el)
+  const canvas = $('canvas', frame)
+  const g = canvas.getContext('2d')
+  const zoomIn = $('input[type=range]', el)
+  let zoom = 1
+  let cx = 0
+  let cy = 0
+  const size = () => ({ w: frame.clientWidth, h: frame.clientHeight })
+  /** Pixels on screen per pixel of the picture: zoom 1 fills the frame. */
+  const scale = () => {
+    const { w, h } = size()
+    return Math.max(w / img.width, h / img.height) * zoom
+  }
+  /** The picture always covers the frame. */
+  const clamp = () => {
+    const { w, h } = size()
+    const s = scale()
+    const hw = (img.width * s) / 2
+    const hh = (img.height * s) / 2
+    cx = Math.min(hw, Math.max(w - hw, cx))
+    cy = Math.min(hh, Math.max(h - hh, cy))
+  }
+  const draw = () => {
+    const { w, h } = size()
+    const dpr = devicePixelRatio || 1
+    if (canvas.width !== Math.round(w * dpr)) {
+      canvas.width = Math.round(w * dpr)
+      canvas.height = Math.round(h * dpr)
+    }
+    clamp()
+    const s = scale()
+    g.setTransform(dpr, 0, 0, dpr, 0, 0)
+    g.clearRect(0, 0, w, h)
+    g.drawImage(img, cx - (img.width * s) / 2, cy - (img.height * s) / 2, img.width * s, img.height * s)
+  }
+  requestAnimationFrame(() => {
+    const { w, h } = size()
+    cx = w / 2
+    cy = h / 2
+    draw()
+  })
+  const setZoom = (z, at) => {
+    const { w, h } = size()
+    const before = scale()
+    zoom = Math.min(4, Math.max(1, z))
+    // Zoomed about the point under the pointer (the middle for the slider), as a photo editor does.
+    const px = at?.x ?? w / 2
+    const py = at?.y ?? h / 2
+    const k = scale() / before
+    cx = px - (px - cx) * k
+    cy = py - (py - cy) * k
+    zoomIn.value = String(zoom)
+    draw()
+  }
+  zoomIn.addEventListener('input', () => setZoom(+zoomIn.value))
+  frame.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault()
+      const r = frame.getBoundingClientRect()
+      setZoom(zoom * (e.deltaY < 0 ? 1.08 : 1 / 1.08), { x: e.clientX - r.left, y: e.clientY - r.top })
+    },
+    { passive: false }
+  )
+  let drag = null
+  frame.addEventListener('pointerdown', (e) => {
+    drag = { x: e.clientX, y: e.clientY, cx, cy }
+    frame.setPointerCapture(e.pointerId)
+  })
+  frame.addEventListener('pointermove', (e) => {
+    if (!drag) return
+    cx = drag.cx + e.clientX - drag.x
+    cy = drag.cy + e.clientY - drag.y
+    draw()
+  })
+  frame.addEventListener('pointerup', () => (drag = null))
+  frame.addEventListener('pointercancel', () => (drag = null))
+  frame.tabIndex = 0
+  frame.setAttribute('aria-label', 'The picture. Arrow keys move it, plus and minus zoom.')
+  frame.addEventListener('keydown', (e) => {
+    const step = e.shiftKey ? 30 : 8
+    const moves = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }
+    if (moves[e.key]) {
+      e.preventDefault()
+      cx += moves[e.key][0]
+      cy += moves[e.key][1]
+      draw()
+    } else if (e.key === '+' || e.key === '=') setZoom(zoom * 1.1)
+    else if (e.key === '-') setZoom(zoom / 1.1)
+  })
+  const ro = new ResizeObserver(() => draw())
+  ro.observe(frame)
+  let result = null
+  $('[data-apply]', el).addEventListener('click', () => {
+    const { w, h } = size()
+    const s = scale()
+    const left = cx - (img.width * s) / 2
+    const top = cy - (img.height * s) / 2
+    const out = document.createElement('canvas')
+    out.width = width
+    out.height = height
+    const o = out.getContext('2d')
+    o.fillStyle = '#fff'
+    o.fillRect(0, 0, width, height)
+    o.imageSmoothingQuality = 'high'
+    o.drawImage(img, -left / s, -top / s, w / s, h / s, 0, 0, width, height)
+    out.toBlob((b) => {
+      result = b
+      close()
+    }, 'image/jpeg', 0.9)
+  })
+  await closed(el)
+  ro.disconnect()
+  return result
 }
 
 // ── Writing an update: new, a repost with thoughts, or an edit
@@ -725,17 +841,17 @@ export function compose(opts = {}) {
   const title = edit ? 'Edit update' : repostOf ? 'Repost with your thoughts' : 'Create an update'
   const { el, close } = dialog(`<div class="dialog-h"><h2>${title}</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
 <div class="dialog-b compose">
-<div class="row" style="margin-bottom:12px">${avatar(me)}<div><b>${esc(me.name)}</b><div><select class="aud" aria-label="Who can see this"><option value="anyone">Anyone</option><option value="connections">Connections only</option></select></div></div></div>
+<div class="row" style="margin-bottom:12px">${avatar(me)}<div><b>${esc(me.name)}</b><div><select class="aud" aria-label="Who can see this"><option value="anyone">Anyone</option><option value="followers">Followers only</option></select></div></div></div>
 <textarea maxlength="3000" placeholder="${repostOf ? 'Add your thoughts' : 'What do you want to talk about? Use @username to mention someone and #hashtags.'}" aria-label="Your update">${esc(edit?.text ?? '')}</textarea>
 ${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="post-a">[\s\S]*?<\/div>\s*<\/article>/, '</article>')}</div>` : ''}
 <div class="preview" hidden><img alt=""><button class="btn ghost small" type="button" data-unpick>Remove</button></div>
+<p class="muted small">${me.admin ? '' : 'Every update is checked before it reaches the feed. Until then it shows on your profile.'}</p>
 <p class="err" hidden></p>
 </div>
 <div class="dialog-f">${edit || repostOf ? '' : '<label class="btn ghost">Add a picture or GIF<input type="file" accept="image/jpeg,image/png,image/gif" hidden></label>'}<span class="grow"></span><button class="btn" type="button" data-send>${edit ? 'Save' : 'Post'}</button></div>`)
   const text = $('textarea', el)
   const aud = $('.aud', el)
   aud.value = edit?.audience ?? 'anyone'
-  if (repostOf) aud.disabled = false
   const file = $('input[type=file]', el)
   const preview = $('.preview', el)
   const err = $('.err', el)
@@ -767,10 +883,11 @@ ${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="
       if (edit) {
         Object.assign(edit, u)
         for (const card of $$(`[data-post="${u.id}"]`)) card.outerHTML = postHtml(u)
-        toast('Saved.')
+        toast(u.review === 'pending' ? 'Saved. It is checked again before it is back in the feed.' : 'Saved.')
       } else {
         emit('posted', u)
-        if (document.body.dataset.page !== 'feed') toast(`Posted. <a href="/p?id=${u.id}">See it</a>`)
+        const waits = u.review === 'pending' ? ' It is on your profile now, and reaches the feed once it is approved.' : ''
+        toast(`Posted.${waits} <a href="/p?id=${u.id}">See it</a>`, waits ? 8000 : 4500)
       }
     } catch (e) {
       err.textContent = e.message
@@ -782,7 +899,7 @@ ${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="
 
 // ── Jobs from the website's listings: who applied, Apply, saving, and One click apply
 
-/** Your network's faces and GMAFJ's counts for these jobs, by id. Empty for a visitor. */
+/** The faces of people you follow, and Oporch's counts, for these jobs, by id. Empty for a visitor. */
 export async function jobSignals(ids) {
   if (!me || !ids.length) return {}
   try {
@@ -792,12 +909,12 @@ export async function jobSignals(ids) {
   }
 }
 
-/** Apply pressed: kept in My items, and your network sees it (unless you turned that off). */
+/** Apply pressed: kept in My items, and your followers see it (unless you turned that off). */
 export const markApplied = (id, job) => api('POST', `/social/jobs/${id}/applied`, job ? { job: { title: job.title, location: job.location ?? '' } } : {})
 
 /*
  * Apply opens the employer's page; whether they applied there is theirs to say. So, as LinkedIn asks,
- * "Did you apply?" when they come back to this tab, and only a yes is recorded: their connections see
+ * "Did you apply?" when they come back to this tab, and only a yes is recorded: their followers see
  * applications, not pages opened.
  */
 let applying = null
@@ -837,16 +954,30 @@ addEventListener('blur', leftForTheJob)
 addEventListener('focus', backFromTheJob)
 document.addEventListener('visibilitychange', () => (document.hidden ? leftForTheJob() : backFromTheJob()))
 
-/** One click apply: sent to the person's desktop app, which applies to it for them. */
+/**
+ * One click apply (the owner, 2026-10-21: "the server will try to reach the app, if its not active, the
+ * user will get a pop up for that and a download button incase they dont have one"): the job goes to the
+ * person's desktop app through the server. When the app is open it applies within a minute; when it is
+ * not, they are told so, with the download, and the job waits for the app's next start.
+ */
 export async function sendToApp(id, job) {
   const r = await api('POST', `/social/jobs/${id}/applied`, { queue: true, job })
-  toast(
-    r.appOpen
-      ? 'Sent to GMAFJ on your computer. It starts applying within a minute.'
-      : 'Saved for GMAFJ on your computer: it applies as soon as the app is open. <a href="/download">Get the app</a>',
-    7000
-  )
   refreshBadges()
+  if (r.appOpen) {
+    toast('Sent to your desktop app. It starts applying within a minute.', 6000)
+    return r
+  }
+  dialog(
+    `<div class="dialog-b stack" style="text-align:center;padding:30px 26px">
+<div class="app-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+<h2>Your desktop app is not open</h2>
+<p class="muted">One click apply works through the Oporch app on your computer. Open it and it applies to <b>${esc(job.title)}</b> by itself. The job waits for it.</p>
+<p class="muted small">Not installed yet? It is free, for Windows 10 and 11.</p>
+<a class="btn wide" href="/download">Download the desktop app</a>
+<button class="btn ghost wide" type="button" data-close>OK, I will open it</button>
+</div>`,
+    'small'
+  )
   return r
 }
 
@@ -896,14 +1027,13 @@ document.addEventListener('click', (e) => {
       ['Settings', go('/settings')],
       ['My items', go('/items')],
       ['Who viewed your profile', go('/views')],
-      ...(me?.admin ? [[`Admin${lastBadges?.reviews ? ` (${lastBadges.reviews} waiting)` : ''}`, go('/admin')]] : []),
       ['Get the desktop app', go('/download')],
       // As the desktop app's account menu: it offers the theme that is not showing (boot.js applies it next time).
       [document.documentElement.classList.contains('dark') ? 'Light mode' : 'Dark mode', toggleTheme],
       ['Log out', () => void signOut()]
     ])
   }
-  const rel = t.closest('[data-connect],[data-accept],[data-ignore],[data-withdraw],[data-remove],[data-follow],[data-unfollow]')
+  const rel = t.closest('[data-follow],[data-following],[data-requested]')
   if (rel) return void relate(rel)
   const unhide = t.closest('[data-unhide]')
   if (unhide) {

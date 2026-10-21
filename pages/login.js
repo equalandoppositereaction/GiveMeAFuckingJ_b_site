@@ -32,13 +32,13 @@ export default async function ({ main }) {
 
   const legal = '<p class="legal">By continuing you agree to the <a href="/terms">Terms of Use</a> and the <a href="/privacy">Privacy Policy</a>.</p>'
   const forms = {
-    in: () => `<p class="sub">Log in to apply, connect and share.</p>
+    in: () => `<p class="sub">Log in to apply, follow people and share.</p>
 <form data-f="in"><input class="input" name="email" type="email" autocomplete="email" placeholder="Email" required>
 <input class="input" name="password" type="password" autocomplete="current-password" placeholder="Password" required>
 <button class="btn wide" type="submit">Log in</button><p class="err" hidden></p></form>
 <p class="alt"><button class="textbtn" type="button" data-go="forgot">Forgot password?</button></p>
-<p class="alt">New to GMAFJ? <button class="textbtn" type="button" data-go="new">Create an account</button></p>`,
-    new: () => `<p class="sub">Apply to jobs with one click, connect with people and share updates. Free.</p>
+<p class="alt">New to Oporch? <button class="textbtn" type="button" data-go="new">Create an account</button></p>`,
+    new: () => `<p class="sub">Apply to jobs with one click, follow people and share updates. Free.</p>
 <form data-f="new"><input class="input" name="name" autocomplete="name" placeholder="Full name" maxlength="100" required>
 <input class="input" name="email" type="email" autocomplete="email" placeholder="Email" required>
 <p class="muted small" style="margin:-4px 2px 2px;text-align:left">An address at Gmail, Outlook, Hotmail, Yahoo, iCloud, Proton or another major email provider.</p>
@@ -61,7 +61,7 @@ export default async function ({ main }) {
   }
 
   function draw() {
-    main.innerHTML = `<div class="auth"><div class="card"><div class="brand">GMAFJ</div>${forms[mode]()}</div></div>`
+    main.innerHTML = `<div class="auth"><div class="card"><div class="brand"><span class="mark" aria-hidden="true">O</span><span>Oporch</span></div>${forms[mode]()}</div></div>`
     $('input', main)?.focus()
   }
 

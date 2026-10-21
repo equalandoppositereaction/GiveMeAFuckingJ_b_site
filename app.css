@@ -1,34 +1,42 @@
 /*
- * GMAFJ, the social network (the owner, 2026-10-08): LinkedIn's functionality and Instagram's layout. Since
- * 2026-10-20 in the desktop app's look (the owner: "make the theme like the desktop app's modernistic theme"),
- * after src/renderer/styles/globals.css and its shadcn components: Source Serif 4 for everything, a warm
- * off-white ground, white cards with a hairline border and 16px corners, black for the thing to press, and
- * blue as the only hue used for its own sake (links, focus, what is waiting on you). Green, amber and red
- * only where they mean something. Light by default; Dark mode is in the More menu (html.dark), as the app's
- * account menu has it. No em dashes in anything shown.
+ * Oporch (GMAFJ until 2026-10-21), the social network (the owner, 2026-10-08): LinkedIn's functionality and
+ * Instagram's layout. Since 2026-10-20 in the desktop app's look (the owner: "make the theme like the desktop
+ * app's modernistic theme"), after src/renderer/styles/globals.css and its shadcn components: Source Serif 4
+ * for everything, a warm light-grey ground, white cards with a visible edge and 16px corners, black for the
+ * thing to press, and blue as the only hue used for its own sake (links, focus, what is waiting on you).
+ * Green, amber and red only where they mean something. Light by default; Dark mode is in the More menu
+ * (html.dark), as the app's account menu has it. No em dashes in anything shown.
  *
- * The menu is a rail of icons on the left; hovered or tabbed into, it opens over the page with every name
- * (the owner, 2026-10-08). On phones, a bar on top and tabs along the bottom.
+ * The menu is a rail of icons on the left, the name at its top and the menus in its middle, as Instagram's
+ * (the owner, 2026-10-21); hovered or tabbed into, it opens over the page with every name (the owner,
+ * 2026-10-08). On phones, a bar on top and tabs along the bottom.
+ */
+/*
+ * The palette (the owner, 2026-10-21: "the contrast between the background and the foreground is not
+ * enough"), measured, not guessed: every text colour is at least 4.5:1 on every surface it sits on (the
+ * page's own text 16:1 and more), the edge of anything you type into or press at least 3:1, and the white
+ * cards a clear step off the grey ground. The same in the dark. s.css carries the same values, and the
+ * standard profile design (design.js) its light ones.
  */
 :root{
   --radius:12px;--radius-xl:16px;
-  --bg:#fcfcfb;--card:#fff;--fg:#0a0a0a;--soft:#3d3d3d;--muted:#646464;--faint:#8f8f8f;
-  --primary:#171717;--primary-fg:#fafafa;--secondary:#ececec;--hover:#f0efec;--accent:#edece8;
-  --border:#e1e1e1;--input:#d4d4d4;--blue:#155dfc;--blue-fg:#fafafa;--ring:rgb(21 93 252/.25);
-  --ok:#1b8a4c;--wait:#8a6400;--bad:#e7000b;
-  --sidebar:#fbfbf9;--sidebar-fg:#3b3b3b;--strip:#f3f2ef;
-  --shadow-card:0 1px 2px rgb(0 0 0/.05);--shadow:0 10px 30px rgb(0 0 0/.12),0 2px 6px rgb(0 0 0/.06);
+  --bg:#efeeea;--card:#fff;--fg:#111;--soft:#333;--muted:#575757;--faint:#6a6a6a;
+  --primary:#111;--primary-fg:#fff;--secondary:#e8e7e2;--hover:#ebeae5;--accent:#e2e1dc;
+  --border:#d6d4ce;--input:#85837e;--blue:#1d4ed8;--blue-fg:#fff;--ring:rgb(29 78 216/.3);
+  --ok:#166534;--wait:#8a5a00;--bad:#b91c1c;--bad-bg:#b91c1c;
+  --sidebar:var(--card);--sidebar-fg:var(--soft);--strip:#f3f2ee;
+  --shadow-card:0 1px 3px rgb(0 0 0/.07);--shadow:0 10px 30px rgb(0 0 0/.14),0 2px 6px rgb(0 0 0/.08);
   /* Older names, still used: */
   --line:var(--border);--line-2:var(--input);--text:var(--fg);--night:var(--sidebar);--frame:1px solid var(--border);
   --rail:64px;--rail-open:248px;--top:0px;--tabs:0px;color-scheme:light
 }
 html.dark{
-  --bg:#151515;--card:#1a1a19;--fg:#fafafa;--soft:#d0d0d0;--muted:#a1a1a1;--faint:#7a7a7a;
-  --primary:#e5e5e5;--primary-fg:#171717;--secondary:#262626;--hover:#232323;--accent:#343434;
-  --border:rgb(255 255 255/.1);--input:rgb(255 255 255/.15);--blue:#51a2ff;--blue-fg:#171717;--ring:rgb(81 162 255/.3);
-  --ok:#3fc37a;--wait:#e0b13a;--bad:#ff6467;
-  --sidebar:#111;--sidebar-fg:#d4d4d4;--strip:#232323;
-  --shadow-card:0 1px 2px rgb(0 0 0/.3);--shadow:0 10px 30px rgb(0 0 0/.5);color-scheme:dark
+  --bg:#0c0c0c;--card:#1c1c1c;--fg:#f4f4f4;--soft:#d4d4d4;--muted:#a8a8a8;--faint:#8c8c8c;
+  --primary:#f4f4f4;--primary-fg:#111;--secondary:#2c2c2c;--hover:#292929;--accent:#353535;
+  --border:#3a3a3a;--input:#787878;--blue:#6ea8ff;--blue-fg:#0c0c0c;--ring:rgb(110 168 255/.35);
+  --ok:#5dd48a;--wait:#f0b43c;--bad:#ff7b72;--bad-bg:#c42b2b;
+  --sidebar:var(--card);--sidebar-fg:var(--soft);--strip:#252525;
+  --shadow-card:0 1px 2px rgb(0 0 0/.4);--shadow:0 10px 30px rgb(0 0 0/.6);color-scheme:dark
 }
 *,::before,::after{box-sizing:border-box;margin:0;padding:0;border:0 solid var(--border)}
 html{font-family:"Source Serif 4",Georgia,serif;font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%;background:var(--bg);color:var(--fg)}
@@ -64,18 +72,21 @@ html.in:not(.shown) body[data-page=landing] .main{visibility:hidden}
 .shell{display:flex;min-height:100vh}
 .main{flex:1;min-width:0;margin-left:var(--rail);padding-bottom:var(--tabs)}
 .topbar,.tabbar{display:none}
-.brand{display:flex;align-items:center;gap:12px;font-size:19px;font-weight:600;letter-spacing:.02em}
-.brand img{flex:none;width:24px;height:24px}
-html.dark .brand img{filter:invert(1)}
+/* The name: its initial in a black tile (white in the dark), then the word. Until the owner has artwork for Oporch. */
+.brand{display:flex;align-items:center;gap:12px;font-size:20px;font-weight:700;letter-spacing:-.01em}
+.mark{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:var(--primary);color:var(--primary-fg);font-size:19px;font-weight:700;line-height:1;font-variation-settings:"opsz" 60}
+.av.i.mark-av{background:var(--primary);color:var(--primary-fg);font-size:17px;font-weight:700}
 /* The rail: icons, and every name once it is hovered or tabbed into. It opens over the page, which stays where it is. */
-.rail{position:fixed;inset:0 auto 0 0;z-index:40;display:flex;flex-direction:column;gap:2px;width:var(--rail);padding:16px 12px 12px;overflow:hidden;background:var(--sidebar);color:var(--sidebar-fg);border-right:1px solid var(--border);transition:width .22s cubic-bezier(.4,0,.2,1),box-shadow .22s}
+.rail{position:fixed;inset:0 auto 0 0;z-index:40;display:flex;flex-direction:column;gap:2px;width:var(--rail);padding:18px 12px 12px;overflow:hidden;background:var(--sidebar);color:var(--sidebar-fg);border-right:1px solid var(--border);transition:width .22s cubic-bezier(.4,0,.2,1),box-shadow .22s}
 .rail:hover,.rail:focus-within{width:var(--rail-open);box-shadow:var(--shadow)}
-.rail .brand{gap:16px;height:40px;margin-bottom:14px;padding:0 8px;white-space:nowrap;color:var(--fg)}
-.nav-i{position:relative;display:flex;align-items:center;gap:14px;width:100%;min-height:40px;padding:0 10px;border-radius:var(--radius);color:color-mix(in srgb,var(--sidebar-fg) 85%,transparent);font-size:15px;white-space:nowrap;text-align:left;transition:background .15s,color .15s}
-.nav-i svg{flex:none;width:20px;height:20px;stroke-width:1.8}
+.rail .brand{gap:14px;height:40px;padding:0 6px;white-space:nowrap;color:var(--fg)}
+/* The menus in the middle of the rail, the name above and More below, as Instagram's are. */
+.rail-mid{display:flex;flex-direction:column;gap:6px;margin-block:auto}
+.nav-i{position:relative;display:flex;align-items:center;gap:14px;width:100%;min-height:44px;padding:0 10px;border-radius:var(--radius);color:color-mix(in srgb,var(--sidebar-fg) 85%,transparent);font-size:15px;white-space:nowrap;text-align:left;transition:background .15s,color .15s}
+.nav-i svg{flex:none;width:21px;height:21px;stroke-width:1.8}
 .nav-i:hover{background:var(--hover);color:var(--fg)}
-.rail .nav-i>span:not(.badge):not([data-me-av]),.rail .brand>span{opacity:0;transition:opacity .12s}
-.rail:hover .nav-i>span:not(.badge):not([data-me-av]),.rail:focus-within .nav-i>span:not(.badge):not([data-me-av]),.rail:hover .brand>span,.rail:focus-within .brand>span{opacity:1;transition-delay:.08s}
+.rail .nav-i>span:not(.badge):not([data-me-av]),.rail .brand>.word{opacity:0;transition:opacity .12s}
+.rail:hover .nav-i>span:not(.badge):not([data-me-av]),.rail:focus-within .nav-i>span:not(.badge):not([data-me-av]),.rail:hover .brand>.word,.rail:focus-within .brand>.word{opacity:1;transition-delay:.08s}
 .nav-i[aria-current=page]{background:var(--accent);color:var(--fg);font-weight:600}
 .nav-i[aria-current=page] svg{stroke-width:2.2}
 .nav-i [data-me-av]{flex:none;width:20px;justify-content:center}
@@ -85,15 +96,15 @@ html.dark .brand img{filter:invert(1)}
 /* A count waiting on you: blue, the app's colour for attention. */
 .badge{position:absolute;left:24px;top:3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--blue);color:var(--blue-fg);font-size:11px;font-weight:700;line-height:17px;text-align:center;font-variant-numeric:tabular-nums}
 .badge:empty{display:none}
-.rail-foot{display:flex;flex-direction:column;gap:2px;margin-top:auto;padding-top:10px;border-top:1px solid var(--border)}
+.rail-foot{display:flex;flex-direction:column;gap:2px;padding-top:10px;border-top:1px solid var(--border)}
 /* Phones: a bar along the top, tabs along the bottom, in the rail's grey. */
 @media(max-width:767px){
   :root{--rail:0px;--top:56px;--tabs:calc(56px + env(safe-area-inset-bottom))}
   .rail{display:none}
   .main{padding-top:var(--top)}
   .topbar{position:fixed;inset:0 0 auto 0;z-index:40;display:flex;align-items:center;gap:2px;height:var(--top);padding:0 8px 0 16px;background:var(--sidebar);border-bottom:1px solid var(--border);color:var(--fg)}
-  .topbar .brand{margin-right:auto;font-size:18px}
-  .topbar .brand img{width:22px;height:22px}
+  .topbar .brand{margin-right:auto;font-size:19px}
+  .topbar .mark{width:26px;height:26px;font-size:17px}
   .tabbar{position:fixed;inset:auto 0 0 0;z-index:40;display:flex;justify-content:space-around;align-items:center;height:var(--tabs);padding-bottom:env(safe-area-inset-bottom);background:var(--sidebar);border-top:1px solid var(--border);color:var(--fg)}
   .topbar .nav-i,.tabbar .nav-i{width:44px;min-height:44px;justify-content:center;padding:0}
   .topbar .badge,.tabbar .badge{left:24px;top:4px}
@@ -106,9 +117,9 @@ html.dark .brand img{filter:invert(1)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:36px;padding:0 16px;border-radius:var(--radius);background:var(--primary);color:var(--primary-fg);font-size:14px;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgb(0 0 0/.05);transition:background .15s,color .15s,opacity .15s,transform .1s}
 .btn:hover{opacity:.85}
 .btn:active{transform:scale(.98)}
-.btn.ghost,.btn.line{background:var(--card);color:var(--fg);box-shadow:inset 0 0 0 1px var(--border),0 1px 2px rgb(0 0 0/.05)}
+.btn.ghost,.btn.line{background:var(--card);color:var(--fg);box-shadow:inset 0 0 0 1px var(--input),0 1px 2px rgb(0 0 0/.05)}
 .btn.ghost:hover,.btn.line:hover{background:var(--hover);opacity:1}
-.btn.danger{background:var(--bad);color:#fff}
+.btn.danger{background:var(--bad-bg);color:#fff}
 .btn.small{min-height:32px;padding:0 12px;font-size:13px}
 .btn.wide{width:100%}
 .act{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 .75rem;border-radius:var(--radius);color:var(--soft);font-size:14px;font-weight:500}
@@ -153,9 +164,13 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .who-n a:hover{text-decoration:underline;text-underline-offset:3px}
 .who-h{color:var(--muted);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .deg{color:var(--muted);font-size:13.5px}
-/* "Example": quiet grey words beside the name, there for anyone who looks (the owner, 2026-10-20). */
-.tag{display:inline-flex;align-items:center;color:var(--muted);font-size:12.5px;font-weight:400;white-space:nowrap}
+/* "Follows you", in a grey chip beside the name, as Instagram marks it; a lock beside a private account's. */
+.chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:var(--secondary);color:var(--soft);font-size:11.5px;font-weight:600;white-space:nowrap}
+.lock{display:inline-flex;color:var(--muted)}
+.lock svg{width:17px;height:17px}
 .person{display:flex;align-items:center;gap:12px;padding:12px 0}
+.person.pick{width:100%;padding:10px 8px;border-radius:var(--radius);text-align:left}
+.person.pick:hover{background:var(--hover)}
 .person .who{flex:1}
 /* The faces of your connections on an update or a job, overlapping, as Instagram shows who liked. */
 .faces{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--soft)}
@@ -208,6 +223,10 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .via b{color:var(--fg)}
 .post-h{display:flex;align-items:center;gap:10px;padding:14px 16px}
 .post-h .who{flex:1}
+/* Your own update's review (the owner, 2026-10-21): waiting, or turned down with the reason. Only you see it. */
+.review{margin:0 16px 12px;padding:9px 12px;border-radius:var(--radius);font-size:13.5px;line-height:1.45}
+.review.pending{background:color-mix(in srgb,var(--wait) 12%,transparent);color:color-mix(in srgb,var(--wait) 80%,var(--fg))}
+.review.rejected{background:color-mix(in srgb,var(--bad) 10%,transparent);color:color-mix(in srgb,var(--bad) 75%,var(--fg))}
 .post-t{padding:0 16px 14px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 .post-t a{color:var(--blue)}
 .post-t a:hover{text-decoration:underline}
@@ -262,7 +281,7 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .dialog-b{padding:20px}
 .dialog-f{display:flex;justify-content:flex-end;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--border)}
 .compose textarea{width:100%;min-height:160px;padding:4px 0;font-size:17px;resize:vertical;outline:none;border:0;background:none}
-.compose .aud{margin-top:2px;padding:2px 8px;border:1px solid var(--border);border-radius:999px;font-size:12.5px}
+.compose .aud{margin-top:2px;padding:2px 8px;border:1px solid var(--input);border-radius:999px;font-size:12.5px}
 .compose .embed-wrap{padding:12px 0 0}
 .preview{position:relative;margin-top:12px}
 .preview img{width:100%;max-height:360px;object-fit:contain;border-radius:var(--radius);background:var(--strip)}
@@ -290,7 +309,13 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .li-name h1{font-size:30px;line-height:1.2}
 .li-headline{font-size:17px}
 .li-meta{color:var(--muted);font-size:14px}
+/* Instagram's three numbers: updates, followers, following. */
+.li-counts{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:6px;font-size:15px;color:var(--soft)}
+.li-counts b{color:var(--fg);font-weight:700;font-variant-numeric:tabular-nums}
+.li-by{margin-top:6px;font-size:13.5px}
 .li-actions{margin-top:14px;gap:8px}
+.li-sec.locked{display:flex;align-items:center;gap:16px}
+.li-sec.locked>svg{flex:none;width:44px;height:44px;padding:10px;border:1.5px solid var(--fg);border-radius:50%}
 @media(max-width:600px){.li-cover{height:120px}.li-photo{margin-top:-60px}.li-photo .av{width:100px;height:100px}.li-photo .av.i{font-size:34px!important}.li-head{padding:0 16px 20px}.li-name h1{font-size:26px}}
 .li-sec{padding:20px 24px}
 .li-sec .sec-h{margin:-20px -24px 14px;padding:16px 24px;border-bottom:1px solid var(--border)}
@@ -318,7 +343,7 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .entry .sub{color:var(--soft)}
 .entry .when{color:var(--muted);font-size:13.5px}
 .entry .desc{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere}
-.entry .url{display:inline-flex;align-items:center;min-height:32px;margin-top:10px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-weight:600}
+.entry .url{display:inline-flex;align-items:center;min-height:32px;margin-top:10px;padding:0 12px;border:1px solid var(--input);border-radius:var(--radius);font-size:13px;font-weight:600}
 .entry .url:hover{background:var(--hover)}
 .skill-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--border)}
 .skill-row b{font-weight:600}
@@ -348,9 +373,10 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(--border);border-radius:0 8px 8px 0;background:var(--strip);color:var(--soft);font-size:14.5px;white-space:pre-wrap;overflow-wrap:anywhere}
 .sent-inv summary{cursor:pointer;list-style:none;font-weight:600}
 .sent-inv summary::-webkit-details-marker{display:none}
-.note-row{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border);font-size:14.5px}
+.note-row{display:flex;align-items:center;gap:12px;padding:0 20px 0 0;border-bottom:1px solid var(--border);font-size:14.5px}
 .note-row:last-child{border-bottom:0}
 .note-row:hover{background:var(--hover)}
+.note-link{display:flex;flex:1;min-width:0;align-items:center;gap:14px;padding:14px 0 14px 20px}
 .note-row.unread{background:color-mix(in srgb,var(--blue) 6%,transparent);box-shadow:inset 3px 0 0 var(--blue)}
 .note-row b{font-weight:600}
 .note-thumb{flex:none;width:48px;height:48px;border-radius:8px;object-fit:cover}
@@ -358,7 +384,19 @@ blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(
 /* ── Messages */
 .dm{display:flex;height:calc(100vh - var(--top) - var(--tabs))}
 .dm-list{width:360px;flex:none;border-right:1px solid var(--border);overflow-y:auto;background:var(--card)}
-.dm-list h1{padding:24px 20px 16px;font-size:24px}
+.dm-top{display:flex;align-items:center;justify-content:space-between;padding:22px 16px 10px 20px}
+.dm-top h1{font-size:24px}
+.dm-top .menu-b svg{width:22px;height:22px}
+.dm-tabs{padding:0 16px 10px}
+.tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;margin-left:6px;padding:0 5px;border-radius:10px;background:var(--blue);color:var(--blue-fg);font-size:11.5px;font-weight:700}
+.tab-count:empty{display:none}
+.dm-note{padding:8px 18px;border-bottom:1px solid var(--border);background:var(--strip)}
+/* A request: accept, delete or block before it can be answered, as on Instagram. */
+.dm-ask{display:flex;flex-direction:column;gap:12px;padding:16px 18px;border-top:1px solid var(--border);background:var(--card);font-size:14.5px}
+.dm-hello{display:flex;flex-direction:column;align-items:center;gap:6px;margin:auto;text-align:center}
+.dm-hello .av{margin-bottom:6px}
+.new-to{gap:10px}
+.new-to .input{flex:1}
 .conv{display:flex;align-items:center;gap:12px;width:100%;padding:12px 20px;text-align:left}
 .conv:hover{background:var(--hover)}
 .conv[aria-current=true]{background:var(--accent)}
@@ -404,13 +442,14 @@ blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(
 .classic .q:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px var(--ring)}
 .classic .q input{flex:1;min-width:0;padding:.45rem 0;border:0;background:none;color:var(--fg);font-size:17px;outline:none}
 .classic .q button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--primary);color:var(--primary-fg)}
-.classic .q .arrow{width:18px;height:18px;margin:0}
+/* Centred in the send button: the arrow's own rule lowers it to the text's baseline elsewhere (the owner, 2026-10-21). */
+.classic .q .arrow{align-self:center;width:18px;height:18px;margin:0}
 .classic .q button:hover .arrow{transform:translateX(.15rem)}
 .classic .search ::placeholder{color:var(--muted);opacity:1}
 .classic .filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin-top:.75rem}
 .classic .filters input,.classic .filters select{width:100%;min-width:0;min-height:40px;padding:.4rem .75rem;border:1px solid var(--input);border-radius:var(--radius);background:var(--card);color:var(--fg);font:inherit;font-size:14.5px;outline:none;appearance:none;-webkit-appearance:none;transition:border-color .15s,box-shadow .15s}
 .classic .filters #loc{grid-column:1/-1}
-.classic .filters select{padding-right:2rem;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23737373' stroke-width='1.4' d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E") no-repeat right .8rem center/11px 7px;cursor:pointer}
+.classic .filters select{padding-right:2rem;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%238a8a8a' stroke-width='1.4' d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E") no-repeat right .8rem center/11px 7px;cursor:pointer}
 .classic .filters select:has(option[value=""]:checked){color:var(--muted)}
 .classic .filters option{background:var(--card);color:var(--fg)}
 .classic .filters input:focus,.classic .filters select:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--ring)}
@@ -418,41 +457,42 @@ blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(
 .classic .count{margin-bottom:1.25rem;color:var(--muted);font-size:15px}
 .classic .more-app{margin-left:.35rem;color:var(--blue);font-weight:500}
 .classic .more-app:hover{text-decoration:underline}
-.classic .ad-tile{position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:var(--shadow-card)}
-.classic .ad-label{position:absolute;top:10px;left:12px;z-index:1;padding:1px 8px;border-radius:999px;background:var(--secondary);color:var(--muted);font-size:11px;font-weight:600}
-.classic .ad-tile ins{flex:1;min-height:0;margin-top:2rem}
-.classic .house{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:.9rem;padding:1.25rem}
-.classic .house p{font-size:19px;font-weight:600;line-height:1.3}
-.classic .house .apply{margin-top:0}
-.classic .ad-tile:has(ins[data-ad-status="filled"]) .house{display:none}
-.classic .jobs{--row:15.5rem;--strip:2.5rem;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:var(--row);grid-auto-flow:row dense;gap:1rem}
+.classic .jobs{--row:16rem;display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:var(--row);grid-auto-flow:row dense;gap:1rem}
 .classic .job{position:relative;display:flex;flex-direction:column;min-width:0;border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:var(--shadow-card);transition:box-shadow .15s}
 .classic .job:hover{box-shadow:0 4px 14px rgb(0 0 0/.07)}
 .classic .niche{position:absolute;top:-.65rem;right:.9rem;z-index:5;padding:2px 10px;border-radius:999px;background:var(--primary);color:var(--primary-fg);font-size:12px;font-weight:600;line-height:1.4;cursor:help;outline:none}
 .classic .niche .tip{position:absolute;top:calc(100% + .4rem);right:0;display:none;width:min(17rem,80vw);padding:.7rem .85rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);font-size:13.5px;font-weight:400;line-height:1.45;box-shadow:var(--shadow)}
 .classic .niche:hover .tip,.classic .niche:focus .tip{display:block}
 .classic .job.open{grid-row:span 3}
-.classic .top{display:flex;flex:none;flex-direction:column;gap:.25rem;height:calc(var(--row) - var(--strip) - 2px);padding:1rem 1rem .9rem;cursor:pointer}
+.classic .top{display:flex;flex:none;flex-direction:column;gap:.25rem;height:calc(var(--row) - 2px);padding:1rem 1rem .9rem;cursor:pointer}
 .classic .top h3{margin-bottom:.3rem;font-size:18px;font-weight:600;line-height:1.3}
 .classic .top h3 button{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;font:inherit;text-align:left}
 .classic .top h3 button:hover{text-decoration:underline;text-underline-offset:3px}
 .classic .top p{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;color:var(--muted)}
-.classic .apply{display:flex;flex:none;align-items:center;align-self:flex-start;min-height:36px;margin-top:auto;padding:0 16px;border-radius:var(--radius);background:var(--primary);color:var(--primary-fg);font-size:14px;font-weight:600;transition:opacity .15s}
-.classic .apply:hover{opacity:.85}
-.classic .apply:disabled{background:var(--secondary);color:var(--muted);cursor:default;opacity:1}
-.classic .apply .arrow,.classic .app .arrow,.classic .moreb .arrow{align-self:center;width:.85em;height:.85em;margin:0 0 0 .5rem}
-.classic .apply:hover .arrow,.classic .app:hover .arrow{transform:translateX(.25rem)}
-/* Apply, and beside it the faces of your connections who applied: they float there as Instagram's do on a post. */
-.classic .apply-row{display:flex;align-items:center;gap:.6rem;min-width:0;margin-top:auto}
-.classic .apply-row .apply{margin-top:0}
-.classic .save{display:flex;flex:none;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+/* Apply and One click apply side by side, as the desktop app has them: Apply outlined, One click apply filled. */
+.classic .apply,.classic .oneclick{display:flex;flex:none;align-items:center;gap:.4rem;min-height:36px;padding:0 14px;border-radius:var(--radius);font-size:14px;font-weight:600;white-space:nowrap;transition:opacity .15s,background .15s}
+.classic .apply{background:var(--card);color:var(--fg);box-shadow:inset 0 0 0 1px var(--input)}
+.classic .apply:hover{background:var(--hover)}
+.classic .oneclick{background:var(--primary);color:var(--primary-fg)}
+.classic .oneclick:hover{opacity:.85}
+.classic .oneclick .bolt{flex:none;width:15px;height:15px}
+.classic .apply:disabled,.classic .oneclick:disabled{background:var(--secondary);color:var(--muted);box-shadow:none;cursor:default;opacity:1}
+.classic .apply .arrow,.classic .moreb .arrow{align-self:center;width:.85em;height:.85em;margin:0 0 0 .1rem}
+.classic .apply:hover .arrow{transform:translateX(.25rem)}
+/* Buttons on one line where they fit, else two; the faces of people you follow who applied under them. */
+.classic .apply-row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;min-width:0;margin-top:auto}
+.classic .faces-slot{display:block;min-width:0;min-height:20px;margin-top:.35rem}
+.classic .faces-slot:empty{display:none}
+/* Save: a bookmark in the top-right corner, as LinkedIn has it, so the two Apply buttons keep their line. */
+.classic .save{position:absolute;top:.85rem;right:.75rem;z-index:2;display:flex;flex:none;align-items:center;justify-content:center;width:34px;height:34px;border-radius:var(--radius);background:var(--card);color:var(--soft)}
+.classic .top h3{padding-right:2.4rem}
 .classic .save svg{width:17px;height:17px}
 .classic .save:hover{background:var(--hover)}
 .classic .save[aria-pressed=true] path{fill:currentColor}
-.classic .apply-row .faces{min-width:0;color:var(--soft)}
-.classic .apply-row .faces>span:last-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.classic .apply-row .faces .av{box-shadow:0 0 0 2px var(--card)}
-.classic .apply-row .faces b{color:var(--fg)}
+.classic .faces-slot .faces{min-width:0;color:var(--soft);font-size:13px}
+.classic .faces-slot .faces>span:last-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.classic .faces-slot .faces .av{box-shadow:0 0 0 2px var(--card)}
+.classic .faces-slot .faces b{color:var(--fg)}
 .classic .more{flex:1;min-height:0;overflow:auto;padding:.85rem 1rem 1rem;border-top:1px solid var(--border);font-size:14px;animation:drop .25s ease-out}
 @keyframes drop{from{opacity:0;transform:translateY(-.4rem)}}
 @media(prefers-reduced-motion:reduce){.classic .more{animation:none}.classic .arrow{transition:none}}
@@ -462,17 +502,11 @@ blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(
 .classic .more ul{display:flex;flex-direction:column;gap:.3rem;padding-left:1.1rem}
 .classic .chips{display:flex;flex-wrap:wrap;gap:.4rem}
 .classic .chips span{padding:1px 8px;border:1px solid var(--border);border-radius:8px;background:none;font-size:12.5px}
-/* The strip under every job: One click apply, which sends the job to the desktop app (once it was a link to the download). */
-.classic .app{display:flex;flex:none;align-items:center;justify-content:space-between;width:100%;height:var(--strip);margin-top:auto;padding:0 1rem;border-top:1px solid var(--border);border-radius:0 0 calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px);background:var(--strip);color:var(--soft);font-size:13px;font-weight:500;line-height:1.2;text-align:left}
-.classic .app:hover{background:var(--accent);color:var(--fg)}
-.classic .app:disabled{cursor:default;color:var(--muted)}
-.classic .moreb{display:flex;align-items:center;min-height:40px;margin:2rem auto 0;padding:0 20px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);font-size:15px;font-weight:600;box-shadow:0 1px 2px rgb(0 0 0/.05)}
+.classic .moreb{display:flex;align-items:center;min-height:40px;margin:2rem auto 0;padding:0 20px;border:1px solid var(--input);border-radius:var(--radius);background:var(--card);font-size:15px;font-weight:600;box-shadow:0 1px 2px rgb(0 0 0/.05)}
 .classic .moreb:hover{background:var(--hover)}
-.classic .seen{display:flex;flex-direction:column;row-gap:2.5rem;padding-block:3.5rem;border-top:1px solid var(--border);background:var(--card)}
-.classic .label{font-size:26px;font-weight:600;line-height:1.35;letter-spacing:-.01em;text-wrap:balance;user-select:none}
 .classic .foot{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem;padding-block:2rem 3rem;border-top:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:13.5px}
 .classic .foot a:hover{color:var(--fg);text-decoration:underline}
-.classic .top h3 button:focus-visible,.classic .apply:focus-visible,.classic .app:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.classic .top h3 button:focus-visible,.classic .apply:focus-visible,.classic .oneclick:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 @container(min-width:640px){
   .classic .headline{font-size:40px}
   .classic .q input{font-size:18px}
@@ -486,27 +520,95 @@ blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(
   .classic .headline{font-size:54px}
   .classic .filters{grid-template-columns:1.4fr repeat(4,minmax(0,1fr))}
   .classic .filters #loc{grid-column:auto}
-  .classic .seen{padding-block:5rem}
-}
-@container(min-width:1240px){
-  .classic .seen{display:grid;grid-template-columns:.2fr .8fr}
-  .classic .seen>.label{grid-column:1/-1}
-  .classic .seen>div{grid-column:2}
 }
 
-/* ── Settings: the profile editor, the design studio; and Admin */
-.set-nav{display:flex;gap:4px;overflow-x:auto;margin-bottom:20px;scrollbar-width:none}
-.set-nav a{flex:none;min-height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:var(--radius);color:var(--muted);font-size:14px;font-weight:500}
-.set-nav a:hover{background:var(--hover);color:var(--fg)}
-.set-nav a[aria-current=page],.set-nav a.on{background:var(--accent);color:var(--fg);font-weight:600}
+/*
+ * ── Settings, laid out as Instagram's (the owner, 2026-10-21: "replicate the layout of instagram, fix the
+ * screen being too narrow and too long to scroll"): the sections in a list on the left, the one chosen on
+ * the right, one at a time; on a phone the list, then the section with Back.
+ */
+.set{display:grid;grid-template-columns:300px minmax(0,1fr);width:100%;max-width:1260px;min-height:100vh;margin:0 auto}
+.set-side{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:32px 16px 40px 20px;border-right:1px solid var(--border);scrollbar-width:thin}
+.set-side h1{margin:0 0 22px 12px;font-size:24px}
+.set-group{display:flex;flex-direction:column;gap:2px;margin-bottom:24px}
+.set-group h2{margin:0 0 6px 12px;color:var(--muted);font-size:12.5px;font-weight:600}
+.set-group a{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 12px;border-radius:var(--radius);color:var(--fg);font-size:15px}
+.set-group a svg{flex:none;width:20px;height:20px}
+.set-group a:hover{background:var(--hover)}
+.set-group a[aria-current=true]{background:var(--accent);font-weight:600}
+.set-pane{min-width:0;padding:32px 40px 96px;container-type:inline-size}
+.set-pane:not(.wide)>*{max-width:760px}
+.pane-h{display:flex;align-items:flex-start;gap:12px;margin-bottom:22px}
+.pane-h h2{display:flex;align-items:center;flex-wrap:wrap;gap:10px;font-size:24px}
+.pane-h p{margin-top:4px}
+.set-back{display:none}
+@media(max-width:767px){
+  .set{display:block}
+  .set-side{position:static;height:auto;border-right:0;padding:20px 16px}
+  .set.open .set-side{display:none}
+  .set:not(.open) .set-pane{display:none}
+  .set-pane{padding:16px 16px 96px}
+  .pane-h{flex-direction:column;gap:14px}
+  .set-back{display:inline-flex;flex:none}
+}
+.hint{color:var(--muted);font-size:13px;font-weight:400}
+.sub-tabs{flex-wrap:wrap;margin-bottom:18px}
+.sub-tabs .n{margin-left:6px;color:var(--muted);font-size:12px;font-weight:500}
+.sub-tabs .n:empty{display:none}
 .list-ed{display:flex;flex-direction:column;gap:12px}
 .list-ed .card{position:relative;padding:16px;box-shadow:none}
 .list-ed .rm{position:absolute;top:10px;right:10px}
-.save-bar{position:sticky;bottom:var(--tabs);z-index:5;display:flex;align-items:center;gap:14px;border-top:1px solid var(--border);background:var(--card)}
-.ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
-@media(max-width:900px){.ed{grid-template-columns:1fr}}
-.ed textarea{min-height:280px}
+.save-bar{position:sticky;bottom:var(--tabs);z-index:5;display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:22px;padding:14px 0;border-top:1px solid var(--border);background:var(--bg)}
+/* A choice saved as soon as it changes, as Instagram's switches. */
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer}
+.toggle:last-child{border-bottom:0}
+.toggle>span{display:flex;flex-direction:column;gap:3px}
+.toggle input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;position:relative;width:44px;height:26px;border-radius:13px;background:var(--input);cursor:pointer;transition:background .15s}
+.toggle input[type=checkbox]::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgb(0 0 0/.25);transition:transform .15s}
+.toggle input[type=checkbox]:checked{background:var(--primary)}
+.toggle input[type=checkbox]:checked::after{transform:translateX(18px)}
+html.dark .toggle input[type=checkbox]:checked::after{background:var(--primary-fg)}
+.toggle input[type=radio]{flex:none;width:18px;height:18px;accent-color:var(--primary)}
+.danger-zone{border-color:color-mix(in srgb,var(--bad) 35%,var(--border))}
+/* Edit profile's pictures, as the profile shows them: the cover, and the photo over its edge. */
+.pic-head{overflow:hidden}
+/* No min-height: through the aspect ratio it became a min-width, and on a phone the cover and its button ran off the card. */
+.pic-cover{position:relative;aspect-ratio:4/1;background:var(--accent) center/cover}
+.pic-actions{position:absolute;right:12px;bottom:12px;display:flex;gap:8px}
+.pic-me{display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px 16px;padding:0 20px 18px}
+/* The name keeps its line; on a phone the buttons go under it rather than squeeze it. */
+.pic-me .grow{min-width:min(12rem,100%)}
+.pic-av{position:relative;margin-top:-52px}
+.pic-av .av{width:112px;height:112px;border:4px solid var(--card)}
+.pic-av .av.i{font-size:40px!important}
+@media(max-width:600px){.pic-av{margin-top:-40px}.pic-av .av{width:84px;height:84px}.pic-av .av.i{font-size:30px!important}}
+/* The crop: drag and zoom inside the shape it will have (app.js cropImage). */
+.crop{position:relative;width:100%;overflow:hidden;border-radius:var(--radius);background:#111;touch-action:none;cursor:grab;outline-offset:3px}
+.crop:active{cursor:grabbing}
+.crop canvas{display:block;width:100%;height:100%}
+.crop.round::after{content:'';position:absolute;inset:0;margin:auto;height:100%;aspect-ratio:1;border-radius:50%;box-shadow:0 0 0 9999px rgb(0 0 0/.55);pointer-events:none}
+.crop:not(.round)::after{content:'';position:absolute;inset:0;border:2px solid rgb(255 255 255/.85);border-radius:var(--radius);pointer-events:none}
+.zoom{display:flex;align-items:center;gap:12px}
+.zoom input{flex:1;accent-color:var(--primary)}
+/* Design your profile: which kind, its code beside the live preview. */
+.kind-pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:4px 0 14px}
+.kind-pick label{display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);cursor:pointer}
+.kind-pick label:has(input:checked){border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.kind-pick label>span{display:flex;flex-direction:column;gap:2px}
+.kind-pick input{margin-top:5px;accent-color:var(--primary)}
+details.ai{margin-bottom:16px}
+details.ai summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:14px 18px;cursor:pointer;list-style:none}
+details.ai summary::-webkit-details-marker{display:none}
+.studio{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;align-items:start}
+.studio-code textarea[data-d=code]{min-height:320px}
+.studio-code textarea[data-d=css]{min-height:180px}
+.studio-prev{position:sticky;top:16px}
+@container(max-width:820px){.studio{grid-template-columns:1fr}.studio-prev{position:static}}
+@container(max-width:560px){.kind-pick{grid-template-columns:1fr}}
 .prompt{min-height:240px;font-size:12px}
+/* One click apply, when the desktop app is not open: its picture over the words. */
+.app-mark{display:flex;justify-content:center;margin-bottom:4px}
+.app-mark svg{width:48px;height:48px;padding:10px;border-radius:16px;background:var(--secondary);color:var(--fg)}
 .state{display:inline-flex;align-items:center;height:22px;padding:0 9px;border:1px solid currentColor;border-radius:999px;font-size:12px;font-weight:600}
 .state.pending{color:var(--wait)}
 .state.approved{color:var(--ok)}

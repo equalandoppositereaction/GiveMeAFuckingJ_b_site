@@ -5,44 +5,34 @@
  * as the words are typed and the filters picked (the owner, 2026-10-07). The first search fetches the
  * full list, jobs/index.txt (several megabytes), in one request; it is searched on the visitor's own
  * device as it streams in, the first results showing at once, and the count is exact once it is all in.
- * Twelve boxes at a time, ads included.
+ * Twelve jobs at a time.
  *
  * A job's link and details are in its chunk, jobs/<chunk>.json, fetched when the job is opened, or as
  * the pointer reaches its Apply. Apply opens the job's page itself in a new tab; no link is ever shown.
  * Formats: scripts/build-jobs.mjs.
  *
  * The social network (the owner, 2026-10-08: "keep the jobs display the same as before but with the
- * friends applying thing"): the same display, now the Jobs page, with three additions. Apply needs an
- * account. The grey strip under each job is One click apply, which sends the job to the person's
- * desktop app (it used to link to the download). The faces of their connections who applied sit
- * beside Apply, and Save keeps a job in My items.
+ * friends applying thing"): the same display, now the Jobs page, with these additions. Apply needs an
+ * account. One click apply sits beside it, as in the desktop app (the owner, 2026-10-21): the server
+ * hands the job to the person's desktop app, and when the app is not open they are told, with the
+ * download. The faces of the people they follow who applied sit under the buttons, and Save keeps a job
+ * in My items. No ads (the owner, 2026-10-21).
  */
 import { requireLogin, appliedLine, didYouApply, jobSignals, notApplying, saveJob, sendToApp, toast } from '/app.js'
 
 export default async function () {
-  // Twelve boxes at a time, the ads among them (the owner, 2026-10-07).
   const BOXES = 12
   const EARLY = 3000 // jobs read before the first results show
   const TYPING = 300 // ms after the last key before the search runs
-  /*
-   * The ad unit in every sixth box. With only a slot it is a responsive display ad; give it the in-feed
-   * unit's slot and layout key (AdSense: Ads, By ad unit, In-feed ads; the code it shows has both) and
-   * it becomes an in-feed ad styled like the jobs.
-   */
-  const FEED_SLOT = '2714256184'
-  const FEED_LAYOUT = ''
   const TYPE = { F: 'Full time', P: 'Part time', C: 'Contract', I: 'Internship', T: 'Temporary', L: 'Freelance', A: 'Apprenticeship' }
   const LEVEL = { E: 'Entry level', M: 'Mid level', S: 'Senior level', X: 'Executive level' }
   const SYMBOL = { USD: '$', EUR: '€', GBP: '£', INR: '₹', JPY: '¥', CAD: 'CA$', AUD: 'A$', SGD: 'S$', NZD: 'NZ$', HKD: 'HK$', BRL: 'R$', MXN: 'MX$', CNY: 'CN¥', KRW: '₩', ILS: '₪', PHP: '₱' }
   const ARROW = '<svg class="arrow" viewBox="0 0 17 14" fill="none" aria-hidden="true"><path stroke="currentColor" d="M1 7h15M10 1l6 6-6 6"/></svg>'
   // Save: a bookmark, so the faces beside Apply keep their room.
   const BOOKMARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'
-  const NICHE = 'Ultra niche jobs were extracted directly from the employer’s career page and usually don’t have many applicants to compete with.'
-  const AD = `<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-9726750731585284" data-ad-slot="${FEED_SLOT}" ${
-    FEED_LAYOUT ? `data-ad-format="fluid" data-ad-layout-key="${FEED_LAYOUT}"` : 'data-ad-format="auto"'
-  }></ins>`
-  // The fifth box of every six is an ad, in a job's frame; until AdSense fills it, or when it cannot, it offers the app.
-  const AD_TILE = `<div class="ad-tile"><span class="ad-label mono">Advertisement</span>${AD}<div class="house"><p>Find more jobs and apply to them with one click, from our desktop app.</p><a class="apply" href="/download">Download free${ARROW}</a></div></div>`
+  const NICHE = 'Niche jobs were extracted directly from the employer’s career page and usually don’t have many applicants to compete with.'
+  // One click apply's mark: a lightning bolt, as quick as it is.
+  const BOLT = '<svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>'
   const LATIN = /^[\p{Script=Latin}\p{N}\p{P}\p{S}\s]+$/u
   const DAY = 864e5
   const today = Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / DAY)
@@ -60,22 +50,6 @@ export default async function () {
     let v = cache.get(s)
     if (v === undefined) cache.set(s, (v = norm(s)))
     return v
-  }
-
-  /**
-   * Every ad on screen not yet asked for. A push fills the FIRST unfilled adsbygoogle unit in the page, not a
-   * chosen one, so a unit that is hidden must never be in the page unpushed.
-   */
-  function ads(root) {
-    for (const ins of root.querySelectorAll('ins.adsbygoogle:not([data-pushed])')) {
-      if (!ins.offsetWidth) continue // hidden at this width: an ad there would have no size
-      ins.dataset.pushed = '1'
-      try {
-        ;(window.adsbygoogle = window.adsbygoogle || []).push({})
-      } catch {
-        /* blocked, or not approved yet: the space stays empty */
-      }
-    }
   }
 
   // ── The full list, column by column, read on the first search
@@ -146,7 +120,6 @@ export default async function () {
   // ── Searching
   let found = [] // jobs, as tiles need them
   let shown = 0 // jobs on screen
-  let boxes = 0 // and boxes, the ads among them
 
   /** A test for the location box: the text at a word's start in the location, or a country whose name starts with it. */
   function placeTest(text) {
@@ -165,7 +138,7 @@ export default async function () {
 
   /**
    * Searches what has loaded, newest posting day first, Latin-script titles first so a search does not
-   * open on a wall of Chinese. `keep`: the same search with more of the list in, so the boxes already on
+   * open on a wall of Chinese. `keep`: the same search with more of the list in, so the jobs already on
    * screen stay that many.
    */
   function search(keep = false) {
@@ -192,7 +165,7 @@ export default async function () {
     }
     const order = (by) => [...by.keys()].sort((a, b) => b - a).flatMap((d) => by.get(d))
     found = [...order(byDay[1]), ...order(byDay[0])].map(jobAt)
-    render(keep ? Math.max(boxes, BOXES) : BOXES)
+    render(keep ? Math.max(shown, BOXES) : BOXES)
     tell(`${found.length.toLocaleString('en')} ${found.length === 1 ? 'job' : 'jobs'}${loaded ? '' : ` so far, ${(head.count - n).toLocaleString('en')} more loading…`}`)
   }
 
@@ -229,34 +202,26 @@ export default async function () {
 
   function render(upTo) {
     shown = 0
-    boxes = 0
     grid.textContent = ''
     byKey.clear()
     page(upTo)
   }
 
-  /** Draws boxes up to `upTo` (twelve more by default). An ad only with a job after it, so a list never ends on one. */
-  function page(upTo = boxes + BOXES) {
+  /** Draws jobs up to `upTo` (twelve more by default). */
+  function page(upTo = shown + BOXES) {
     const html = []
     const drawn = []
-    while (boxes < upTo && shown < found.length) {
-      if (boxes % 6 === 4) {
-        html.push(AD_TILE)
-        boxes++
-        if (boxes >= upTo) break
-      }
+    while (shown < upTo && shown < found.length) {
       drawn.push(found[shown].id)
       html.push(tile(found[shown++]))
-      boxes++
     }
     grid.insertAdjacentHTML('beforeend', html.join(''))
     // Gone once every job found is on screen: a button that does nothing is worse than none.
     more.hidden = shown >= found.length
-    ads(grid)
     void faces(drawn)
   }
 
-  /** The faces of your connections who applied to the jobs just drawn, beside their Apply. */
+  /** The faces of the people you follow who applied to the jobs just drawn, under their buttons. */
   async function faces(ids) {
     const got = await jobSignals(ids)
     for (const [id, sig] of Object.entries(got)) {
@@ -309,16 +274,17 @@ export default async function () {
     const f = job.flags
     const tags = [f[2] === 'R' ? 'Remote' : 'On-site', TYPE[f[0]]].filter(Boolean).join(' · ')
     return `<article class="job" data-id="${job.id}">
-<span class="niche mono" tabindex="0">Ultra niche<span class="tip" role="tooltip">${NICHE}</span></span>
+<span class="niche mono" tabindex="0">Niche<span class="tip" role="tooltip">${NICHE}</span></span>
+<button class="save" type="button" aria-pressed="false" aria-label="Save" title="Save for later">${BOOKMARK}</button>
 <div class="top">
 <h3><button type="button" aria-expanded="false">${esc(job.title)}</button></h3>
 <p class="mono">${esc(job.loc || 'Location not listed')}</p>
 <p class="mono">${tags}</p>
 <p class="mono">${esc(salary(job.pay))}</p>
-<div class="apply-row"><button class="apply" type="button">Apply${ARROW}</button><button class="save" type="button" aria-pressed="false" aria-label="Save" title="Save for later">${BOOKMARK}</button><span class="faces-slot"></span></div>
+<div class="apply-row"><button class="apply" type="button">Apply${ARROW}</button><button class="oneclick" type="button" title="Your desktop app applies to it for you">${BOLT}<span>One click apply</span></button></div>
+<span class="faces-slot"></span>
 </div>
 <div class="more" hidden></div>
-<button class="app mono oneclick" type="button"><span>Apply with one click from our desktop app</span>${ARROW}</button>
 </article>`
   }
 
@@ -422,13 +388,14 @@ export default async function () {
     button.disabled = true
   }
 
-  /** Applied (Apply says so), or sent to the desktop app (the strip says so). */
-  function done(el, sent) {
+  /** Applied (Apply says so), or with the desktop app (One click apply says so: sent, or waiting for it to open). */
+  function done(el, sent, waiting = false) {
     if (!el) return
     if (!sent) return void (el.querySelector('.apply').firstChild.textContent = 'Applied')
-    const strip = el.querySelector('.oneclick')
-    strip.firstElementChild.textContent = 'Sent to your desktop app'
-    strip.disabled = true
+    const button = el.querySelector('.oneclick')
+    button.lastElementChild.textContent = waiting ? 'Waiting for your app' : 'Sent to your app'
+    button.title = waiting ? 'It applies as soon as your desktop app is open' : 'Your desktop app has it'
+    button.disabled = true
   }
 
   const savedMark = (el, on) => {
@@ -455,20 +422,23 @@ export default async function () {
     button.disabled = false
   }
 
-  /** One click apply: the job goes to the person's desktop app, which applies to it for them. */
-  async function oneClick(job, strip) {
-    if (!requireLogin('Log in to apply with one click.') || strip.disabled) return
-    strip.disabled = true
-    const label = strip.firstElementChild
-    label.textContent = 'Sending to your desktop app…'
+  /**
+   * One click apply: the server hands the job to the person's desktop app, which applies to it for them.
+   * When the app is not open they are told so, with the download (app.js `sendToApp`), and it waits.
+   */
+  async function oneClick(job, button) {
+    if (!requireLogin('Log in to apply with one click.') || button.disabled) return
+    button.disabled = true
+    const label = button.lastElementChild
+    label.textContent = 'Sending…'
     try {
       const d = await detail(job)
       if (!d || !/^https?:\/\//i.test(d[0])) throw new Error('This job is no longer listed.')
-      await sendToApp(job.id, { title: job.title, location: job.loc || '', url: d[0] })
-      done(strip.closest('.job'), true)
+      const r = await sendToApp(job.id, { title: job.title, location: job.loc || '', url: d[0] })
+      done(button.closest('.job'), true, !r.appOpen)
     } catch (e) {
-      strip.disabled = false
-      label.textContent = 'Apply with one click from our desktop app'
+      button.disabled = false
+      label.textContent = 'One click apply'
       toast(esc(e.message))
     }
   }
@@ -478,8 +448,8 @@ export default async function () {
     if (t.closest('a, .niche')) return
     const job = t.closest('.job')
     if (!job) return
-    const strip = t.closest('.oneclick')
-    if (strip) return void oneClick(byKey.get(+job.dataset.id), strip)
+    const quick = t.closest('.oneclick')
+    if (quick) return void oneClick(byKey.get(+job.dataset.id), quick)
     const button = t.closest('.apply')
     if (button) return void apply(byKey.get(+job.dataset.id), button)
     const saver = t.closest('.save')
@@ -537,7 +507,6 @@ export default async function () {
   }
 
   // ── First paint: the home page's own few, or the search in the address.
-  ads(document)
   const asked = new URLSearchParams(location.search)
   for (const el of fields) if (asked.has(el.name)) el.value = asked.get(el.name)
   if (fields.some((el) => el.value)) void run()

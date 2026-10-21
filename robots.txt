@@ -1,19 +1,9 @@
-# GMAFJ. Search engines and AI assistants are welcome to read everything here.
-# The *ad*.html pages only frame ads inside the app, so they are kept out of search results, as are the job
-# listings' data files (jobs/).
+# Oporch. Search engines and AI assistants are welcome to read everything here. The job listings' data
+# files (jobs/) are kept out of search results.
 
 User-agent: *
 Allow: /
-Disallow: /*adleft.html
-Disallow: /*adright.html
 Disallow: /jobs/
-
-# AdSense reads every page, the ad pages included, to choose relevant ads.
-User-agent: Mediapartners-Google
-Allow: /
-
-User-agent: AdsBot-Google
-Allow: /
 
 # AI search and answer engines.
 User-agent: GPTBot
@@ -38,8 +28,6 @@ User-agent: cohere-ai
 User-agent: MistralAI-User
 User-agent: YouBot
 Allow: /
-Disallow: /*adleft.html
-Disallow: /*adright.html
 Disallow: /jobs/
 
 Sitemap: https://givemeafuckingjob.com/sitemap.xml
