@@ -7,9 +7,10 @@
  * Green, amber and red only where they mean something. Light by default; Dark mode is in the More menu
  * (html.dark), as the app's account menu has it. No em dashes in anything shown.
  *
- * The menu is a rail of icons on the left, the name at its top and the menus in its middle, as Instagram's
- * (the owner, 2026-10-21); hovered or tabbed into, it opens over the page with every name (the owner,
- * 2026-10-08). On phones, a bar on top and tabs along the bottom.
+ * The menu is a rail of icons on the left, the logo alone at its top (the owner, 2026-10-22: "Remove the name
+ * of the platform and just keep the logo") and the menus in its middle, as Instagram's (the owner,
+ * 2026-10-21); hovered or tabbed into, it opens over the page with every name (the owner, 2026-10-08). On
+ * phones, a bar on top and tabs along the bottom.
  */
 /*
  * The palette (the owner, 2026-10-21: "the contrast between the background and the foreground is not
@@ -64,7 +65,7 @@ h3{font-size:16px;font-weight:600;line-height:1.35}
 
 /* Who sees what: html.in is set once the session is known (boot.js guesses first, app.js decides). */
 html:not(.in) [data-in],html.in [data-out]{display:none!important}
-/* A member opening the home page is sent on to their Feed, so its jobs are not flashed first. */
+/* A member opening the home page is sent on to their Home, so its jobs are not flashed first. */
 html.in:not(.shown) body[data-page=landing] .main{visibility:hidden}
 [data-me-av]{display:flex}
 
@@ -73,9 +74,10 @@ html.in:not(.shown) body[data-page=landing] .main{visibility:hidden}
 .main{flex:1;min-width:0;margin-left:var(--rail);padding-bottom:var(--tabs)}
 .topbar,.tabbar{display:none}
 /*
- * The name: the owner's logo as it is, then the word (the owner, 2026-10-21: "The logo is the same, dont
- * change it"). Its supplied variants, swapped by a class as the desktop app's Logo.tsx swaps them: the black
- * mark (favicon.png) in the light, the white one (logo-dark.png) in the dark.
+ * The brand: the owner's logo as it is (the owner, 2026-10-21: "The logo is the same, dont change it"), alone
+ * in the menus, with the word beside it where a page names itself (signing in). Its supplied variants,
+ * swapped by a class as the desktop app's Logo.tsx swaps them: the black mark (favicon.png) in the light, the
+ * white one (logo-dark.png) in the dark.
  */
 .brand{display:flex;align-items:center;gap:12px;font-size:20px;font-weight:700;letter-spacing:-.01em}
 .logo{flex:none;width:28px;height:28px;object-fit:contain}
@@ -92,8 +94,8 @@ html.dark .logo.on-dark{display:block}
 .nav-i{position:relative;display:flex;align-items:center;gap:14px;width:100%;min-height:44px;padding:0 10px;border-radius:var(--radius);color:color-mix(in srgb,var(--sidebar-fg) 85%,transparent);font-size:15px;white-space:nowrap;text-align:left;transition:background .15s,color .15s}
 .nav-i svg{flex:none;width:21px;height:21px;stroke-width:1.8}
 .nav-i:hover{background:var(--hover);color:var(--fg)}
-.rail .nav-i>span:not(.badge):not([data-me-av]),.rail .brand>.word{opacity:0;transition:opacity .12s}
-.rail:hover .nav-i>span:not(.badge):not([data-me-av]),.rail:focus-within .nav-i>span:not(.badge):not([data-me-av]),.rail:hover .brand>.word,.rail:focus-within .brand>.word{opacity:1;transition-delay:.08s}
+.rail .nav-i>span:not(.badge):not([data-me-av]){opacity:0;transition:opacity .12s}
+.rail:hover .nav-i>span:not(.badge):not([data-me-av]),.rail:focus-within .nav-i>span:not(.badge):not([data-me-av]){opacity:1;transition-delay:.08s}
 .nav-i[aria-current=page]{background:var(--accent);color:var(--fg);font-weight:600}
 .nav-i[aria-current=page] svg{stroke-width:2.2}
 .nav-i [data-me-av]{flex:none;width:20px;justify-content:center}
@@ -167,7 +169,6 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .who-n{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:15px;font-weight:600;line-height:1.3}
 .who-n a:hover{text-decoration:underline;text-underline-offset:3px}
 .who-h{color:var(--muted);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.deg{color:var(--muted);font-size:13.5px}
 /* "Follows you", in a grey chip beside the name, as Instagram marks it; a lock beside a private account's. */
 .chip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;background:var(--secondary);color:var(--soft);font-size:11.5px;font-weight:600;white-space:nowrap}
 .lock{display:inline-flex;color:var(--muted)}
@@ -175,8 +176,17 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .person{display:flex;align-items:center;gap:12px;padding:12px 0}
 .person.pick{width:100%;padding:10px 8px;border-radius:var(--radius);text-align:left}
 .person.pick:hover{background:var(--hover)}
+/* Picking whom to send a post or a message to: a face, a name and a username, no links, and a ring that fills once picked. */
+.pick .who-t{display:flex;flex-direction:column}
+.pick .who-h{display:block}
+.pick .tick{flex:none;width:22px;height:22px;border:1.5px solid var(--input);border-radius:50%}
+.pick[aria-pressed=true] .tick{border-color:var(--primary);background:var(--primary);box-shadow:inset 0 0 0 4px var(--card)}
+.send-list{max-height:min(46vh,360px);margin:0 -8px;overflow-y:auto}
+.picked{display:flex;flex-wrap:wrap;gap:6px}
+.pick-chip{height:26px;cursor:pointer}
+.pick-chip:hover{background:var(--accent)}
 .person .who{flex:1}
-/* The faces of your connections on an update or a job, overlapping, as Instagram shows who liked. */
+/* The faces of people you follow on a post or a job, overlapping, as Instagram shows who liked. */
 .faces{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--soft)}
 .faces .stack-av{display:flex}
 .faces .av{width:24px;height:24px;box-shadow:0 0 0 2px var(--card)}
@@ -186,6 +196,8 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 /* ── Pages: the heading over a rule, as the app's PageHeader; cards as its Card. */
 .page{width:100%;max-width:1000px;margin:0 auto;padding:32px 24px 80px}
 .page.narrow{max-width:720px}
+/* Someone's posts as a feed: Home's width, so their comments fit beside them. */
+.page.posts-page{max-width:648px}
 .page-h{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border)}
 .card{border:1px solid var(--border);border-radius:var(--radius-xl);background:var(--card);box-shadow:var(--shadow-card)}
 .card.pad{padding:20px 24px}
@@ -199,20 +211,19 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .spin{width:22px;height:22px;margin:36px auto;border:2px solid var(--border);border-top-color:var(--fg);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.spin{animation-duration:3s}}
-/* Tabs over a list: For you and Following, People and Updates, My items, Admin. The open one in the selected grey. */
+/* Tabs over a list: For you, Following and Jobs (and My items beside them), People and Posts, My items. The open one in the selected grey. */
 .feed-tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
-.feed-tabs button{flex:none;min-height:34px;padding:0 14px;border-radius:var(--radius);color:var(--muted);font-size:14px;font-weight:500}
-.feed-tabs button:hover{background:var(--hover);color:var(--fg)}
+.feed-tabs .tabs-in{display:flex;gap:4px}
+.feed-tabs button,.feed-tabs .tab-link{flex:none;display:inline-flex;align-items:center;min-height:34px;padding:0 14px;border-radius:var(--radius);color:var(--muted);font-size:14px;font-weight:500}
+.feed-tabs button:hover,.feed-tabs .tab-link:hover{background:var(--hover);color:var(--fg)}
 .feed-tabs button[aria-selected=true]{background:var(--accent);color:var(--fg);font-weight:600}
 
-/* ── The Feed, and a column beside it on wide screens */
+/* ── Home, and a column beside it on wide screens */
 .feed-wrap{display:flex;justify-content:center;gap:40px;padding:32px 20px 80px}
 .feed{width:100%;max-width:600px;display:flex;flex-direction:column;gap:16px}
-.aside{width:320px;flex:none;display:flex;flex-direction:column;gap:16px}
+/* As tall as what is in it, not the feed: below it, a post's comments open on the right (app.js openComments). */
+.aside{width:320px;flex:none;align-self:flex-start;display:flex;flex-direction:column;gap:16px}
 @media(max-width:1100px){.aside{display:none}}
-.start{display:flex;align-items:center;gap:12px;padding:14px 16px}
-.start button{flex:1;min-height:42px;padding:0 16px;border:1px solid var(--input);border-radius:999px;color:var(--muted);text-align:left;font-size:15px;transition:background .15s}
-.start button:hover{background:var(--hover);color:var(--fg)}
 .aside-h{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;color:var(--fg)}
 .aside-h .textbtn{font-size:14px}
 .foot-links{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--muted)}
@@ -221,8 +232,10 @@ html.dark .input,html.dark .field input:not([type=checkbox]):not([type=file]),ht
 .dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
 .dot.on{background:var(--ok)}
 
-/* ── An update */
+/* ── A post */
 .post{overflow:hidden}
+/* Its comments are open beside it (app.js openComments). */
+.post.commenting{box-shadow:0 0 0 1.5px var(--fg)}
 .via{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted)}
 .via b{color:var(--fg)}
 .post-h{display:flex;align-items:center;gap:10px;padding:14px 16px}
@@ -258,7 +271,7 @@ button.ig-n:hover{text-decoration:underline;text-underline-offset:3px}
 .ig-by .stack-av{display:flex}
 .ig-by .av{width:20px;height:20px;box-shadow:0 0 0 2px var(--card)}
 .ig-by .av+.av{margin-left:-6px}
-.ig-more{display:block;padding:6px 16px 0;font-size:14px;color:var(--muted)}
+.ig-more{display:block;padding:6px 16px 0;font-size:14px;color:var(--muted);text-align:left}
 .ig-more:hover{color:var(--fg)}
 .ig-mine{padding:6px 16px 0;font-size:14px;overflow-wrap:anywhere}
 .ig-mine a:not(:first-child){color:var(--blue)}
@@ -275,10 +288,34 @@ button.ig-n:hover{text-decoration:underline;text-underline-offset:3px}
 .embed-h{display:flex;align-items:center;gap:10px;padding:12px}
 .embed .post-t{padding:0 12px 12px}
 /*
- * Comments, Instagram's (pages/post.js): a username then the comment, its age, likes and Reply under it,
- * a small heart on its right; replies folded under "View replies"; one box at the bottom.
+ * A recommendation (the owner, 2026-10-22): who recommends it, then the profile, its cover, photo, name,
+ * headline and numbers, to follow or open (app.js `recommendationHtml`).
+ */
+.rec-by{border-bottom:0}
+.rec-cover{display:block;height:96px;margin:4px 16px 0;border-radius:var(--radius);background:var(--accent) center/cover}
+.rec-body{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 16px 18px;text-align:center}
+.rec-photo{margin-top:-46px}
+.rec-photo .av{width:92px;height:92px;border:4px solid var(--card)}
+.rec-photo .av.i{font-size:32px!important}
+.rec-name{font-size:18px;font-weight:600;line-height:1.3}
+.rec-name:hover{text-decoration:underline;text-underline-offset:3px}
+.rec-h{max-width:46ch;color:var(--soft);font-size:14.5px}
+.rec-go{justify-content:center;margin-top:10px}
+.pad{padding:16px}
+/*
+ * Comments, Instagram's (comments.js), under a post on its own page, beside it in a list (`.cpanel`), or
+ * in a sheet on a narrow screen: a username then the comment, its age, likes and Reply under it, a small
+ * heart on its right; replies folded under "View replies"; one box at the bottom.
  */
 .ig-comments{display:flex;flex-direction:column}
+.cpanel{position:absolute;z-index:30;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow);animation:pop .14s ease-out}
+.cpanel .dialog-h,.dialog.sheet .dialog-h{padding:12px 16px}
+.cpanel .dialog-h h2,.dialog.sheet .dialog-h h2{font-size:16px}
+.cpanel-b,.sheet-b{flex:1;min-height:0}
+.cpanel-b .ig-list,.sheet-b .ig-list{flex:1;min-height:0;overflow-y:auto}
+.veil:has(>.dialog.sheet){align-items:flex-end;padding:0}
+.dialog.sheet{display:flex;flex-direction:column;max-width:640px;height:min(85vh,720px);border-bottom:0;border-radius:var(--radius-xl) var(--radius-xl) 0 0}
+@media(prefers-reduced-motion:reduce){.cpanel{animation:none}}
 .ig-list{display:flex;flex-direction:column;gap:16px;padding:16px}
 .ig-c{display:flex;align-items:flex-start;gap:12px}
 .ig-c.reply{margin-top:14px}
@@ -294,7 +331,7 @@ button.ig-n:hover{text-decoration:underline;text-underline-offset:3px}
 .ig-view{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:12.5px;font-weight:600;color:var(--muted)}
 .ig-view>span{width:24px;border-top:1px solid var(--muted)}
 .ig-view:hover{color:var(--fg)}
-#earlier .ig-view{margin:14px 16px 0}
+.ig-earlier .ig-view{margin:14px 16px 0}
 .ig-cl{flex:none;display:inline-flex;margin-top:4px;padding:4px;color:var(--muted)}
 .ig-cl svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .ig-cl:hover{color:var(--fg)}
@@ -351,7 +388,7 @@ button.ig-n:hover{text-decoration:underline;text-underline-offset:3px}
 .li-name h1{font-size:30px;line-height:1.2}
 .li-headline{font-size:17px}
 .li-meta{color:var(--muted);font-size:14px}
-/* Instagram's three numbers: updates, followers, following. */
+/* Instagram's three numbers: posts, followers, following. */
 .li-counts{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:6px;font-size:15px;color:var(--soft)}
 .li-counts b{color:var(--fg);font-weight:700;font-variant-numeric:tabular-nums}
 .li-by{margin-top:6px;font-size:13.5px}
@@ -365,15 +402,53 @@ button.ig-n:hover{text-decoration:underline;text-underline-offset:3px}
 .li-aside h2{font-size:18px}
 .sec-h .textbtn{flex:none}
 .li-sec .post{margin-top:12px}
-.li-bar{display:flex;align-items:center;gap:14px;padding:14px 18px}
-.li-bar .li-actions{margin-top:0}
-/* A member's own design takes the page: the boxes beside it go under it. */
-.li.designed{flex-direction:column;align-items:stretch;max-width:1320px}
-.li.designed .li-aside{width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:16px}
-.design-box{min-height:120px;border:1px solid var(--border);border-radius:var(--radius-xl);background:#fff;overflow:hidden;box-shadow:var(--shadow-card)}
-.design{display:block;width:100%;border:0;background:transparent}
-@media(max-width:600px){.li-bar{flex-wrap:wrap}.design-box{border-inline:0;border-radius:0}}
-.note-card{color:var(--muted);font-size:14.5px}
+/*
+ * The profile's top right (the owner, 2026-10-22): its heart and likes, its recommendations, Share; beside
+ * the photo on the standard profile, in a bar over a member's own design.
+ */
+.li-photo-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.pf-acts{display:flex;align-items:center;gap:2px;margin-bottom:6px}
+.pf-acts .ig{min-width:38px;min-height:38px;padding:0 6px}
+.pf-acts .ig.on.pf-like svg{fill:var(--heart);stroke:var(--heart);opacity:1;animation:beat .3s ease-out}
+.pf-acts .ig.on.pf-rec svg{fill:currentColor;opacity:1}
+.pf-i{cursor:default}
+.pf-i:hover svg{opacity:1}
+.pf-n{min-height:38px;margin-left:-4px;padding:0 8px 0 2px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.pf-n:hover{text-decoration:underline;text-underline-offset:3px}
+@media(prefers-reduced-motion:reduce){.pf-acts .ig.on.pf-like svg{animation:none}}
+/*
+ * A member's own design is the whole window (the owner, 2026-10-22: "the user's custom profile will be there
+ * and just an overlay of the app's icons and sidebar"): the site's menu over it, and the bar of the
+ * profile's buttons on its top right.
+ */
+.design{display:block;width:100%;border:0;background:#fff}
+.pd{position:fixed;inset:0;z-index:1;background:#fff}
+.design.fill{height:100%}
+.pd-bar{position:fixed;top:calc(var(--top) + 14px);right:16px;z-index:35;display:flex;align-items:center;gap:2px;max-width:calc(100vw - var(--rail) - 32px);padding:4px 6px;border:1px solid var(--border);border-radius:999px;background:var(--card);box-shadow:var(--shadow)}
+.pd-bar .pf-acts{margin:0}
+.pd-rel{display:flex;padding:0 4px}
+/* Posts as tiles, LinkedIn's Activity: a row that scrolls sideways, each tile its post's first lines. */
+.tiles{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,260px);gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.tile{display:flex;flex-direction:column;gap:8px;min-height:180px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);scroll-snap-align:start}
+.tile:hover{border-color:var(--input)}
+.tile-h{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.tile-h>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile-h b{color:var(--fg);font-weight:600}
+.tile-t{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.tile-i{width:100%;height:110px;border-radius:8px;object-fit:cover;background:var(--strip)}
+.tile-i.only{height:170px}
+.tile-s{margin-top:auto;color:var(--muted);font-size:12.5px}
+.tile-w{align-self:flex-start;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--wait) 12%,transparent);color:color-mix(in srgb,var(--wait) 80%,var(--fg));font-size:12px;font-weight:600}
+.tile-w.bad{background:color-mix(in srgb,var(--bad) 10%,transparent);color:color-mix(in srgb,var(--bad) 75%,var(--fg))}
+.tiles-all{margin-top:12px}
+.pf-ph{font-size:20px}
+.pf-views b{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}
+/* People as small cards: who recommends a profile, and whom it recommends. */
+.pf-people{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.pf-person{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;padding:14px 10px;border:1px solid var(--border);border-radius:var(--radius);text-align:center}
+.pf-person:hover{background:var(--hover)}
+.pf-person b{font-size:14.5px;font-weight:600}
+.pf-person .who-h{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:100%;white-space:normal}
 .otw{margin-top:14px;padding:12px 16px;border-radius:var(--radius);background:var(--strip);font-size:14.5px}
 .otw b{color:var(--ok);font-weight:600}
 .otw.hiring b{color:var(--fg)}
@@ -387,11 +462,18 @@ button.ig-n:hover{text-decoration:underline;text-underline-offset:3px}
 .entry .desc{margin-top:8px;white-space:pre-wrap;overflow-wrap:anywhere}
 .entry .url{display:inline-flex;align-items:center;min-height:32px;margin-top:10px;padding:0 12px;border:1px solid var(--input);border-radius:var(--radius);font-size:13px;font-weight:600}
 .entry .url:hover{background:var(--hover)}
-.skill-row{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--border)}
-.skill-row b{font-weight:600}
-.skill-row .faces{margin-top:4px}
-.rec-row{display:flex;gap:12px;padding:16px 0;border-top:1px solid var(--border)}
-.sec-h+.entry,.sec-h+.skill-row,.sec-h+.rec-row{border-top:0;padding-top:4px}
+/* Skills as a grid (the owner, 2026-10-22: "3 per row, centered"); a long one takes two places, or the row (profile.js `fitSkills`). */
+.skill-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.sk{flex:0 0 calc((100% - 20px) / 3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;padding:12px;border:1px solid var(--border);border-radius:var(--radius);text-align:center}
+.sk.w2{flex-basis:calc((100% - 20px) / 3 * 2 + 10px)}
+.sk.w3{flex-basis:100%}
+.sk-n{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600}
+.sk-e{color:var(--muted);font-size:12.5px}
+.sk-e:empty{display:none}
+.sk-b{min-height:28px;margin-top:2px;padding:0 12px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--input);font-size:12.5px;font-weight:600}
+.sk-b:hover{background:var(--hover)}
+.sk-b.on{background:var(--primary);color:var(--primary-fg);box-shadow:none}
+.sec-h+.entry{border-top:0;padding-top:4px}
 .contact-row{display:flex;flex-direction:column;gap:2px}
 
 /* ── Search: the bar, LinkedIn's filters, and people to connect with under it. */
@@ -409,10 +491,7 @@ button.ig-n:hover{text-decoration:underline;text-underline-offset:3px}
 .pymk-r{margin-bottom:12px;color:var(--muted);font-size:13px}
 .pymk-card [data-rel]{margin-top:auto;justify-content:center}
 
-/* ── Notifications and invitations */
-.invite{padding:4px 0;border-top:1px solid var(--border)}
-.sec-h+.invite{border-top:0}
-blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(--border);border-radius:0 8px 8px 0;background:var(--strip);color:var(--soft);font-size:14.5px;white-space:pre-wrap;overflow-wrap:anywhere}
+/* ── Notifications, and requests to follow */
 .sent-inv summary{cursor:pointer;list-style:none;font-weight:600}
 .sent-inv summary::-webkit-details-marker{display:none}
 .note-row{display:flex;align-items:center;gap:12px;padding:0 20px 0 0;border-bottom:1px solid var(--border);font-size:14.5px}
@@ -433,6 +512,8 @@ blockquote.note{margin:0 0 12px 56px;padding:8px 12px;border-left:3px solid var(
 .tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:19px;height:19px;margin-left:6px;padding:0 5px;border-radius:10px;background:var(--blue);color:var(--blue-fg);font-size:11.5px;font-weight:700}
 .tab-count:empty{display:none}
 .dm-note{padding:8px 18px;border-bottom:1px solid var(--border);background:var(--strip)}
+.dm-h{margin:14px 20px 6px;color:var(--muted);font-size:12.5px;font-weight:600}
+.dm-pad{padding:0 20px}
 /* A request: accept, delete or block before it can be answered, as on Instagram. */
 .dm-ask{display:flex;flex-direction:column;gap:12px;padding:16px 18px;border-top:1px solid var(--border);background:var(--card);font-size:14.5px}
 .dm-hello{display:flex;flex-direction:column;align-items:center;gap:6px;margin:auto;text-align:center}
@@ -632,12 +713,7 @@ html.dark .toggle input[type=checkbox]:checked::after{background:var(--primary-f
 .crop:not(.round)::after{content:'';position:absolute;inset:0;border:2px solid rgb(255 255 255/.85);border-radius:var(--radius);pointer-events:none}
 .zoom{display:flex;align-items:center;gap:12px}
 .zoom input{flex:1;accent-color:var(--primary)}
-/* Design your profile: which kind, its code beside the live preview. */
-.kind-pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:4px 0 14px}
-.kind-pick label{display:flex;gap:10px;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);cursor:pointer}
-.kind-pick label:has(input:checked){border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
-.kind-pick label>span{display:flex;flex-direction:column;gap:2px}
-.kind-pick input{margin-top:5px;accent-color:var(--primary)}
+/* Design your profile: its code beside the live preview. */
 details.ai{margin-bottom:16px}
 details.ai summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:14px 18px;cursor:pointer;list-style:none}
 details.ai summary::-webkit-details-marker{display:none}
@@ -646,7 +722,6 @@ details.ai summary::-webkit-details-marker{display:none}
 .studio-code textarea[data-d=css]{min-height:180px}
 .studio-prev{position:sticky;top:16px}
 @container(max-width:820px){.studio{grid-template-columns:1fr}.studio-prev{position:static}}
-@container(max-width:560px){.kind-pick{grid-template-columns:1fr}}
 .prompt{min-height:240px;font-size:12px}
 /* One click apply, when the desktop app is not open: its picture over the words. */
 .app-mark{display:flex;justify-content:center;margin-bottom:4px}
@@ -666,19 +741,14 @@ details.code-v pre{max-height:280px;overflow:auto;padding:12px;border-radius:var
 .pic.add{align-items:center;justify-content:center;min-height:160px;border:1px dashed var(--input);color:var(--muted);font-size:14.5px;cursor:pointer}
 .pic.add:hover{background:var(--hover);color:var(--fg)}
 .dprev{border:1px solid var(--border);border-radius:var(--radius);background:var(--strip);overflow:hidden}
-.rec-ed{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--border)}
-h3+.rec-ed{border-top:0;padding-top:0}
+/* A window's height, scrolled inside, as the profile shows it. */
+.dprev .design{height:70vh}
 
-/* ── My items, and who viewed your profile */
+/* ── My items */
 .job-row{display:flex;align-items:center;gap:10px;padding:14px 0;border-top:1px solid var(--border)}
 .job-row:first-child{border-top:0}
 h3+.job-row{border-top:0}
 .job-row b{font-weight:600}
-.stats{display:flex;gap:48px;margin-bottom:12px}
-.stats div{display:flex;flex-direction:column}
-.stats b{font-size:36px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
-.viewer{display:flex;align-items:center;gap:12px}
-.viewer .person{flex:1;min-width:0}
 
 /* ── Sign in: a card on the ground, as the app's sign-in */
 .auth{display:flex;min-height:calc(100vh - var(--top) - var(--tabs));align-items:center;justify-content:center;padding:32px 16px;background:var(--bg)}
@@ -690,7 +760,7 @@ h3+.job-row{border-top:0}
 .legal{margin-top:16px;color:var(--muted);font-size:12.5px;text-align:center}
 .legal a{color:var(--blue)}
 
-/* ── The feed's Jobs tab (pages/feed.js): a job as a card, saying why it is there, with the jobs page's buttons. */
+/* ── The Jobs tab of Home (pages/home.js): a job as a card, saying why it is there, with the jobs page's buttons. */
 .jobcard{padding:14px 16px}
 .jc-why{display:flex;align-items:center;gap:8px;min-height:20px;margin-bottom:10px;font-size:13px}
 .jc-why .faces{font-size:13px}
@@ -708,7 +778,7 @@ h3+.job-row{border-top:0}
 .jobcard .save:hover{background:var(--hover)}
 .jobcard .save[aria-pressed=true] path{fill:currentColor}
 
-/* ── Communities (pages/groups.js): Messages' layout; a community's face, its initials on a rounded square. */
+/* ── Communities (communities.js), in Messages: a community's face, its initials on a rounded square. */
 .av.gav{border-radius:14px;background:var(--accent);color:var(--fg)}
 .av.s.gav{border-radius:10px;font-size:12px!important}
 .dm-head .who{min-width:0}

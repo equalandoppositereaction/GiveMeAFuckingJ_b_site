@@ -1,17 +1,14 @@
 /**
  * A member's own profile design (the owner, 2026-10-08: "our main highlight is the custom profile that
  * the users can show their creativity on while still being able to show the regular features of the
- * profile like posts projects and all"). Two kinds:
+ * profile like posts projects and all"): HTML and CSS, CSS3 and all it can do, and nothing else (the
+ * owner, 2026-10-22: "Make it just html and css (css3) for custom profiles, remove the react"). Its
+ * {{placeholders}} are filled in from the profile each time it is shown.
  *
- * - HTML and CSS, its {{placeholders}} filled in from the profile each time it is shown;
- * - React (the owner, 2026-10-21: "add in react aswell, where the user can use react to customize their
- *   profiles"): a component that gets the whole profile as `props.profile`, compiled on the server
- *   (server/src/social/design.ts) and run here with React and ReactDOM from /vendor/react.js.
- *
- * Either way it is shown in a sealed frame (mountDesign): no script runs in it but ours and, for React,
- * the design's own approved script; nothing in it reaches the page around it, a form, or another site
- * (pictures are ours, fonts Google's, no network at all for scripts). The owner approves a design before
- * anyone else sees it, in the review console. With its pictures, at most 10 MB.
+ * It is shown in a sealed frame (mountDesign) in which no script runs at all, and from which nothing
+ * reaches the page around it, a form, or another site: pictures are ours, fonts Google's. On the profile it
+ * is the whole window, the site's menu and the profile's buttons over it (pages/profile.js). The owner
+ * approves a design before anyone else sees it, in the review console. With its pictures, at most 10 MB.
  */
 import { API, esc, media, plural } from '/app.js'
 
@@ -70,10 +67,10 @@ const entry = (title, sub, dates, desc, logo, link = '') =>
     dates ? `<p class="when">${esc(dates)}</p>` : ''
   }${desc ? `<p class="desc">${lines(desc)}</p>` : ''}${link}</div></div>`
 
-/** An update as a card in a design: plain text and its picture, linking to the update itself. */
+/** A post as a card in a design: plain text and its picture, linking to the post itself. */
 function postCard(u) {
   const x = u.repostOf && !u.text && !u.repostOf.gone ? u.repostOf : u
-  const stats = [u.reactions?.total ? plural(u.reactions.total, 'reaction') : '', u.comments ? plural(u.comments, 'comment') : ''].filter(Boolean).join(' · ')
+  const stats = [u.reactions?.total ? plural(u.reactions.total, 'like') : '', u.comments ? plural(u.comments, 'comment') : ''].filter(Boolean).join(' · ')
   return `<a class="post" href="${location.origin}/p?id=${u.id}"><p class="post-date">${x === u ? '' : 'Reposted · '}${esc(day(u.at))}</p>${x.text ? `<p class="post-text">${lines(x.text)}</p>` : ''}${
     x.image ? `<img class="post-image" src="${esc(media(x.image))}" alt="">` : ''
   }${stats ? `<p class="post-stats">${stats}</p>` : ''}</a>`
@@ -93,15 +90,12 @@ export function profileParts(p, updates = []) {
     languages: of('languages').map((x) => `<div class="entry"><div class="what"><h3>${esc(x.name)}</h3><p class="sub">${esc(PROFICIENCY[x.proficiency] ?? '')}</p></div></div>`).join(''),
     // Spaced, so a design that shows skills inline can wrap them.
     skills: of('skills').map((s) => `<span class="skill">${esc(typeof s === 'string' ? s : s.name)}</span>`).join(' '),
-    recommendations: of('recommendations')
-      .map((r) => `<blockquote class="rec"><p>${lines(r.text)}</p><footer><b>${esc(r.author?.name ?? '')}</b>${r.author?.headline ? `, ${esc(r.author.headline)}` : ''}${r.relationship ? ` · ${esc(r.relationship)}` : ''}</footer></blockquote>`)
-      .join(''),
     featured: of('featured').map(postCard).join(''),
     posts: updates.map(postCard).join('')
   }
 }
 
-// ── What an HTML design starts from, and what it can use
+// ── What a design starts from, and what it can use
 
 /**
  * The standard profile, LinkedIn's, as HTML and CSS (the owner, 2026-10-08: "the base would be like
@@ -122,20 +116,20 @@ export const BASE_HTML = `<main class="profile">
   </section>
   <section class="card" data-if="featured"><h2>Featured</h2><div class="posts">{{featured}}</div></section>
   <section class="card" data-if="about"><h2>About</h2><p class="about">{{about}}</p></section>
-  <section class="card" data-if="posts"><h2>Updates</h2><div class="posts">{{posts}}</div></section>
+  <section class="card" data-if="posts"><h2>Posts</h2><div class="posts">{{posts}}</div></section>
   <section class="card" data-if="experience"><h2>Experience</h2>{{experience}}</section>
   <section class="card" data-if="education"><h2>Education</h2>{{education}}</section>
   <section class="card" data-if="certifications"><h2>Licenses and certifications</h2>{{certifications}}</section>
   <section class="card" data-if="projects"><h2>Projects</h2>{{projects}}</section>
   <section class="card" data-if="volunteering"><h2>Volunteering</h2>{{volunteering}}</section>
   <section class="card" data-if="skills"><h2>Skills</h2><div class="skills">{{skills}}</div></section>
-  <section class="card" data-if="recommendations"><h2>Recommendations</h2>{{recommendations}}</section>
   <section class="card" data-if="honors"><h2>Honors and awards</h2>{{honors}}</section>
   <section class="card" data-if="languages"><h2>Languages</h2>{{languages}}</section>
 </main>`
 
 export const BASE_CSS = `* { box-sizing: border-box; }
-body { margin: 0; background: #efeeea; color: #111; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+/* The page is the whole window. Oporch's menu floats over its left edge (64px) and the profile's buttons over its top right; on a phone, bars over its top and bottom (56px each). */
+body { margin: 0; padding: 76px 24px 48px 88px; background: #efeeea; color: #111; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 a { color: #1d4ed8; }
 .profile { display: flex; flex-direction: column; gap: 8px; max-width: 880px; margin: 0 auto; }
 .card { background: #fff; border: 1px solid #d6d4ce; border-radius: 8px; padding: 20px 24px; }
@@ -171,10 +165,9 @@ h2 { margin: 0 0 12px; font-size: 20px; }
 .post-date, .post-stats { color: #575757; font-size: 13px; }
 .post-text { margin: 6px 0 !important; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
 .post-image { display: block; width: 100%; max-height: 220px; margin: 6px 0; border-radius: 6px; object-fit: cover; }
-.rec { margin: 0; padding: 12px 0; border-top: 1px solid #e2e0da; }
-.rec:first-of-type { border-top: 0; padding-top: 0; }
-.rec p { margin: 0 0 6px; white-space: pre-wrap; }
-.rec footer { color: #575757; font-size: 14px; }
+@media (max-width: 767px) {
+  body { padding: 64px 0 76px; }
+}
 @media (max-width: 600px) {
   .card { padding: 16px; border-radius: 0; }
   .top { padding: 0; }
@@ -184,7 +177,7 @@ h2 { margin: 0 0 12px; font-size: 20px; }
 }
 `
 
-/** The placeholders an HTML design may use, for the editor's list and the AI prompt. */
+/** The placeholders a design may use, for the editor's list and the AI prompt. */
 export const PLACEHOLDERS = {
   name: 'your name',
   pronouns: 'your pronouns',
@@ -202,8 +195,8 @@ export const PLACEHOLDERS = {
   cover_url: 'the address of your cover picture, for an <img> or CSS',
   open_to_work: 'what work you are open to, a line of text, when you are',
   hiring: 'the word "Hiring", when you are hiring',
-  featured: 'your featured updates, each an <a class="post"> like those in {{posts}}',
-  posts: 'your latest updates, each an <a class="post"> holding p.post-date, p.post-text, img.post-image and p.post-stats',
+  featured: 'your featured posts, each an <a class="post"> like those in {{posts}}',
+  posts: 'your latest posts, each an <a class="post"> holding p.post-date, p.post-text, img.post-image and p.post-stats',
   experience: 'your experience, each a div.entry holding div.logo, div.what, h3, p.sub, p.when and p.desc',
   education: 'your education, each a div.entry',
   certifications: 'your licenses and certifications, each a div.entry, with an a.url link when there is one',
@@ -211,8 +204,7 @@ export const PLACEHOLDERS = {
   volunteering: 'your volunteering, each a div.entry',
   honors: 'your honors and awards, each a div.entry',
   languages: 'your languages, each a div.entry (h3 the language, p.sub how well)',
-  skills: 'your skills, each a span.skill',
-  recommendations: 'recommendations people wrote you, each a blockquote.rec holding p and footer'
+  skills: 'your skills, each a span.skill'
 }
 
 /** The placeholders' values for this profile: text escaped, the lists as HTML. */
@@ -231,14 +223,16 @@ function values(p, updates) {
     joined: esc(joined),
     followers: esc((p.counts?.followers ?? 0).toLocaleString('en')),
     following: esc((p.counts?.following ?? 0).toLocaleString('en')),
-    // A design made when there were connections still reads, as the people who follow them.
-    connections: esc((p.counts?.followers ?? 0).toLocaleString('en')),
     avatar: p.avatar ? `<img class="avatar" src="${esc(media(p.avatar))}" alt="">` : `<span class="avatar">${initial(p.name)}</span>`,
     avatar_url: esc(media(p.avatar)),
     cover_url: esc(media(p.cover)),
     open_to_work: esc(openLine(p.openToWork)),
     hiring: p.hiring ? 'Hiring' : '',
-    ...parts
+    ...parts,
+    // Designs made before still read: the people who follow them where connections were, and nothing where
+    // written recommendations were (a recommendation is the site's own now, over the design: the owner, 2026-10-22).
+    connections: esc((p.counts?.followers ?? 0).toLocaleString('en')),
+    recommendations: ''
   }
 }
 
@@ -253,7 +247,8 @@ const SAFE_LINK = new Set(['http:', 'https:', 'mailto:', 'tel:'])
  * What the frame will not hold, whatever the owner approved: scripts, frames, forms, embeds, and the
  * <meta>, <base> and <link> that could send the frame somewhere else; event attributes; links that are
  * not web, mail or phone addresses (no javascript:, however it is spelled); SVG animations of a link.
- * Every link opens in a new tab. An element with data-if="x" stays only when {{x}} has something.
+ * Every link to somewhere else opens in a new tab; a link to a place on the page (#projects) stays in it,
+ * so a design can use :target. An element with data-if="x" stays only when {{x}} has something.
  * DOMParser runs nothing.
  */
 function cleanDesign(html, v) {
@@ -262,7 +257,7 @@ function cleanDesign(html, v) {
     const key = el.getAttribute('data-if').trim()
     if (!Object.hasOwn(v, key) || !v[key] || v[key] === '0') el.remove()
   }
-  for (const el of doc.querySelectorAll('script, iframe, frame, frameset, object, embed, applet, form, meta, base, link, portal, video, audio, source, track')) el.remove()
+  for (const el of doc.querySelectorAll('script, noscript, iframe, frame, frameset, object, embed, applet, form, meta, base, link, portal, video, audio, source, track')) el.remove()
   for (const el of doc.querySelectorAll('animate, set')) {
     if (/href/i.test(el.getAttribute('attributeName') ?? '')) el.remove()
   }
@@ -281,307 +276,43 @@ function cleanDesign(html, v) {
       }
     }
   }
-  for (const a of doc.querySelectorAll('a, area')) {
+  for (const a of doc.querySelectorAll('a[href], area[href]')) {
+    if (a.getAttribute('href').trim().startsWith('#')) continue
     a.setAttribute('target', '_blank')
     a.setAttribute('rel', 'noopener noreferrer nofollow ugc')
   }
   return doc.body.innerHTML
 }
 
-// ── A React design: the profile as data
-
-/** An update as a React design gets it. */
-const postData = (u) => {
-  const x = u.repostOf && !u.text && !u.repostOf.gone ? u.repostOf : u
-  return {
-    id: u.id,
-    url: `${location.origin}/p?id=${u.id}`,
-    date: day(u.at),
-    at: u.at,
-    text: x.text ?? '',
-    image: x.image ? media(x.image) : null,
-    reactions: u.reactions?.total ?? 0,
-    comments: u.comments ?? 0,
-    repost: x !== u
-  }
-}
-
-/** The whole profile, as `props.profile` (the prompt below describes it to the member's AI). */
-export function profileData(p, updates = []) {
-  const of = (k) => p[k] || []
-  const o = p.openToWork
-  return {
-    name: p.name ?? '',
-    pronouns: p.pronouns ?? '',
-    headline: p.headline ?? '',
-    location: p.location ?? '',
-    about: p.about ?? '',
-    website: p.website ?? '',
-    handle: p.handle ?? '',
-    url: `${location.origin}/u?h=${encodeURIComponent(p.handle ?? '')}`,
-    joined: p.joined ? new Date(p.joined).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : '',
-    counts: { followers: p.counts?.followers ?? 0, following: p.counts?.following ?? 0, updates: p.counts?.updates ?? 0 },
-    avatar: p.avatar ? media(p.avatar) : null,
-    cover: p.cover ? media(p.cover) : null,
-    // Plain text: React escapes it itself (initial() is HTML for the placeholders).
-    initials: String(p.name || '?').trim().split(/\s+/).slice(0, 2).map((w) => [...w][0] ?? '').join('').toUpperCase(),
-    openToWork: o ? { titles: o.titles ?? [], places: o.places ?? [], types: (o.types ?? []).map((t) => WORK_TYPE[t] ?? t), startsNow: o.start === 'now', line: openLine(o) } : null,
-    hiring: !!p.hiring,
-    experience: of('experience').map((x) => ({ title: x.title ?? '', company: x.company ?? '', location: x.location ?? '', current: !!x.current, dates: span(x.start, x.end, x.current), description: x.description ?? '' })),
-    education: of('education').map((x) => ({ school: x.school ?? '', degree: x.degree ?? '', field: x.field ?? '', dates: span(x.start, x.end) })),
-    certifications: of('certifications').map((x) => ({ name: x.name ?? '', issuer: x.issuer ?? '', issued: when(x.issued).text, expires: when(x.expires).text, credentialId: x.credentialId ?? '', url: x.url ?? '' })),
-    projects: of('projects').map((x) => ({ name: x.name ?? '', dates: span(x.start, x.end), description: x.description ?? '', url: x.url ?? '' })),
-    volunteering: of('volunteering').map((x) => ({ role: x.role ?? '', organization: x.organization ?? '', cause: x.cause ?? '', current: !!x.current, dates: span(x.start, x.end, x.current), description: x.description ?? '' })),
-    honors: of('honors').map((x) => ({ title: x.title ?? '', issuer: x.issuer ?? '', date: when(x.date).text, description: x.description ?? '' })),
-    languages: of('languages').map((x) => ({ name: x.name ?? '', proficiency: PROFICIENCY[x.proficiency] ?? '' })),
-    skills: of('skills').map((s) => (typeof s === 'string' ? s : s.name)),
-    recommendations: of('recommendations').map((r) => ({ text: r.text ?? '', author: { name: r.author?.name ?? '', headline: r.author?.headline ?? '' }, relationship: r.relationship ?? '' })),
-    featured: of('featured').map(postData),
-    updates: updates.map(postData)
-  }
-}
-
-/** The standard profile again, as a React component: where a React design starts. It uses BASE_CSS. */
-export const BASE_JSX = `import { useState } from 'react'
-
-// Your profile: everything on it arrives as props.profile, and stays up to date by itself.
-export default function Profile({ profile }) {
-  const [allUpdates, setAllUpdates] = useState(false)
-  const updates = allUpdates ? profile.updates : profile.updates.slice(0, 3)
-  return (
-    <main className="profile">
-      <section className="card top">
-        <div className="cover" style={{ backgroundImage: profile.cover ? \`url("\${profile.cover}")\` : undefined }} />
-        <div className="intro">
-          {profile.avatar ? <img className="avatar" src={profile.avatar} alt="" /> : <span className="avatar">{profile.initials}</span>}
-          <h1>
-            {profile.name} {profile.pronouns && <span className="pronouns">({profile.pronouns})</span>}
-          </h1>
-          <p className="headline">{profile.headline}</p>
-          <p className="meta">
-            {profile.location && <span>{profile.location} · </span>}
-            {profile.counts.followers} followers · {profile.counts.following} following
-          </p>
-          {profile.openToWork && <p className="open">{profile.openToWork.line}</p>}
-          {profile.hiring && <p className="hiring">Hiring</p>}
-          {profile.website && <a className="site" href={profile.website}>{profile.website}</a>}
-        </div>
-      </section>
-      {profile.about && (
-        <section className="card">
-          <h2>About</h2>
-          <p className="about">{profile.about}</p>
-        </section>
-      )}
-      {profile.updates.length > 0 && (
-        <section className="card">
-          <h2>Updates</h2>
-          <div className="posts">
-            {updates.map((u) => (
-              <a className="post" href={u.url} key={u.id}>
-                <p className="post-date">{u.date}</p>
-                {u.text && <p className="post-text">{u.text}</p>}
-                {u.image && <img className="post-image" src={u.image} alt="" />}
-              </a>
-            ))}
-          </div>
-          {profile.updates.length > 3 && <button onClick={() => setAllUpdates(!allUpdates)}>{allUpdates ? 'Show fewer' : 'Show all updates'}</button>}
-        </section>
-      )}
-      {profile.experience.length > 0 && (
-        <section className="card">
-          <h2>Experience</h2>
-          {profile.experience.map((x, i) => (
-            <div className="entry" key={i}>
-              <div className="logo">{(x.company || x.title).slice(0, 1)}</div>
-              <div className="what">
-                <h3>{x.title}</h3>
-                <p className="sub">{[x.company, x.location].filter(Boolean).join(' · ')}</p>
-                <p className="when">{x.dates}</p>
-                {x.description && <p className="desc">{x.description}</p>}
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
-      {profile.education.length > 0 && (
-        <section className="card">
-          <h2>Education</h2>
-          {profile.education.map((x, i) => (
-            <div className="entry" key={i}>
-              <div className="logo">{x.school.slice(0, 1)}</div>
-              <div className="what">
-                <h3>{x.school}</h3>
-                <p className="sub">{[x.degree, x.field].filter(Boolean).join(', ')}</p>
-                <p className="when">{x.dates}</p>
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
-      {profile.projects.length > 0 && (
-        <section className="card">
-          <h2>Projects</h2>
-          {profile.projects.map((x, i) => (
-            <div className="entry" key={i}>
-              <div className="logo">{x.name.slice(0, 1)}</div>
-              <div className="what">
-                <h3>{x.name}</h3>
-                <p className="when">{x.dates}</p>
-                {x.description && <p className="desc">{x.description}</p>}
-                {x.url && <a className="url" href={x.url}>Show project</a>}
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
-      {profile.skills.length > 0 && (
-        <section className="card">
-          <h2>Skills</h2>
-          <div className="skills">{profile.skills.map((s) => <span className="skill" key={s}>{s}</span>)}</div>
-        </section>
-      )}
-    </main>
-  )
-}
-`
-
-/*
- * The frame sizes itself to its page: one script of ours inside it says how tall the page is, and the
- * page's own Content-Security-Policy lets that script run and nothing else but, for React, React itself
- * and the design's approved script (a fresh nonce each time). The parent believes only a height, only
- * from its own frames, at most 300 times each, and never more than 20000px: a page that grows when it is
- * made taller cannot run away with it.
- */
-const frames = new WeakMap()
-addEventListener('message', (e) => {
-  const f = e.source && frames.get(e.source)
-  const h = e.data?.designHeight
-  if (!f || typeof h !== 'number' || !Number.isFinite(h) || ++f.n > 300) return
-  const px = Math.min(20000, Math.max(80, Math.ceil(h)))
-  if (Math.abs(px - f.h) > 1) f.el.style.height = `${(f.h = px)}px`
-})
-
-/** A script's text, safe inside a <script> element. */
-const inline = (js) => String(js).replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--')
-
-/**
- * React, fetched once by the page and written into each React design's frame, so a frame loads no script
- * at all. A sealed frame could not fetch it from a local address anyway: the review console on
- * 127.0.0.1 showed every React design as "no component" (2026-10-21).
- */
-let reactJs
-const reactSource = () =>
-  (reactJs ??= fetch('/vendor/react.js')
-    .then((r) => {
-      if (!r.ok) throw new Error(`React could not be loaded (${r.status})`)
-      return r.text()
-    })
-    .catch((x) => {
-      reactJs = undefined
-      throw x
-    }))
-
 /**
  * A member's design, shown in a sealed frame inside `box`, filled in from the profile `p` and their latest
- * `updates`: an HTML design's placeholders, or a React design's props. Pictures only from Oporch, fonts
- * only from Google Fonts, no forms, no network for scripts, nothing that can move the page around it;
- * links open in a new tab. `onError` hears a React design that could not run (the editor's preview).
+ * `updates`. No script runs in it (no allow-scripts, and its policy allows none); pictures only from
+ * Oporch, fonts only from Google Fonts, no forms, nothing that can move the page around it; links open in a
+ * new tab. `fill`: it is the whole window (the profile), else as tall as its box makes it (the previews).
  */
-export function mountDesign(box, design, p, updates = [], onError) {
-  const nonce = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('')
-  const react = design.kind === 'react'
-  const csp = `default-src 'none'; img-src data: blob: ${new URL(API).origin}; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src data: https://fonts.gstatic.com; script-src 'nonce-${nonce}'; form-action 'none'; base-uri 'none'`
-  // Ours: the height, every link to a new tab, and for React what went wrong, said to the page.
-  const sizer = `(function(){var s=function(){parent.postMessage({designHeight:document.documentElement.getBoundingClientRect().height},'*')};addEventListener('load',function(){s();new ResizeObserver(s).observe(document.documentElement)});document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(a){a.target='_blank';a.rel='noopener noreferrer nofollow ugc'}},true);addEventListener('error',function(e){parent.postMessage({designError:String(e.message||e)},'*');var r=document.getElementById('root');if(r&&!r.childElementCount)r.textContent='This design could not be shown.'})})()`
-  let body
-  let css = String(design.css ?? '')
-  if (react) {
-    const props = JSON.stringify(profileData(p, updates)).replace(/</g, '\\u003c')
-    const run = `(function(){var C=window.Design&&(Design.default||Design.Profile);var r=document.getElementById('root');if(typeof C!=='function'){r.textContent='This design has no component to show: export one with export default.';parent.postMessage({designError:'no component exported'},'*');return}ReactDOM.createRoot(r).render(React.createElement(C,{profile:window.PROFILE}))})()`
-    body = (lib) => `<div id="root"></div><script nonce="${nonce}">${inline(lib)}</script><script nonce="${nonce}">window.PROFILE=${props};var require=function(n){if(n==='react')return React;if(n==='react-dom'||n==='react-dom/client')return ReactDOM;throw new Error('Only react and react-dom can be imported')};</script><script nonce="${nonce}">${inline(design.js)}</script><script nonce="${nonce}">${run}</script>`
-  } else {
-    const v = values(p, updates)
-    body = cleanDesign(fillDesign(design.html, v), v)
-    css = fillCss(css, v)
-  }
+export function mountDesign(box, design, p, updates = [], { fill = false } = {}) {
+  const csp = `default-src 'none'; img-src data: blob: ${new URL(API).origin}; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src data: https://fonts.gstatic.com; form-action 'none'; base-uri 'none'`
+  const v = values(p, updates)
+  const body = cleanDesign(fillDesign(design.html, v), v)
+  const css = fillCss(String(design.css ?? ''), v)
   const f = document.createElement('iframe')
-  f.className = 'design'
+  f.className = fill ? 'design fill' : 'design'
   f.title = `${p.name ?? 'Their'} profile`
-  f.setAttribute('sandbox', 'allow-scripts allow-popups allow-popups-to-escape-sandbox')
+  f.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox')
   f.setAttribute('referrerpolicy', 'no-referrer')
-  f.style.height = '600px'
-  const page = (b) =>
-    `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${csp}"><script nonce="${nonce}">${sizer}</script><style>${css.replace(/<\/style/gi, '<\\/style')}</style></head><body>${b}</body></html>`
-  if (!react) f.srcdoc = page(body)
+  f.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="${csp}"><style>${css.replace(/<\/style/gi, '<\\/style')}</style></head><body>${body}</body></html>`
   box.replaceChildren(f)
-  frames.set(f.contentWindow, { el: f, n: 0, h: 600, onError })
-  if (react)
-    reactSource().then(
-      (lib) => (f.srcdoc = page(body(lib))),
-      (x) => {
-        f.srcdoc = page('<p>This design could not be shown.</p>')
-        onError?.(x.message)
-      },
-    )
   return f
 }
-addEventListener('message', (e) => {
-  const f = e.source && frames.get(e.source)
-  if (f?.onError && typeof e.data?.designError === 'string') f.onError(e.data.designError.slice(0, 300))
-})
 
-/** Does this design show the updates itself? Then the profile page does not list them again under it. */
-export const showsPosts = (design) => (design?.kind === 'react' ? /\bupdates\b/.test(design.js ?? '') : /\{\{\s*posts\s*\}\}/.test(design?.html ?? ''))
-
-// ── The prompts a member gives their own AI, and its answer read back
+// ── The prompt a member gives their own AI, and its answer read back
 
 /**
  * The prompt for a member's AI to design their profile with (the owner, 2026-10-08: "so that the user
  * can just make minute changes and give their ai model the prompt"). The first lines are theirs to change.
  */
-export function designPrompt({ kind = 'html', headline = '', pictures = [] } = {}) {
+export function designPrompt({ headline = '', pictures = [] } = {}) {
   const pics = pictures.length ? pictures.map((u, i) => `${i + 1}. ${u}`).join('\n') : 'None yet. Leave room for a picture only if it uses my photo or cover.'
-  const shared = `- Pictures: only my photo and cover, the addresses listed below, or SVG and data: images written into the code. Pictures from other websites are blocked.
-- Fonts: Google Fonts, through @import at the top of the CSS. Nothing else from other websites loads.
-- No forms, iframes, video, audio or embeds. Links open in a new tab.
-- The page around the frame already shows my name with the Follow and Message buttons, so do not make those.
-- Keep it appropriate for a professional network: Oporch checks every design before it is shown.
-- Be creative. Make it feel like me, not a template, while keeping it easy to read.`
-  if (kind === 'react') {
-    return `Design my profile page on Oporch, a social network for jobs. Write it as one React component and its CSS.
-
-The look I want: bold and modern, a dark background, one bright accent colour, big type, and my projects shown as cards.
-What I do: ${headline || 'my job title'}
-
-HOW IT WORKS
-- My page is shown inside a frame as your component, rendered with React 19. The frame is as wide as the page and grows as tall as the design, so it must look right on a phone 320px wide and on a wide screen.
-- Write one file: \`export default function Profile({ profile }) { ... }\`. You may import from 'react' (useState, useEffect, useMemo and the other hooks) and nothing else: no other packages, no fetch, no network at all.
-- \`profile\` holds everything on my profile, kept up to date by Oporch. Use it; never type my details in yourself:
-  name, pronouns, headline, location, about (with line breaks), website, handle, url (my profile's address), joined ("October 2026"), initials,
-  counts { followers, following, updates }, avatar and cover (picture addresses, or null),
-  openToWork (null, or { titles, places, types, startsNow, line }), hiring (true or false),
-  experience [{ title, company, location, current, dates, description }],
-  education [{ school, degree, field, dates }],
-  certifications [{ name, issuer, issued, expires, credentialId, url }],
-  projects [{ name, dates, description, url }],
-  volunteering [{ role, organization, cause, current, dates, description }],
-  honors [{ title, issuer, date, description }],
-  languages [{ name, proficiency }], skills (a list of words),
-  recommendations [{ text, author { name, headline }, relationship }],
-  featured and updates: my updates, newest first, each { id, url, date, text, image (or null), reactions, comments }.
-- Any list can be empty and any text can be blank: show a section only when it has something.
-- Interactivity is welcome: tabs, filters, carousels, animations, hover effects, with state in React.
-
-RULES
-${shared}
-- At most 2 MB of code and 1 MB of CSS.
-
-MY PICTURES
-${pics}
-
-Answer with exactly two code blocks: the component in a \`\`\`jsx block, then the CSS in a \`\`\`css block.`
-  }
   const list = Object.entries(PLACEHOLDERS)
     .map(([k, v]) => `- {{${k}}}: ${v}`)
     .join('\n')
@@ -591,15 +322,20 @@ The look I want: bold and modern, a dark background, one bright accent colour, b
 What I do: ${headline || 'my job title'}
 
 HOW IT WORKS
-- My page is shown inside a frame, as the HTML you write (only what goes inside <body>, no <html> or <head>) and the CSS you write. The frame is as wide as the page and grows as tall as the design, so it must look right on a phone 320px wide and on a wide screen.
+- My page is the whole browser window, as the HTML you write (only what goes inside <body>, no <html> or <head>) and the CSS you write. It scrolls like any web page, and 100vh is the window's height, so full-screen sections work. It must look right on a phone 320px wide and on a wide screen.
+- Oporch's own menu floats over my page: a bar 64px wide down the left edge on screens 768px and wider, and on phones a bar 56px tall across the top and another across the bottom. The top right corner holds the like, recommend, share and follow buttons, about 360px wide and 60px tall. Backgrounds may run under all of these; keep text, links and pictures clear of them.
 - Oporch fills in these placeholders from my profile every time the page is shown. Use them; never type my details in yourself:
 ${list}
 - The lists ({{experience}}, {{posts}} and the rest) arrive as ready-made HTML with the classes above. Style those classes; do not try to build the lists yourself.
 - Put data-if="placeholder name" on any element that should only show when that placeholder has something, for example <section data-if="projects">. Use it on every section, since some of mine may be empty.
 
 RULES
-- No JavaScript: scripts are taken out and blocked. Animations and effects in CSS only (transitions, keyframes, gradients, filters, blend modes are all fine). For interactivity, use the React kind of design instead.
-${shared}
+- HTML and CSS only. JavaScript is taken out and could not run anyway. Use all of CSS3 instead: transitions, keyframe animations, transforms, gradients, filters, blend modes, grid, custom properties, scroll snapping. For things that open, switch or reveal, use <details> and <summary>, :hover and :focus, links to #ids with :target, or labelled checkboxes and radio buttons with :checked.
+- Pictures: only my photo and cover, the addresses listed below, or SVG and data: images written into the code. Pictures from other websites are blocked.
+- Fonts: Google Fonts, through @import at the top of the CSS. Nothing else from other websites loads.
+- No forms, iframes, video, audio or embeds. Links to other sites open in a new tab.
+- Keep it appropriate for a professional network: Oporch checks every design before it is shown.
+- Be creative. Make it feel like me, not a template, while keeping it easy to read.
 - At most 2 MB of HTML and 1 MB of CSS.
 
 MY PICTURES
@@ -608,13 +344,9 @@ ${pics}
 Answer with exactly two code blocks: the HTML in a \`\`\`html block, then the CSS in a \`\`\`css block.`
 }
 
-/** An AI's answer read back: its code blocks (```html or ```jsx, and ```css), or a whole page with <style> in it. */
-export function parseAnswer(text, kind = 'html') {
+/** An AI's answer read back: its ```html and ```css blocks, or a whole page with <style> in it. */
+export function parseAnswer(text) {
   const block = (langs) => new RegExp('```(?:' + langs + ')[^\\n]*\\n([\\s\\S]*?)```', 'i').exec(text)?.[1]
-  if (kind === 'react') {
-    const code = block('jsx|tsx|javascript|js|typescript|ts|react') ?? (/```/.test(text) ? '' : text)
-    return { jsx: code.trim(), css: (block('css') ?? '').trim() }
-  }
   let html = block('html') ?? (/```/.test(text) ? '' : text)
   let css = block('css')
   const styles = []

@@ -6,9 +6,10 @@
  * Every page is the same shell: the menus, built into the page, and a <main> filled in here. This file
  * is what every page shares: the API (api.givemeafuckingjob.com until Oporch's own domain, signed in by an
  * HttpOnly cookie no script can read), who is signed in, the menus' badges, and the pieces pages are made
- * of: people and following, updates (reactions, comments, reposts, sending, their review), dialogs,
- * pictures and cropping them, jobs and One click apply. A member's own profile design is design.js. Each
- * page's own part is /pages/<name>.js, named by <body data-page>.
+ * of: people and following, posts (the server's "updates": likes, comments beside them, reposts, sending,
+ * recommendations of a profile, their review), dialogs, pictures and cropping them, jobs and One click
+ * apply. A member's own profile design is design.js, a post's comments comments.js. Each page's own part
+ * is /pages/<name>.js, named by <body data-page>.
  *
  * Everything a person wrote goes through esc() on its way into the page. A profile design is the one
  * thing shown as written, and only inside a sandboxed frame (design.js).
@@ -74,6 +75,9 @@ export async function api(method, path, body) {
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
     if (res.status === 401 && me) signedOutNow()
+    // A route the server does not have yet (Fastify's own "Route POST:/x not found"): this site is newer than the
+    // server it reached, as on the day both are updated. Its "Not Found" is what members saw on 2026-10-22.
+    if (res.status === 404 && /^Route \S+ not found$/.test(data.message ?? '')) throw new ApiError('Oporch is being updated. Try again in a few minutes.', 404, 'updating')
     throw new ApiError(data.error || `Something went wrong (${res.status}). Try again.`, res.status, data.code)
   }
   return data
@@ -127,7 +131,7 @@ export function requireLogin(why = 'Log in to continue.') {
     `<div class="dialog-b stack" style="text-align:center;padding:30px 26px">
 <div class="brand" style="justify-content:center;margin:0">${LOGO}<span>Oporch</span></div>
 <h2>${esc(why)}</h2>
-<p class="muted">Join Oporch to apply to jobs with one click, follow people and share updates. It is free.</p>
+<p class="muted">Join Oporch to apply to jobs with one click, follow people and share your work. It is free.</p>
 <a class="btn wide" href="/login?next=${next}">Log in</a>
 <a class="btn ghost wide" href="/login?new=1&next=${next}">Create an account</a>
 </div>`,
@@ -152,7 +156,7 @@ export const emit = (name, detail) => bus.dispatchEvent(new CustomEvent(name, { 
 function paintMe() {
   document.documentElement.classList.toggle('in', !!me)
   for (const a of $$('[data-me-link]')) a.href = me ? profileUrl(me) : '/login'
-  // Jobs is a visitor's home page; a member's home page is their Feed, so theirs is /explore.
+  // Jobs is a visitor's home page; a member's is Home, so theirs is /explore.
   for (const a of $$('[data-nav=jobs]')) a.href = me ? '/explore' : '/'
   // Your face on Profile; a visitor keeps the person drawn there.
   for (const slot of $$('[data-me-av]')) {
@@ -168,8 +172,8 @@ async function badges() {
   } catch {
     return
   }
-  // Requests to follow you are answered on the Notifications page, message requests on Messages: they count there.
-  const shown = { notifications: (lastBadges.notifications || 0) + (lastBadges.requests || 0), messages: (lastBadges.messages || 0) + (lastBadges.messageRequests || 0) }
+  // Requests to follow you are answered on the Notifications page; message requests and communities are in Messages: they count there.
+  const shown = { notifications: (lastBadges.notifications || 0) + (lastBadges.requests || 0), messages: (lastBadges.messages || 0) + (lastBadges.messageRequests || 0) + (lastBadges.groups || 0) }
   for (const el of $$('[data-badge]')) {
     const n = shown[el.dataset.badge] ?? lastBadges[el.dataset.badge] ?? 0
     el.textContent = n ? (n > 99 ? '99+' : String(n)) : ''
@@ -227,7 +231,7 @@ async function relate(btn) {
   const handle = box?.dataset.rel
   if (!handle || !requireLogin('Log in to follow people.')) return
   const h = encodeURIComponent(handle)
-  const compact = !box.closest('.li-head, .li-bar')
+  const compact = !box.closest('.li-head')
   const followsYou = box.dataset.followsYou === '1'
   const change = async (method) => {
     btn.disabled = true
@@ -276,24 +280,27 @@ export const linkify = (text) =>
     .replace(/(^|[^a-z0-9._@/])@([a-z0-9][a-z0-9._]{1,28}[a-z0-9])/gi, (_, pre, h) => `${pre}<a href="/u?h=${h.toLowerCase()}">@${h}</a>`)
     .replace(/(^|[\s(])#([\p{L}\p{N}_]{2,50})/gu, (_, pre, tag) => `${pre}<a href="/search?tab=posts&amp;q=${encodeURIComponent('#' + tag)}">#${tag}</a>`)
 
-// ── Updates
+// ── Posts (the server's "updates"; the owner, 2026-10-22: "change updates to posts")
 
 /*
- * An update's actions, as Instagram draws them (the owner, 2026-10-21: "Change the like comment repost and
+ * A post's actions, as Instagram draws them (the owner, 2026-10-21: "Change the like comment repost and
  * send button interface to what instagram has"): a heart, a speech bubble, the repost arrows and the paper
  * plane, each with its count, and the bookmark on the right; then "Liked by" someone you follow, "View all
  * comments", and a box to add one. A like is the heart; reactions of LinkedIn's other kinds, from before,
- * still count as likes.
+ * still count as likes. The speech bubble opens the comments beside the post (`openComments`). A profile's
+ * own heart, recommendation and share are drawn with the last three (pages/profile.js).
  */
 const ICON = {
   heart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3s-7.6-4.6-9.3-9.5C1.5 7.4 3.8 4 7.3 4c2 0 3.7 1.1 4.7 2.8C13 5.1 14.7 4 16.7 4c3.5 0 5.8 3.4 4.6 6.8-1.7 4.9-9.3 9.5-9.3 9.5z"/></svg>',
   comment: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 16.4A9 9 0 1 0 17 19.8l4.5 1.7z"/></svg>',
   repost: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2.5 20.5 6 17 9.5"/><path d="M3.5 11.5V9.8A3.8 3.8 0 0 1 7.3 6h13.2"/><path d="M7 21.5 3.5 18 7 14.5"/><path d="M20.5 12.5v1.7a3.8 3.8 0 0 1-3.8 3.8H3.5"/></svg>',
   send: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 2.5 10.2 13.8"/><path d="m21.5 2.5-6.9 19-4.4-7.7-7.7-4.4z"/></svg>',
-  save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5.2L5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5z"/></svg>'
+  save: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21l-7-5.2L5 21V4.5A1.5 1.5 0 0 1 6.5 3h11A1.5 1.5 0 0 1 19 4.5z"/></svg>',
+  recommend: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.5 10.5V20.5H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z"/><path d="M7.5 10.5 11.4 3.2a1.8 1.8 0 0 1 3.4 1.1L14 9h5.3a2 2 0 0 1 2 2.4l-1.6 7.5a2 2 0 0 1-2 1.6H7.5"/></svg>',
+  share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5"/></svg>'
 }
 export { ICON }
-const posts = new Map() // id -> the update as last drawn, for redrawing it
+const posts = new Map() // id -> the post as last drawn, for redrawing it
 
 /** "Liked by" the first person you follow who liked it, and how many others, as Instagram says it. */
 function likedBy(u) {
@@ -303,7 +310,7 @@ function likedBy(u) {
   return `<button type="button" class="ig-by" data-likes><span class="stack-av">${f.map((p) => avatar(p, 'xs')).join('')}</span><span>Liked by <b>${esc(f[0].name)}</b>${r.total > 1 ? ` and ${plural(r.total - 1, 'other')}` : ''}</span></button>`
 }
 
-const VIA = { reacted: 'reacted to this', commented: 'commented on this' }
+const VIA = { reacted: 'liked this', commented: 'commented on this' }
 const AUDIENCE = { anyone: 'Anyone', followers: 'Followers' }
 
 /**
@@ -311,14 +318,40 @@ const AUDIENCE = { anyone: 'Anyone', followers: 'Followers' }
  * or turned down, with the owner's reason.
  */
 function reviewNote(u) {
-  if (u.review === 'pending') return '<div class="review pending"><b>Waiting for review.</b> It is on your profile now, and reaches the feed once it is approved.</div>'
+  if (u.review === 'pending') return '<div class="review pending"><b>Waiting for review.</b> It is on your profile now, and reaches people’s Home once it is approved.</div>'
   if (u.review === 'rejected') return `<div class="review rejected"><b>Not approved.</b> Only you can see it.${u.reviewNote ? ` The reviewer said: “${esc(u.reviewNote)}”` : ''} Edit it and it is checked again.</div>`
   return ''
 }
 
-/** An update as every list shows it: who and why, the text, a picture, a repost, then Instagram's actions. `opts.solo`: on its own page. */
+/**
+ * A recommendation (the owner, 2026-10-22: "the profile comes up in their follower's feeds with the person's
+ * profile on top saying xyz recommends this profile"): who recommends it, then the profile, to follow or open.
+ */
+function recommendationHtml(u, opts) {
+  const a = u.author || { name: 'Deleted account', handle: '' }
+  const p = u.recommends
+  const by = u.mine ? 'You recommend' : `<a href="${profileUrl(a)}"><b>${esc(a.name)}</b></a> recommends`
+  const head = `<div class="via rec-by">${avatar(a, 'xs')}<span class="grow">${by} ${p?.relation === 'self' ? 'your' : 'this'} profile · ${ago(u.at)}</span><button class="menu-b" type="button" data-post-menu aria-label="More actions">⋯</button></div>`
+  if (!p) return `<article class="card post rec" data-post="${u.id}">${head}<p class="pad muted small">This profile is not available.</p></article>`
+  const href = profileUrl(p)
+  const facts = [p.location ? esc(p.location) : '', plural(p.followers, 'follower'), p.likes ? plural(p.likes, 'like') : '', p.recommendations ? plural(p.recommendations, 'recommendation') : ''].filter(Boolean)
+  return `<article class="card post rec" data-post="${u.id}"${opts.solo ? ' data-solo="1"' : ''}>
+${head}
+<a class="rec-cover" href="${href}" tabindex="-1" aria-hidden="true"${p.cover ? ` style="background-image:url('${esc(media(p.cover))}')"` : ''}></a>
+<div class="rec-body">
+<a class="rec-photo" href="${href}" tabindex="-1">${avatar(p, 'xl')}</a>
+<a class="rec-name" href="${href}">${esc(p.name)}</a>
+${p.headline ? `<p class="rec-h">${esc(p.headline)}</p>` : ''}
+<p class="muted small">${facts.join(' · ')}</p>
+<div class="row wrap rec-go">${p.relation === 'self' ? '' : relButtons(p.handle, p.relation, true, { followsYou: p.followsYou })}<a class="btn ghost small" href="${href}">View profile</a></div>
+</div>
+</article>`
+}
+
+/** A post as every list shows it: who and why, the text, a picture, a repost, then Instagram's actions. `opts.solo`: on its own page. */
 export function postHtml(u, opts = {}) {
   posts.set(u.id, u)
+  if (u.recommends !== undefined) return recommendationHtml(u, opts)
   const a = u.author || { name: 'Deleted account', handle: '' }
   const line = [a.headline, `${ago(u.at)}${u.edited ? ' · Edited' : ''} · ${AUDIENCE[u.audience] ?? ''}`].filter(Boolean)
   const repost = u.repostOf
@@ -332,7 +365,7 @@ export function postHtml(u, opts = {}) {
       : ''
   const inner = (x) =>
     x.gone
-      ? '<div class="card pad muted small">This update is not available.</div>'
+      ? '<div class="card pad muted small">This post is not available.</div>'
       : `<a class="embed" href="/p?id=${x.id}"><div class="embed-h">${avatar(x.author, 's')}<div><b>${esc(x.author?.name ?? '')}</b><div class="who-h">${esc(x.author?.headline ?? '')} · ${ago(x.at)}</div></div></div>${
           x.text ? `<div class="post-t clamp">${esc(x.text)}</div>` : ''
         }${x.image ? `<img class="post-i" src="${esc(media(x.image))}" alt="" loading="lazy">` : ''}</a>`
@@ -354,26 +387,26 @@ ${actions(shown, opts.solo)}
 
 const count = (n) => (n ? `<span class="ig-n">${Number(n).toLocaleString('en')}</span>` : '')
 /**
- * The row of actions, then "Liked by", the comments and a box for one: Instagram's, under every update.
- * `solo`: the update's own page, whose comments and box are below it, so neither is repeated here.
+ * The row of actions, then "Liked by", the comments and a box for one: Instagram's, under every post.
+ * `solo`: the post's own page, whose comments and box are below it, so neither is repeated here.
  */
 function actions(u, solo = false) {
   const liked = !!u.reactions?.mine
   const n = u.reactions?.total ?? 0
   return `<div class="post-a">
 <button class="ig${liked ? ' on' : ''}" type="button" data-like aria-pressed="${liked}" aria-label="${liked ? 'Unlike' : 'Like'}">${ICON.heart}</button>${n ? `<button class="ig-n" type="button" data-likes aria-label="See who liked it">${n.toLocaleString('en')}</button>` : ''}
-<a class="ig" href="/p?id=${u.id}#say" aria-label="Comment">${ICON.comment}${count(u.comments)}</a>
+<button class="ig" type="button" data-comments aria-label="Comments">${ICON.comment}${count(u.comments)}</button>
 <button class="ig" type="button" data-repost aria-label="Repost">${ICON.repost}${count(u.reposts)}</button>
 <button class="ig" type="button" data-send aria-label="Send">${ICON.send}</button>
 <span class="grow"></span>
 <button class="ig${u.saved ? ' on' : ''}" type="button" data-save aria-pressed="${!!u.saved}" aria-label="${u.saved ? 'Remove from saved' : 'Save'}">${ICON.save}</button>
 </div>
 ${likedBy(u)}
-${!solo && u.comments ? `<a class="ig-more" href="/p?id=${u.id}#comments">${u.comments === 1 ? 'View 1 comment' : `View all ${u.comments.toLocaleString('en')} comments`}</a>` : ''}
+${!solo && u.comments ? `<button class="ig-more" type="button" data-comments>${u.comments === 1 ? 'View 1 comment' : `View all ${u.comments.toLocaleString('en')} comments`}</button>` : ''}
 ${!solo && me ? `<form class="ig-say" data-say><input maxlength="2000" placeholder="Add a comment…" aria-label="Add a comment" autocomplete="off"><button class="textbtn" type="submit" disabled>Post</button></form>` : ''}`
 }
 
-/** Every card of this update on the page, its actions drawn again after a change (the box keeps what is typed in it). */
+/** Every card of this post on the page, its actions drawn again after a change (the box keeps what is typed in it). */
 function redrawActions(u) {
   for (const card of $$(`[data-post="${u.id}"]`)) {
     const say = $('[data-say] input', card)?.value ?? ''
@@ -392,7 +425,7 @@ function redrawActions(u) {
 
 /** The heart: liked, or not any more. Any reaction from before counts as the like. */
 async function like(card, only = false) {
-  if (!requireLogin('Log in to like updates.')) return
+  if (!requireLogin('Log in to like posts.')) return
   const u = posts.get(+card.dataset.post)
   if (!u) return
   const was = !!u.reactions?.mine
@@ -416,7 +449,7 @@ async function likesDialog(id) {
   }
 }
 
-/** A comment from the box under an update, as Instagram's: shown under it at once, the count moved on. */
+/** A comment from the box under a post, as Instagram's: shown under it at once, the count moved on. */
 async function commentInline(form) {
   const card = form.closest('[data-post]')
   const u = card && posts.get(+card.dataset.post)
@@ -430,17 +463,106 @@ async function commentInline(form) {
     u.comments = (u.comments || 0) + 1
     input.value = ''
     redrawActions(u)
-    // Yours shows under the update at once, above the box, as Instagram shows it.
+    // Yours shows under the post at once, above the box, as Instagram shows it.
     for (const c of $$(`[data-post="${u.id}"]`)) {
       c.querySelector(':scope > .ig-mine')?.remove()
       const line = `<p class="ig-mine"><a href="${profileUrl(me)}"><b>${esc(me.handle)}</b></a> ${linkify(text)}</p>`
       const box = c.querySelector(':scope > .ig-say')
       box ? box.insertAdjacentHTML('beforebegin', line) : c.insertAdjacentHTML('beforeend', line)
     }
+    if (panel?.u === u) void panel.thread.refresh()
   } catch (e) {
     button.disabled = false
     toast(esc(e.message))
   }
+}
+
+/*
+ * ── A post's comments beside it (the owner, 2026-10-22: "make the comment section just appear on the right
+ * side of the post when clicked on the same page (when the user it at the top of the page, the other things on
+ * the right side might obstruct that, in that case for just the top post, make it appear on the left side.)").
+ * On the right where it is free; on the left where something stands on the right, as the column beside the top
+ * of Home does; over that column when the left has no room either; and on a screen too narrow for any of it, a
+ * sheet over the page, as Instagram's phone app opens them. It moves with its post, and goes when the post does.
+ */
+let panel = null // { u, card, el, thread, ro, close }
+const PANEL = { width: 400, least: 300, gap: 16, edge: 8 }
+
+/** Where the panel goes beside `card`, in the page's coordinates, or null when nothing fits beside it. */
+function placeFor(card) {
+  const r = card.getBoundingClientRect()
+  const height = Math.min(Math.max(r.height, 440), innerHeight - 32)
+  // Kept in sight beside its post: from the post's top, or the top of the window when the post began above it.
+  const top = Math.max(r.top, Math.min(16, r.bottom - height))
+  const rail = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail')) || 0
+  const right = { x: r.right + PANEL.gap, room: document.documentElement.clientWidth - PANEL.edge - (r.right + PANEL.gap) }
+  const left = { room: r.left - PANEL.gap - (rail + PANEL.edge) }
+  /** Is anything standing between x0 and x1 beside the post: the column on the right of Home or of a profile? */
+  const taken = (x0, x1) =>
+    $$('.aside, .li-aside').some((el) => {
+      const b = el.getBoundingClientRect()
+      return b.width > 0 && b.height > 0 && b.left < x1 && b.right > x0 && b.top < top + height && b.bottom > top
+    })
+  const at = (x, width, side, over = false) => ({ x: x + scrollX, y: top + scrollY, width, height, side, over })
+  if (right.room >= PANEL.least) {
+    const w = Math.min(PANEL.width, right.room)
+    if (!taken(right.x, right.x + w)) return at(right.x, w, 'right')
+  }
+  if (left.room >= PANEL.least) {
+    const w = Math.min(PANEL.width, left.room)
+    if (!taken(r.left - PANEL.gap - w, r.left - PANEL.gap)) return at(r.left - PANEL.gap - w, w, 'left')
+  }
+  if (right.room >= PANEL.least) return at(right.x, Math.min(PANEL.width, right.room), 'right', true)
+  return null
+}
+
+/** The comments of the post in `card`, beside it, or in a sheet on a narrow screen. Pressed again, they close. */
+async function openComments(card) {
+  const u = posts.get(+card.dataset.post)
+  if (!u) return
+  if (panel?.u === u && panel.card === card) return panel.close()
+  panel?.close()
+  const { mountComments } = await import('/comments.js')
+  const onCount = (by) => {
+    u.comments = Math.max(0, (u.comments || 0) + by)
+    redrawActions(u)
+  }
+  const place = placeFor(card)
+  if (!place) {
+    const { el } = dialog('<div class="dialog-h"><h2>Comments</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div><div class="ig-comments sheet-b"></div>', 'sheet')
+    mountComments($('.sheet-b', el), u, { onCount }).focus()
+    return
+  }
+  const el = document.createElement('aside')
+  el.className = `card cpanel${place.over ? ' over' : ''}`
+  el.setAttribute('aria-label', 'Comments')
+  el.innerHTML = '<div class="dialog-h"><h2>Comments</h2><button class="menu-b" type="button" data-close-panel aria-label="Close the comments">✕</button></div><div class="ig-comments cpanel-b"></div>'
+  document.body.append(el)
+  const thread = mountComments($('.cpanel-b', el), u, { onCount })
+  const put = (p) => Object.assign(el.style, { left: `${p.x}px`, top: `${p.y}px`, width: `${p.width}px`, height: `${p.height}px` })
+  put(place)
+  card.classList.add('commenting')
+  const onKey = (e) => e.key === 'Escape' && !$('.veil') && close()
+  const onResize = () => {
+    const p = card.isConnected && placeFor(card)
+    p ? put(p) : close()
+  }
+  // Its post grew (a long text opened, a comment under it) or left the page (another tab, deleted): it follows.
+  const ro = new ResizeObserver(() => (card.isConnected ? onResize() : close()))
+  ro.observe(card)
+  const close = () => {
+    ro.disconnect()
+    removeEventListener('resize', onResize)
+    document.removeEventListener('keydown', onKey)
+    card.classList.remove('commenting')
+    el.remove()
+    if (panel?.el === el) panel = null
+  }
+  addEventListener('resize', onResize)
+  document.addEventListener('keydown', onKey)
+  el.addEventListener('click', (e) => e.target.closest('[data-close-panel]') && close())
+  panel = { u, card, el, thread, ro, close }
+  thread.focus()
 }
 
 export async function share(url, title = 'Oporch') {
@@ -485,27 +607,46 @@ export function popMenu(anchor, items) {
   setTimeout(() => document.addEventListener('click', close, true))
 }
 
-/** The ⋯ menu of an update. */
+/** The ⋯ menu of a post, or of a recommendation. */
 function postMenu(card, btn) {
   const u = posts.get(+card.dataset.post)
   if (!u) return
   const items = []
-  items.push(['Copy link to update', () => share(`/p?id=${u.id}`)])
+  if (u.recommends !== undefined) {
+    if (u.recommends) items.push(['Copy link to the profile', () => share(profileUrl(u.recommends), u.recommends.name)])
+    if (me && u.mine && u.recommends) items.push(['Undo the recommendation', () => void unrecommend(card, u), true])
+    else if (me && !u.mine) items.push(['I don’t want to see this', () => hideUpdate(card, u)], ['Report', () => report('update', { id: u.id }), true])
+    if (me?.admin && !u.mine) items.push(['Remove (admin)', () => removeUpdate(card, u), true])
+    return popMenu(btn, items)
+  }
+  items.push(['Copy link to post', () => share(`/p?id=${u.id}`)])
   if (me && u.mine) {
     if (u.audience === 'anyone') items.push([u.featured ? 'Remove from Featured' : 'Feature on top of profile', () => toggleFeature(u)])
-    items.push(['Edit update', () => compose({ edit: u })])
+    items.push(['Edit post', () => compose({ edit: u })])
     items.push([u.audience === 'anyone' ? 'Show to followers only' : 'Show to anyone', () => changeAudience(card, u)])
-    items.push(['Delete update', () => removeUpdate(card, u), true])
+    items.push(['Delete post', () => removeUpdate(card, u), true])
   } else if (me) {
     items.push(['I don’t want to see this', () => hideUpdate(card, u)])
-    items.push(['Report update', () => report('update', { id: u.id }), true])
+    items.push(['Report post', () => report('update', { id: u.id }), true])
   }
   if (me?.admin && !u.mine) items.push(['Remove (admin)', () => removeUpdate(card, u), true])
   popMenu(btn, items)
 }
 
+/** Your recommendation of a profile, undone: out of your followers' feeds, and off both profiles. */
+async function unrecommend(card, u) {
+  try {
+    await api('DELETE', `/social/u/${encodeURIComponent(u.recommends.handle)}/recommend`)
+    card.remove()
+    emit('deleted', u.id)
+    toast('Recommendation undone.')
+  } catch (e) {
+    toast(esc(e.message))
+  }
+}
+
 async function toggleSave(u) {
-  if (!requireLogin('Log in to save updates.')) return
+  if (!requireLogin('Log in to save posts.')) return
   try {
     await api(u.saved ? 'DELETE' : 'POST', `/social/updates/${u.id}/save`)
     u.saved = !u.saved
@@ -527,13 +668,13 @@ async function toggleFeature(u) {
 async function changeAudience(card, u) {
   try {
     Object.assign(u, await api('PATCH', `/social/updates/${u.id}`, { audience: u.audience === 'anyone' ? 'followers' : 'anyone' }))
-    card.outerHTML = postHtml(u)
+    card.outerHTML = postHtml(u, { solo: !!card.dataset.solo })
   } catch (e) {
     toast(esc(e.message))
   }
 }
 async function removeUpdate(card, u) {
-  if (!confirm('Delete this update? This cannot be undone.')) return
+  if (!confirm('Delete this post? This cannot be undone.')) return
   try {
     await api('DELETE', `/social/updates/${u.id}`)
     card.remove()
@@ -546,13 +687,13 @@ async function removeUpdate(card, u) {
 async function hideUpdate(card, u) {
   try {
     await api('POST', `/social/updates/${u.id}/hide`)
-    card.innerHTML = `<div class="sec row"><span class="grow muted">Hidden. You will see fewer updates like this.</span><button class="textbtn" type="button" data-unhide="${u.id}">Undo</button></div>`
+    card.innerHTML = `<div class="sec row"><span class="grow muted">Hidden. You will see fewer posts like this.</span><button class="textbtn" type="button" data-unhide="${u.id}">Undo</button></div>`
   } catch (e) {
     toast(esc(e.message))
   }
 }
 
-/** Report a profile, update, comment or message: it goes to the owner's review. */
+/** Report a profile, post, comment or message: it goes to the owner's review. */
 export function report(kind, target) {
   if (!requireLogin('Log in to report.')) return
   const { el, close } = dialog(`<div class="dialog-h"><h2>Report</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
@@ -595,25 +736,32 @@ function repostMenu(card, btn) {
   ])
 }
 
-/** Send an update to people, in a message: the people you follow, or anyone you search for. */
+/**
+ * Send a post to people, in a message: to anyone (the owner, 2026-10-22: no blocks for not following each
+ * other), the people you follow first, anyone else found by name. A press on someone picks them, and picks
+ * them only: nothing in the list is a link to their profile.
+ */
 async function sendDialog(card) {
-  if (!requireLogin('Log in to send updates.')) return
+  if (!requireLogin('Log in to send posts.')) return
   const u = posts.get(+card.dataset.post)
   if (!u || !me) return
   const { el, close } = dialog(`<div class="dialog-h"><h2>Send</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
-<div class="dialog-b stack"><input class="input" placeholder="Search people" data-find><div data-people><div class="spin"></div></div>
-<textarea class="textarea" maxlength="4000" placeholder="Write a message (optional)" style="min-height:60px"></textarea></div>
+<div class="dialog-b stack"><input class="input" type="search" placeholder="Search people" data-find autocomplete="off" aria-label="Search people"><div class="picked" data-picked hidden></div><div class="send-list" data-people><div class="spin"></div></div>
+<textarea class="textarea" maxlength="4000" placeholder="Write a message (optional)" style="min-height:60px"></textarea>
+<p class="muted small">People who do not follow you back find it in their message requests.</p></div>
 <div class="dialog-f"><button class="btn" type="button" data-go disabled>Send</button></div>`)
   const picked = new Map()
   let following = []
   let found = null
+  const row = (p) =>
+    `<button type="button" class="person pick" data-pick="${esc(p.handle)}" aria-pressed="${picked.has(p.handle)}">${avatar(p)}<span class="who-t grow"><span class="who-n">${esc(p.name)}</span><span class="who-h">@${esc(p.handle)}</span></span><span class="tick" aria-hidden="true"></span></button>`
   const draw = () => {
-    const list = found ?? following
-    $('[data-people]', el).innerHTML =
-      list
-        .slice(0, 50)
-        .map((p) => `<label class="person check" style="align-items:center"><input type="checkbox" value="${esc(p.handle)}"${picked.has(p.handle) ? ' checked' : ''}>${who(p)}</label>`)
-        .join('') || `<p class="muted small">${found ? 'Nobody by that name.' : 'Search for someone to send it to.'}</p>`
+    const list = (found ?? following).slice(0, 50)
+    $('[data-people]', el).innerHTML = list.map(row).join('') || `<p class="muted small">${found ? 'Nobody by that name.' : 'Search for someone to send it to.'}</p>`
+    const chips = $('[data-picked]', el)
+    chips.hidden = !picked.size
+    chips.innerHTML = [...picked.values()].map((p) => `<button type="button" class="chip pick-chip" data-unpick="${esc(p.handle)}" aria-label="Do not send to ${esc(p.name)}">${esc(p.name)} ✕</button>`).join('')
+    $('[data-go]', el).disabled = !picked.size
   }
   try {
     following = (await api('GET', `/social/u/${encodeURIComponent(me.handle)}/following`)).people
@@ -630,22 +778,37 @@ async function sendDialog(card) {
       draw()
     }, 250)
   })
-  el.addEventListener('change', (e) => {
-    const box = e.target.closest('input[type=checkbox]')
-    if (!box) return
-    const p = [...following, ...(found ?? [])].find((x) => x.handle === box.value)
-    box.checked ? picked.set(box.value, p) : picked.delete(box.value)
-    $('[data-go]', el).disabled = !picked.size
-  })
-  $('[data-go]', el).addEventListener('click', async () => {
-    const text = $('textarea', el).value
-    try {
-      for (const h of picked.keys()) await api('POST', `/social/messages/${encodeURIComponent(h)}`, { text, updateId: u.id })
-      close()
-      toast(`Sent to ${plural(picked.size, 'person', 'people')}.`)
-    } catch (e) {
-      toast(esc(e.message))
+  el.addEventListener('click', (e) => {
+    const h = e.target.closest('[data-pick]')?.dataset.pick ?? e.target.closest('[data-unpick]')?.dataset.unpick
+    if (!h) return
+    if (picked.has(h)) picked.delete(h)
+    else {
+      const p = [...following, ...(found ?? [])].find((x) => x.handle === h)
+      if (p) picked.set(h, p)
     }
+    draw()
+  })
+  const go = $('[data-go]', el)
+  go.addEventListener('click', async () => {
+    const text = $('textarea', el).value
+    go.disabled = true
+    const failed = []
+    let sent = 0
+    for (const p of [...picked.values()]) {
+      try {
+        await api('POST', `/social/messages/${encodeURIComponent(p.handle)}`, { text, updateId: u.id })
+        picked.delete(p.handle)
+        sent++
+      } catch (x) {
+        failed.push(`${p.name}: ${x.message}`)
+      }
+    }
+    if (!failed.length) {
+      close()
+      return toast(`Sent to ${plural(sent, 'person', 'people')}.`)
+    }
+    draw()
+    toast(esc(`${sent ? `Sent to ${plural(sent, 'person', 'people')}. ` : ''}Not sent to ${failed.join(' ')}`), 8000)
   })
 }
 
@@ -870,19 +1033,19 @@ export async function cropImage(file, { width, height, round = false, title = 'C
   return result
 }
 
-// ── Writing an update: new, a repost with thoughts, or an edit
+// ── Writing a post: new, a repost with thoughts, or an edit
 
 export function compose(opts = {}) {
-  if (!requireLogin('Log in to share an update.')) return
+  if (!requireLogin('Log in to share a post.')) return
   const { edit, repostOf } = opts
-  const title = edit ? 'Edit update' : repostOf ? 'Repost with your thoughts' : 'Create an update'
+  const title = edit ? 'Edit post' : repostOf ? 'Repost with your thoughts' : 'Create a post'
   const { el, close } = dialog(`<div class="dialog-h"><h2>${title}</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
 <div class="dialog-b compose">
 <div class="row" style="margin-bottom:12px">${avatar(me)}<div><b>${esc(me.name)}</b><div><select class="aud" aria-label="Who can see this"><option value="anyone">Anyone</option><option value="followers">Followers only</option></select></div></div></div>
-<textarea maxlength="3000" placeholder="${repostOf ? 'Add your thoughts' : 'What do you want to talk about? Use @username to mention someone and #hashtags.'}" aria-label="Your update">${esc(edit?.text ?? '')}</textarea>
+<textarea maxlength="3000" placeholder="${repostOf ? 'Add your thoughts' : 'What do you want to talk about? Use @username to mention someone and #hashtags.'}" aria-label="Your post">${esc(edit?.text ?? '')}</textarea>
 ${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="post-a">[\s\S]*<\/article>/, '</article>')}</div>` : ''}
 <div class="preview" hidden><img alt=""><button class="btn ghost small" type="button" data-unpick>Remove</button></div>
-<p class="muted small">${me.admin ? '' : 'Every update is checked before it reaches the feed. Until then it shows on your profile.'}</p>
+<p class="muted small">${me.admin ? '' : 'Every post is checked before it reaches anyone’s Home. Until then it shows on your profile.'}</p>
 <p class="err" hidden></p>
 </div>
 <div class="dialog-f">${edit || repostOf ? '' : '<label class="btn ghost">Add a picture or GIF<input type="file" accept="image/jpeg,image/png,image/gif" hidden></label>'}<span class="grow"></span><button class="btn" type="button" data-send>${edit ? 'Save' : 'Post'}</button></div>`)
@@ -919,11 +1082,11 @@ ${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="
       close()
       if (edit) {
         Object.assign(edit, u)
-        for (const card of $$(`[data-post="${u.id}"]`)) card.outerHTML = postHtml(u)
-        toast(u.review === 'pending' ? 'Saved. It is checked again before it is back in the feed.' : 'Saved.')
+        for (const card of $$(`[data-post="${u.id}"]`)) card.outerHTML = postHtml(u, { solo: !!card.dataset.solo })
+        toast(u.review === 'pending' ? 'Saved. It is checked again before it is back in anyone’s Home.' : 'Saved.')
       } else {
         emit('posted', u)
-        const waits = u.review === 'pending' ? ' It is on your profile now, and reaches the feed once it is approved.' : ''
+        const waits = u.review === 'pending' ? ' It is on your profile now, and reaches people’s Home once it is approved.' : ''
         toast(`Posted.${waits} <a href="/p?id=${u.id}">See it</a>`, waits ? 8000 : 4500)
       }
     } catch (e) {
@@ -1027,7 +1190,7 @@ export async function saveJob(id, job, saved) {
 
 // ── Shared clicks, wherever they are on the page
 
-// The box under an update: Post lights up once something is typed, and Enter posts it.
+// The box under a post: Post lights up once something is typed, and Enter posts it.
 document.addEventListener('input', (e) => {
   const box = e.target.closest?.('[data-say] input')
   if (box) $('button', box.form).disabled = !box.value.trim()
@@ -1038,7 +1201,7 @@ document.addEventListener('submit', (e) => {
   e.preventDefault()
   void commentInline(form)
 })
-// A double click on an update's picture likes it, as a double tap does on Instagram.
+// A double click on a post's picture likes it, as a double tap does on Instagram.
 document.addEventListener('dblclick', (e) => {
   const pic = e.target.closest?.('.post-i')
   const card = pic?.closest('[data-post]')
@@ -1070,7 +1233,6 @@ document.addEventListener('click', (e) => {
     return popMenu(more, [
       ['Settings', go('/settings')],
       ['My items', go('/items')],
-      ['Who viewed your profile', go('/views')],
       ['Get the desktop app', go('/download')],
       // As the desktop app's account menu: it offers the theme that is not showing (boot.js applies it next time).
       [document.documentElement.classList.contains('dark') ? 'Light mode' : 'Dark mode', toggleTheme],
@@ -1109,6 +1271,8 @@ document.addEventListener('click', (e) => {
   }
   if (t.closest('[data-like]')) return void like(card)
   if (t.closest('[data-likes]')) return void likesDialog(+card.dataset.post)
+  // The comments: beside the post in a list; on the post's own page they are under it, so its box is the one meant.
+  if (t.closest('[data-comments]')) return card.dataset.solo ? void $('#comments textarea')?.focus() : void openComments(card)
   if (t.closest('[data-save]')) {
     const u = posts.get(+card.dataset.post)
     return u ? void toggleSave(u) : undefined

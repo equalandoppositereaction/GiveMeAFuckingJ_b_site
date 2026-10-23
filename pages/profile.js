@@ -1,22 +1,39 @@
 /**
  * A profile, /u?h=<username>, laid out as LinkedIn's (the owner, 2026-10-08: "the profile should be like
  * linkedin") with Instagram's and X's following (2026-10-21): the top card (cover, photo with its
- * #OpenToWork or #Hiring ring, name, pronouns, headline, place, contact info, updates, followers and
- * following, "Followed by", Follow and Message), then Featured, About, Updates (the owner, 2026-10-21:
- * "Change 'Activity' of a profile to 'Updates'"), Experience, Education, Licenses and certifications,
- * Projects, Volunteering, Skills (endorsed by people who follow each other), Recommendations, Honors and
- * awards, Languages; people to follow beside it.
+ * #OpenToWork or #Hiring ring, name, pronouns, headline, place, contact info, posts, followers and
+ * following, "Followed by", Follow and Message), then Featured, About, Posts, Experience, Education,
+ * Licenses and certifications, Projects, Volunteering, Skills, who recommends them and whom they recommend,
+ * Honors and awards, Languages; beside it your profile's views, or people to follow.
  *
- * A private account shows its card and sections to everyone, and its updates and lists to its followers.
- * A member's own design (Settings, Design your profile), once approved, takes the page: the buttons stay in
- * a bar above it, and the Updates under it unless the design shows the updates itself.
+ * The owner, 2026-10-22: a heart with the profile's likes, its recommendations and Share on its top right
+ * (who liked it and who recommends it open from their numbers); its posts as small tiles, LinkedIn's
+ * Activity, "Show all posts" opening them as a feed (/u?h=<username>&view=posts); skills as a grid, three a
+ * row and centred, a long one taking two or three places; "posts", not "updates"; "just number of views".
+ * A recommendation is one press: the people who follow you see the profile in their Home (server: people.ts).
+ *
+ * A private account shows its card and sections to everyone, and its posts and lists to its followers. A
+ * member's own design (Settings, Design your profile), once approved, is the whole page, with the site's
+ * menu and the profile's buttons over it ("just an overlay of the app's icons and sidebar as default").
  *
  * Visitors without an account see a profile its owner left public.
  */
-import { $, api, avatar, dialog, esc, me, media, on, param, personRow, plural, popMenu, postHtml, profileUrl, relButtons, report, requireLogin, share, toast, who } from '/app.js'
-import { mountDesign, openLine, profileParts, showsPosts } from '/design.js'
+import { $, ago, api, avatar, dialog, esc, ICON, me, media, on, param, personRow, plural, popMenu, postHtml, profileUrl, relButtons, report, requireLogin, share, toast, who } from '/app.js'
+import { mountDesign, openLine, profileParts } from '/design.js'
 
 const LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'
+const PEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
+const MORE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>'
+/** The lists a profile's numbers open: their titles, and what an empty one says. */
+const LISTS = {
+  followers: ['Followers', 'No followers yet.'],
+  following: ['Following', 'Not following anyone yet.'],
+  likes: ['Liked by', 'Nobody has liked this profile yet.'],
+  recommenders: ['Recommended by', 'Nobody has recommended this profile yet.'],
+  recommends: ['Recommends', 'No profiles recommended yet.']
+}
+/** Tiles of posts on the profile; the rest are on the page of all their posts. */
+const TILES = 10
 
 export default async function ({ main }) {
   const handle = param('h') || me?.handle
@@ -38,6 +55,26 @@ export default async function ({ main }) {
   const h = encodeURIComponent(p.handle)
   // The menu's Profile is yours: it is not lit on someone else's.
   if (!self) for (const a of document.querySelectorAll('[data-nav=profile]')) a.removeAttribute('aria-current')
+  if (param('view') === 'posts') return allPosts(main, p, self)
+
+  // ── The top right (the owner, 2026-10-22): the heart and its likes, the recommendations, Share.
+  const count = (n, which, label) => `<button class="pf-n" type="button" data-pf-list="${which}" aria-label="${label}">${Number(n).toLocaleString('en')}</button>`
+  const cluster = () => {
+    const liked = !!p.likes.mine
+    const recd = !!p.recommendations.mine
+    return `${
+      self
+        ? `<span class="ig pf-i" title="Likes of your profile">${ICON.heart}</span>`
+        : `<button class="ig pf-like${liked ? ' on' : ''}" type="button" data-pf-like aria-pressed="${liked}" aria-label="${liked ? 'Unlike this profile' : 'Like this profile'}" title="${liked ? 'Unlike' : 'Like'}">${ICON.heart}</button>`
+    }${count(p.likes.total, 'likes', 'See who liked this profile')}${
+      self
+        ? `<span class="ig pf-i" title="Recommendations of your profile">${ICON.recommend}</span>`
+        : `<button class="ig pf-rec${recd ? ' on' : ''}" type="button" data-pf-rec aria-pressed="${recd}" aria-label="${recd ? 'Undo your recommendation' : 'Recommend this profile to the people who follow you'}" title="${recd ? 'Recommended' : 'Recommend'}">${ICON.recommend}</button>`
+    }${count(p.recommendations.total, 'recommenders', 'See who recommends this profile')}<button class="ig" type="button" data-pf-share aria-label="Share this profile" title="Share">${ICON.share}</button>`
+  }
+  const drawCluster = () => {
+    for (const el of main.querySelectorAll('[data-pf]')) el.innerHTML = cluster()
+  }
 
   const parts = profileParts(p)
   const actions = () =>
@@ -47,7 +84,9 @@ export default async function ({ main }) {
   const nameLine = `<h1>${esc(p.name)}</h1>${p.pronouns ? `<span class="muted">(${esc(p.pronouns)})</span>` : ''}${p.private ? `<span class="lock" title="Private account">${LOCK}</span>` : ''}${p.followsYou ? '<span class="chip">Follows you</span>' : ''}`
   /** Instagram's three numbers; followers and following open their lists. */
   const counts = () =>
-    `<p class="li-counts"><span><b>${p.counts.updates.toLocaleString('en')}</b> ${p.counts.updates === 1 ? 'update' : 'updates'}</span><button type="button" class="link-quiet" data-list="followers"><b data-followers>${p.counts.followers.toLocaleString('en')}</b> ${p.counts.followers === 1 ? 'follower' : 'followers'}</button><button type="button" class="link-quiet" data-list="following"><b>${p.counts.following.toLocaleString('en')}</b> following</button></p>`
+    `<p class="li-counts"><span><b>${p.counts.posts.toLocaleString('en')}</b> ${p.counts.posts === 1 ? 'post' : 'posts'}</span><button type="button" class="link-quiet" data-pf-list="followers"><b data-followers>${p.counts.followers.toLocaleString('en')}</b> ${
+      p.counts.followers === 1 ? 'follower' : 'followers'
+    }</button><button type="button" class="link-quiet" data-pf-list="following"><b>${p.counts.following.toLocaleString('en')}</b> following</button></p>`
   const followedBy = () => {
     const f = p.followedBy
     if (!f?.count) return ''
@@ -56,38 +95,52 @@ export default async function ({ main }) {
     return `<p class="faces li-by"><span class="stack-av">${f.faces.map((x) => avatar(x, 'xs')).join('')}</span><span>Followed by ${names.join(', ')}${rest > 0 ? ` and ${plural(rest, 'other')} you follow` : ''}</span></p>`
   }
 
-  const section = (title, body, extra = '') => (body ? `<section class="card li-sec"><div class="sec-h"><h2>${title}</h2>${extra}</div>${body}</section>` : '')
-  const canEndorse = !!p.mutual
-  const skills = p.skills.length
-    ? p.skills
-        .map(
-          (s) => `<div class="skill-row" data-skill="${esc(s.name)}"><div class="grow"><b>${esc(s.name)}</b>${
-            s.endorsements ? `<div class="faces">${s.faces.length ? `<span class="stack-av">${s.faces.map((f) => avatar(f, 'xs')).join('')}</span>` : ''}<span>${plural(s.endorsements, 'endorsement')}</span></div>` : ''
-          }</div>${canEndorse ? `<button class="btn ${s.endorsed ? 'ghost' : 'line'} small" type="button" data-endorse aria-pressed="${s.endorsed}">${s.endorsed ? 'Endorsed' : 'Endorse'}</button>` : ''}</div>`
-        )
-        .join('')
-    : ''
-  const recs = p.recommendations
-    .map(
-      (r) => `<div class="rec-row">${r.author ? `<a href="${profileUrl(r.author)}">${avatar(r.author)}</a>` : ''}<div class="grow"><div class="who-n">${r.author ? `<a href="${profileUrl(r.author)}">${esc(r.author.name)}</a>` : 'Deleted account'}</div>${
-        r.author?.headline ? `<div class="who-h">${esc(r.author.headline)}</div>` : ''
-      }<div class="muted small">${new Date(r.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} · ${esc(r.relationship)}</div><p class="pre" style="margin-top:8px">${esc(r.text)}</p></div></div>`
-    )
-    .join('')
-  const writeRec = canEndorse ? '<button class="btn line small" type="button" data-recommend>Write a recommendation</button>' : ''
-  const locked = p.locked
-    ? `<section class="card li-sec locked">${LOCK}<div><h2>This account is private</h2><p class="muted">${p.relation === 'requested' ? `You asked to follow ${esc(p.name)}. You will see their updates once they say yes.` : `Follow ${esc(p.name)} to see their updates, followers and who they follow.`}</p></div></section>`
-    : ''
-  const updatesBox = p.locked
-    ? ''
-    : `<section class="card li-sec" id="updates-box"><div class="sec-h"><div><h2>Updates</h2><div class="muted small">${plural(p.counts.followers, 'follower')}</div></div>${
-        self ? '<button class="btn line small" type="button" data-act="create">Create an update</button>' : ''
-      }</div><div id="updates" class="stack"><div class="spin"></div></div><div id="updates-more"></div></section>`
+  // ── A design of their own: the whole page, the site's menu and these buttons over it.
+  if (p.design) {
+    main.innerHTML = `<div class="pd" id="design"></div>
+<div class="pd-bar" role="toolbar" aria-label="${esc(p.name)}"><div class="pf-acts" data-pf>${cluster()}</div>${
+      self
+        ? `<a class="ig" href="/settings#design" aria-label="Edit your design" title="Edit your design">${PEN}</a>`
+        : `<span class="pd-rel">${me ? relButtons(p.handle, p.relation, true, { followsYou: p.followsYou }) : relButtons(p.handle, 'none', true)}</span><a class="ig" href="/messages?h=${h}" aria-label="Message ${esc(p.name)}" title="Message">${ICON.send}</a>`
+    }<button class="ig" type="button" data-more aria-label="More" title="More">${MORE}</button></div>`
+    const updates = p.locked ? [] : await api('GET', `/social/u/${h}/updates`).then((r) => r.updates, () => [])
+    mountDesign($('#design', main), p.design, p, updates, { fill: true })
+    return wire()
+  }
 
-  const standard = () => `<section class="card li-top">
+  const section = (title, body, extra = '', id = '') => (body ? `<section class="card li-sec"${id ? ` id="${id}"` : ''}><div class="sec-h"><h2>${title}</h2>${extra}</div>${body}</section>` : '')
+  /** Skills as a grid (the owner, 2026-10-22: "3 per row, centered"); a long one takes two places or three (`fitSkills`). */
+  const skills = p.skills.length
+    ? `<div class="skill-grid" data-skills>${p.skills
+        .map(
+          (s) => `<div class="sk" data-skill="${esc(s.name)}"><b class="sk-n" title="${esc(s.name)}">${esc(s.name)}</b><span class="sk-e" data-sk-count>${s.endorsements ? plural(s.endorsements, 'endorsement') : ''}</span>${
+            me && !self ? `<button class="sk-b${s.endorsed ? ' on' : ''}" type="button" data-endorse aria-pressed="${s.endorsed}">${s.endorsed ? 'Endorsed' : 'Endorse'}</button>` : ''
+          }</div>`
+        )
+        .join('')}</div>`
+    : ''
+  /** People as small cards: who recommends them, and whom they recommend. */
+  const cards = (list) => `<div class="pf-people">${list.map((x) => `<a class="pf-person" href="${profileUrl(x)}">${avatar(x, 'l')}<b>${esc(x.name)}</b>${x.headline ? `<span class="who-h">${esc(x.headline)}</span>` : ''}</a>`).join('')}</div>`
+  const seeAll = (n, shown, which) => (n > shown ? `<button class="textbtn" type="button" data-pf-list="${which}">See all ${n.toLocaleString('en')}</button>` : '')
+  const recommendedBy = p.recommendedBy.length ? section('Recommended by', cards(p.recommendedBy), seeAll(p.recommendations.total, p.recommendedBy.length, 'recommenders')) : ''
+  const recommending = p.recommending?.people.length
+    ? section(self ? 'Profiles you recommend' : `Profiles ${esc(p.name)} recommends`, cards(p.recommending.people), seeAll(p.recommending.count, p.recommending.people.length, 'recommends'))
+    : ''
+  const locked = p.locked
+    ? `<section class="card li-sec locked">${LOCK}<div><h2>This account is private</h2><p class="muted">${p.relation === 'requested' ? `You asked to follow ${esc(p.name)}. You will see their posts once they say yes.` : `Follow ${esc(p.name)} to see their posts, followers and who they follow.`}</p></div></section>`
+    : ''
+  const postsBox = p.locked
+    ? ''
+    : `<section class="card li-sec" id="posts-box"><div class="sec-h"><div><h2>Posts</h2><div class="muted small">${plural(p.counts.followers, 'follower')}</div></div>${
+        self ? '<button class="btn line small" type="button" data-act="create">Create a post</button>' : ''
+      }</div><div class="tiles" id="tiles"><div class="spin"></div></div><div id="tiles-f"></div></section>`
+
+  main.innerHTML = `<div class="li">
+<div class="li-main">
+<section class="card li-top">
 <div class="li-cover"></div>
 <div class="li-head">
-<div class="li-photo">${avatar(p, 'xl')}</div>
+<div class="li-photo-row"><div class="li-photo">${avatar(p, 'xl')}</div><div class="pf-acts" data-pf>${cluster()}</div></div>
 <div class="li-name">${nameLine}</div>
 ${p.headline ? `<p class="li-headline">${esc(p.headline)}</p>` : ''}
 <p class="li-meta">${p.location ? `${esc(p.location)} · ` : ''}<button type="button" class="link" data-contact>Contact info</button></p>
@@ -99,125 +152,186 @@ ${p.hiring ? `<div class="otw hiring"><b>Hiring</b><div class="muted small">${es
 </div>
 </section>
 ${locked}
-${section('Featured', p.featured.map(postHtml).join(''))}
+${p.featured.length ? section('Featured', `<div class="tiles">${p.featured.map(tile).join('')}</div>`) : ''}
 ${section('About', p.about ? `<p class="pre">${esc(p.about)}</p>` : '')}
-${updatesBox}
+${postsBox}
 ${section('Experience', parts.experience)}
 ${section('Education', parts.education)}
 ${section('Licenses and certifications', parts.certifications)}
 ${section('Projects', parts.projects)}
 ${section('Volunteering', parts.volunteering)}
 ${section('Skills', skills)}
-${section('Recommendations', recs || (writeRec ? `<p class="muted">${esc(p.name)} has no recommendations yet.</p>` : ''), writeRec)}
+${recommendedBy}
+${recommending}
 ${section('Honors and awards', parts.honors)}
 ${section('Languages', parts.languages)}
 ${
   self && !p.about && !p.experience.length && !p.education.length && !p.skills.length
     ? '<section class="card li-sec"><h2>Your profile is empty</h2><p class="muted">Add an About, your experience, education and skills so people know you, or fill it in from the desktop app.</p><p style="margin-top:12px"><a class="btn" href="/settings#edit">Fill in your profile</a></p></section>'
     : ''
-}`
-
-  // A design of their own: the buttons in a bar above it (the frame cannot hold them).
-  const designed = () => `<section class="card li-bar">${avatar(p, 'l')}<div class="grow"><div class="who-n">${nameLine.replace(/<\/?h1>/g, '')}</div>${p.headline ? `<div class="who-h">${esc(p.headline)}</div>` : ''}${counts()}<div class="li-meta small"><button type="button" class="link" data-contact>Contact info</button></div></div><div class="row wrap li-actions">${actions()}</div></section>
-${locked}
-<div id="design" class="design-box"></div>
-${showsPosts(p.design) ? '' : updatesBox}`
-
-  main.innerHTML = `<div class="li${p.design ? ' designed' : ''}">
-<div class="li-main">${p.design ? designed() : standard()}</div>
+}
+</div>
 <aside class="li-aside" id="aside"></aside>
 </div>`
-  if (p.cover && !p.design) $('.li-cover', main).style.backgroundImage = `url("${media(p.cover)}")`
-
-  // ── Updates: their latest, all of them on request.
-  const box = $('#updates', main)
-  const moreBox = $('#updates-more', main)
-  let got = []
-  let cursor = null
-  let more = false
-  let all = false
-  async function loadUpdates() {
-    const r = await api('GET', `/social/u/${h}/updates${cursor ? `?before=${cursor}` : ''}`)
-    got = got.concat(r.updates)
-    cursor = r.updates.at(-1)?.id ?? cursor
-    more = r.more
-    return r.updates
-  }
-  function drawUpdates() {
-    if (!box) return
-    const shown = all ? got : got.slice(0, 3)
-    box.innerHTML = shown.map(postHtml).join('') || (self ? '<p class="muted">You have not shared an update yet.</p>' : `<p class="muted">${esc(p.name)} has not shared an update yet.</p>`)
-    moreBox.innerHTML = (!all && (got.length > 3 || more)) || (all && more) ? `<button class="btn ghost wide" type="button" data-all style="margin-top:12px">${all ? 'Show more' : 'Show all updates'}</button>` : ''
+  if (p.cover) $('.li-cover', main).style.backgroundImage = `url("${media(p.cover)}")`
+  const grid = $('[data-skills]', main)
+  if (grid) {
+    fitSkills(grid)
+    new ResizeObserver(() => fitSkills(grid)).observe(grid)
   }
 
-  if (p.design) {
-    // A design that shows the updates gets them before it is drawn.
-    if (showsPosts(p.design) && !p.locked) await loadUpdates().catch(() => {})
-    mountDesign($('#design', main), p.design, p, got)
-  }
-  if (box) {
-    loadUpdates()
-      .then(drawUpdates)
-      .catch((e) => (box.innerHTML = `<p class="muted">${esc(e.message)}</p>`))
+  // ── Posts: their latest as tiles, all of them on their own page.
+  const tiles = $('#tiles', main)
+  if (tiles) {
+    api('GET', `/social/u/${h}/updates`)
+      .then((r) => {
+        tiles.innerHTML = r.updates.slice(0, TILES).map(tile).join('') || `<p class="muted">${self ? 'You have not shared a post yet.' : `${esc(p.name)} has not shared a post yet.`}</p>`
+        if (r.updates.length) $('#tiles-f', main).innerHTML = `<a class="btn ghost wide tiles-all" href="/u?h=${h}&view=posts">Show all posts</a>`
+      })
+      .catch((e) => (tiles.innerHTML = `<p class="muted">${esc(e.message)}</p>`))
   }
 
-  // ── Beside it: who viewed your profile, people to follow; for a visitor, the way in.
+  // ── Beside it: your profile's views, people to follow; for a visitor, the way in.
   const aside = $('#aside', main)
   if (me) {
-    const cards = []
+    const boxes = []
     if (self) {
-      cards.push(
+      boxes.push(
         api('GET', '/social/me/views')
-          .then((v) => `<section class="card li-sec"><h2>Who viewed your profile</h2><p><b>${plural(v.total, 'profile view')}</b> <span class="muted small">in the past 90 days</span></p><p class="muted small">${plural(v.week, 'view')} this week</p><p style="margin-top:10px"><a class="textbtn" href="/views">See who viewed</a></p></section>`)
+          .then((v) => `<section class="card li-sec"><h2>Profile views</h2><p class="pf-views"><b>${v.total.toLocaleString('en')}</b> <span class="muted small">in the past 90 days</span></p><p class="muted small">${plural(v.week, 'view')} this week</p></section>`)
           .catch(() => '')
       )
     }
-    cards.push(
+    boxes.push(
       api('GET', '/social/suggestions?limit=6')
         .then((r) => {
-          const people = r.people.filter((x) => x.handle !== p.handle).slice(0, 5)
-          return people.length ? `<section class="card li-sec"><div class="sec-h"><h2>Suggested for you</h2><a class="textbtn" href="/search">See all</a></div>${people.map((x) => personRow(x, x.reason)).join('')}</section>` : ''
+          const list = r.people.filter((x) => x.handle !== p.handle).slice(0, 5)
+          return list.length ? `<section class="card li-sec"><div class="sec-h"><h2>Suggested for you</h2><a class="textbtn" href="/search">See all</a></div>${list.map((x) => personRow(x, x.reason)).join('')}</section>` : ''
         })
         .catch(() => '')
     )
-    Promise.all(cards).then((html) => (aside.innerHTML = html.join('')))
+    Promise.all(boxes).then((html) => (aside.innerHTML = html.join('')))
   } else {
     const next = encodeURIComponent(location.pathname + location.search)
     aside.innerHTML = `<section class="card li-sec"><h2>${esc(p.name)} is on Oporch</h2><p class="muted">Join to follow ${esc(p.name)}, apply to jobs with one click and see which jobs the people you follow apply to.</p><div class="stack" style="margin-top:14px"><a class="btn" href="/login?new=1&next=${next}">Join Oporch</a><a class="btn ghost" href="/login?next=${next}">Log in</a></div></section>`
   }
+  return wire()
 
-  // ── The buttons
+  // ── The buttons, on the standard profile and over a design alike
+  function wire() {
+    main.addEventListener('click', async (e) => {
+      const t = e.target
+      if (t.closest('[data-contact]')) return contact()
+      const list = t.closest('[data-pf-list]')
+      if (list) return void people(list.dataset.pfList)
+      if (t.closest('[data-pf-share]')) return void share(`/u?h=${h}`, p.name)
+      if (t.closest('[data-pf-like]')) return void like(t.closest('[data-pf-like]'))
+      if (t.closest('[data-pf-rec]')) return void recommend(t.closest('[data-pf-rec]'))
+      const menu = t.closest('[data-more]')
+      if (menu) return moreMenu(menu)
+      const endorse = t.closest('[data-endorse]')
+      if (endorse) return void endorseSkill(endorse)
+    })
+    // Following from here moves the count with it.
+    on('relation', (r) => {
+      if (r.handle !== p.handle || typeof r.followers !== 'number') return
+      p.counts.followers = r.followers
+      for (const b of main.querySelectorAll('[data-followers]')) b.textContent = r.followers.toLocaleString('en')
+    })
+  }
 
+  async function like(btn) {
+    if (!requireLogin('Log in to like profiles.')) return
+    btn.disabled = true
+    try {
+      const r = await api(p.likes.mine ? 'DELETE' : 'POST', `/social/u/${h}/like`)
+      p.likes = { total: r.likes, mine: r.liked }
+      drawCluster()
+    } catch (x) {
+      btn.disabled = false
+      toast(esc(x.message))
+    }
+  }
+
+  async function recommend(btn) {
+    if (!requireLogin('Log in to recommend profiles.')) return
+    btn.disabled = true
+    try {
+      const r = await api(p.recommendations.mine ? 'DELETE' : 'POST', `/social/u/${h}/recommend`)
+      p.recommendations = { total: r.recommendations, mine: r.recommended }
+      drawCluster()
+      toast(r.recommended ? `You recommend ${esc(p.name)}. The people who follow you see it in their Home.` : 'Your recommendation is undone.')
+    } catch (x) {
+      btn.disabled = false
+      toast(esc(x.message))
+    }
+  }
+
+  async function endorseSkill(btn) {
+    const box = btn.closest('[data-skill]')
+    const yes = btn.getAttribute('aria-pressed') !== 'true'
+    btn.disabled = true
+    try {
+      const r = await api(yes ? 'POST' : 'DELETE', `/social/u/${h}/endorse`, { skill: box.dataset.skill })
+      btn.setAttribute('aria-pressed', String(r.endorsed))
+      btn.textContent = r.endorsed ? 'Endorsed' : 'Endorse'
+      btn.classList.toggle('on', r.endorsed)
+      $('[data-sk-count]', box).textContent = r.endorsements ? plural(r.endorsements, 'endorsement') : ''
+    } catch (x) {
+      toast(esc(x.message))
+    }
+    btn.disabled = false
+  }
+
+  function moreMenu(btn) {
+    const items = [['Share profile', () => share(`/u?h=${h}`, p.name)]]
+    // Over a design, the lists the standard profile shows are here.
+    if (p.design) {
+      items.push(['Contact info', contact], [`Followers (${p.counts.followers.toLocaleString('en')})`, () => void people('followers')], [`Following (${p.counts.following.toLocaleString('en')})`, () => void people('following')])
+      if (p.recommending?.count) items.push([self ? 'Profiles you recommend' : 'Profiles they recommend', () => void people('recommends')])
+    }
+    if (self) items.push(['Settings', () => (location.href = '/settings')])
+    if (me && !self) {
+      items.push(['Report profile', () => report('profile', { handle: p.handle }), true])
+      items.push(['Block', block, true])
+    }
+    popMenu(btn, items)
+  }
+
+  /** A list of people a number on the profile opens: its own followers and recommenders can be removed, as on Instagram. */
   async function people(which) {
-    if (!requireLogin('Log in to see who follows them.')) return
-    const title = which === 'followers' ? 'Followers' : 'Following'
+    if (!requireLogin('Log in to see who they are.')) return
+    const [title, none] = LISTS[which]
     const { el } = dialog(`<div class="dialog-h"><h2>${title}</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div><div class="dialog-b"><div class="spin"></div></div>`, 'small')
+    const removable = self && (which === 'followers' || which === 'recommenders')
     try {
       const r = await api('GET', `/social/u/${h}/${which}`)
       $('.dialog-b', el).innerHTML =
-        r.people
-          .map((x) =>
-            // Your own followers can be removed, as on Instagram; they are not told.
-            self && which === 'followers'
-              ? `<div class="person" data-follower="${esc(x.handle)}">${who(x, x.headline)}<button class="btn ghost small" type="button" data-remove-follower>Remove</button></div>`
-              : personRow(x, x.headline)
-          )
-          .join('') || `<p class="muted">${which === 'followers' ? 'No followers yet.' : 'Not following anyone yet.'}</p>`
-      el.addEventListener('click', async (e) => {
-        const row = e.target.closest('[data-follower]')
-        if (!row || !e.target.closest('[data-remove-follower]')) return
-        try {
-          await api('DELETE', `/social/followers/${encodeURIComponent(row.dataset.follower)}`)
-          row.remove()
+        r.people.map((x) => (removable ? `<div class="person" data-removable="${esc(x.handle)}">${who(x, x.headline)}<button class="btn ghost small" type="button" data-remove>Remove</button></div>` : personRow(x, x.headline))).join('') ||
+        `<p class="muted">${none}</p>`
+    } catch (x) {
+      $('.dialog-b', el).innerHTML = `<p class="muted">${esc(x.message)}</p>`
+      return
+    }
+    el.addEventListener('click', async (e) => {
+      const row = e.target.closest('[data-removable]')
+      if (!row || !e.target.closest('[data-remove]')) return
+      try {
+        if (which === 'followers') {
+          // They are not told, as on Instagram.
+          await api('DELETE', `/social/followers/${encodeURIComponent(row.dataset.removable)}`)
           p.counts.followers = Math.max(0, p.counts.followers - 1)
           for (const b of main.querySelectorAll('[data-followers]')) b.textContent = p.counts.followers.toLocaleString('en')
-        } catch (x) {
-          toast(esc(x.message))
+        } else {
+          const res = await api('DELETE', `/social/me/recommenders/${encodeURIComponent(row.dataset.removable)}`)
+          p.recommendations.total = res.recommendations
+          drawCluster()
         }
-      })
-    } catch (e) {
-      $('.dialog-b', el).innerHTML = `<p class="muted">${esc(e.message)}</p>`
-    }
+        row.remove()
+      } catch (x) {
+        toast(esc(x.message))
+      }
+    })
   }
 
   function contact() {
@@ -234,83 +348,74 @@ ${p.joined ? row('Joined', esc(new Date(p.joined).toLocaleDateString('en-GB', { 
     )
   }
 
-  function recommend() {
-    const { el, close } = dialog(`<div class="dialog-h"><h2>Recommend ${esc(p.name)}</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
-<div class="dialog-b stack">
-<label class="field"><span>How do you know ${esc(p.name)}?</span><input maxlength="120" data-rel-how placeholder="Ex: I managed ${esc(p.name)} directly at Acme"></label>
-<label class="field"><span>Your recommendation</span><textarea maxlength="3000" data-rel-text placeholder="What is ${esc(p.name)} great at? What was it like to work together?"></textarea></label>
-<p class="muted small">${esc(p.name)} decides whether it shows on their profile.</p><p class="err" hidden></p></div>
-<div class="dialog-f"><button class="btn" type="button" data-go>Send</button></div>`)
-    $('[data-go]', el).addEventListener('click', async () => {
-      try {
-        await api('POST', `/social/u/${h}/recommend`, { relationship: $('[data-rel-how]', el).value, text: $('[data-rel-text]', el).value })
-        close()
-        toast(`Sent. ${esc(p.name)} chooses whether to show it.`)
-      } catch (x) {
-        const err = $('.err', el)
-        err.textContent = x.message
-        err.hidden = false
-      }
-    })
-  }
-
   async function block() {
     if (!confirm(`Block ${p.name}? Neither of you will see the other, and neither follows the other any more.`)) return
     try {
       await api('POST', `/social/block/${h}`)
       toast(`${esc(p.name)} is blocked. Unblock them in Settings.`)
-      setTimeout(() => location.replace('/feed'), 1200)
+      setTimeout(() => location.replace('/home'), 1200)
     } catch (x) {
       toast(esc(x.message))
     }
   }
+}
 
-  main.addEventListener('click', async (e) => {
-    const t = e.target
-    if (t.closest('[data-contact]')) return contact()
-    const list = t.closest('[data-list]')
-    if (list) return void people(list.dataset.list)
-    if (t.closest('[data-all]')) {
-      if (all && more) await loadUpdates().catch(() => {})
-      all = true
-      return drawUpdates()
+/** A post as a small tile, LinkedIn's Activity: who and when, its first lines, its picture, its likes and comments. */
+function tile(u) {
+  const x = u.repostOf && !u.text && !u.repostOf.gone ? u.repostOf : u
+  const did = u.repostOf ? 'reposted this' : 'posted this'
+  const stats = [u.reactions?.total ? plural(u.reactions.total, 'like') : '', u.comments ? plural(u.comments, 'comment') : ''].filter(Boolean).join(' · ')
+  return `<a class="tile" href="/p?id=${x.id}">
+<span class="tile-h">${avatar(u.author, 'xs')}<span><b>${esc(u.author?.name ?? '')}</b> ${did} · ${ago(u.at)}</span></span>
+${u.review === 'pending' ? '<span class="tile-w">Waiting for review</span>' : u.review === 'rejected' ? '<span class="tile-w bad">Not approved</span>' : ''}
+${x.text ? `<span class="tile-t">${esc(x.text)}</span>` : ''}
+${x.image ? `<img class="tile-i${x.text ? '' : ' only'}" src="${esc(media(x.image))}" alt="" loading="lazy">` : ''}
+${stats ? `<span class="tile-s">${stats}</span>` : ''}
+</a>`
+}
+
+/** Skills in rows of three, centred; one whose name does not fit takes two places, or the row. */
+function fitSkills(grid) {
+  const gap = parseFloat(getComputedStyle(grid).columnGap) || 10
+  const place = (grid.clientWidth - 2 * gap) / 3
+  for (const el of grid.children) {
+    el.classList.remove('w2', 'w3')
+    const name = el.querySelector('.sk-n')
+    const pad = el.clientWidth - name.clientWidth
+    const need = name.scrollWidth + pad
+    if (need > 2 * place + gap) el.classList.add('w3')
+    else if (need > place) el.classList.add('w2')
+  }
+}
+
+/** All of someone's posts, as a feed (the owner, 2026-10-22: "when 'see all' button is pressed, the rest of the posts are showed in a feed format"). */
+async function allPosts(main, p, self) {
+  const h = encodeURIComponent(p.handle)
+  main.innerHTML = `<div class="page narrow posts-page stack">
+<div class="card pad row">${avatar(p, 'l')}<div class="grow"><h1 class="pf-ph">${self ? 'Your posts' : `${esc(p.name)}’s posts`}</h1><div class="muted small">${plural(p.counts.posts, 'post')}</div></div><a class="btn ghost small" href="/u?h=${h}">Back to the profile</a></div>
+<div id="all" class="stack"><div class="spin"></div></div>
+<div id="all-more"></div>
+</div>`
+  document.title = `${p.name}’s posts | Oporch`
+  const list = $('#all', main)
+  const moreBox = $('#all-more', main)
+  if (p.locked) {
+    list.innerHTML = `<div class="card empty"><h2>This account is private</h2><p>Follow ${esc(p.name)} to see their posts.</p><a class="btn" href="/u?h=${h}">Back to the profile</a></div>`
+    return
+  }
+  let cursor = null
+  const load = async () => {
+    try {
+      const r = await api('GET', `/social/u/${h}/updates${cursor ? `?before=${cursor}` : ''}`)
+      if (!cursor) list.innerHTML = ''
+      list.insertAdjacentHTML('beforeend', r.updates.map((u) => postHtml(u)).join(''))
+      cursor = r.updates.at(-1)?.id ?? cursor
+      if (!list.children.length) list.innerHTML = `<div class="card empty"><p>${self ? 'You have not shared a post yet.' : `${esc(p.name)} has not shared a post yet.`}</p></div>`
+      moreBox.innerHTML = r.more ? '<div class="center"><button class="btn ghost" type="button">Show more</button></div>' : ''
+    } catch (e) {
+      moreBox.innerHTML = `<p class="muted">${esc(e.message)}</p>`
     }
-    if (t.closest('[data-recommend]')) return recommend()
-    const menu = t.closest('[data-more]')
-    if (menu) {
-      const items = [['Share profile', () => share(`/u?h=${h}`, p.name)]]
-      if (self) items.push(['Who viewed your profile', () => (location.href = '/views')])
-      if (me && !self && p.mutual) items.push(['Recommend', recommend])
-      if (me && !self) {
-        items.push(['Report profile', () => report('profile', { handle: p.handle }), true])
-        items.push(['Block', block, true])
-      }
-      return popMenu(menu, items)
-    }
-    const endorse = t.closest('[data-endorse]')
-    if (endorse) {
-      const row = endorse.closest('[data-skill]')
-      const on = endorse.getAttribute('aria-pressed') !== 'true'
-      endorse.disabled = true
-      try {
-        const r = await api(on ? 'POST' : 'DELETE', `/social/u/${h}/endorse`, { skill: row.dataset.skill })
-        endorse.setAttribute('aria-pressed', String(r.endorsed))
-        endorse.textContent = r.endorsed ? 'Endorsed' : 'Endorse'
-        endorse.classList.toggle('ghost', r.endorsed)
-        endorse.classList.toggle('line', !r.endorsed)
-        const count = row.querySelector('.faces > span:last-child')
-        if (count) count.textContent = plural(r.endorsements, 'endorsement')
-        else if (r.endorsements) row.querySelector('.grow').insertAdjacentHTML('beforeend', `<div class="faces"><span>${plural(r.endorsements, 'endorsement')}</span></div>`)
-      } catch (x) {
-        toast(esc(x.message))
-      }
-      endorse.disabled = false
-    }
-  })
-  // Following from here moves the count with it.
-  on('relation', (r) => {
-    if (r.handle !== p.handle || typeof r.followers !== 'number') return
-    p.counts.followers = r.followers
-    for (const b of main.querySelectorAll('[data-followers]')) b.textContent = r.followers.toLocaleString('en')
-  })
+  }
+  moreBox.addEventListener('click', (e) => e.target.closest('button') && void load())
+  await load()
 }

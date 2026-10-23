@@ -5,7 +5,7 @@
 import { $, api, esc, LOGO, me, param } from '/app.js'
 
 /** Where to go afterwards: a path on this site, never another site. */
-const safeNext = (v) => (v && v.startsWith('/') && !v.startsWith('//') && !v.startsWith('/\\') ? v : '/feed')
+const safeNext = (v) => (v && v.startsWith('/') && !v.startsWith('//') && !v.startsWith('/\\') ? v : '/home')
 
 export default async function ({ main }) {
   const next = safeNext(param('next'))
@@ -38,7 +38,7 @@ export default async function ({ main }) {
 <button class="btn wide" type="submit">Log in</button><p class="err" hidden></p></form>
 <p class="alt"><button class="textbtn" type="button" data-go="forgot">Forgot password?</button></p>
 <p class="alt">New to Oporch? <button class="textbtn" type="button" data-go="new">Create an account</button></p>`,
-    new: () => `<p class="sub">Apply to jobs with one click, follow people and share updates. Free.</p>
+    new: () => `<p class="sub">Apply to jobs with one click, follow people and share your work. Free.</p>
 <form data-f="new"><input class="input" name="name" autocomplete="name" placeholder="Full name" maxlength="100" required>
 <input class="input" name="email" type="email" autocomplete="email" placeholder="Email" required>
 <p class="muted small" style="margin:-4px 2px 2px;text-align:left">An address at Gmail, Outlook, Hotmail, Yahoo, iCloud, Proton or another major email provider.</p>

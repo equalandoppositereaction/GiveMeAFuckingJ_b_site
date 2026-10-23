@@ -1,8 +1,8 @@
 /**
  * Notifications, as Instagram has them. Requests to follow you (a private account's) come first, with
- * Confirm and Delete; then what happened: new followers (with Follow back), likes, comments, replies,
- * mentions, reposts, endorsements, recommendations, being made a community's admin, and the owner's review
- * of your updates and your profile design. Opening the list reads it.
+ * Confirm and Delete; then what happened: new followers (with Follow back), likes of your posts and of your
+ * profile, comments, replies, mentions, reposts, endorsements, recommendations of your profile, being made a
+ * community's admin, and the owner's review of your posts and your profile design. Opening the list reads it.
  */
 import { $, ago, api, avatar, esc, LOGO, me, media, on, profileUrl, refreshBadges, relButtons, toast, who } from '/app.js'
 
@@ -49,19 +49,19 @@ export default async function ({ main }) {
   const quote = (t) => (t ? `: “${esc(t.slice(0, 100))}${t.length > 100 ? '…' : ''}”` : '')
   const line = (n) => {
     const who = n.actor ? `<b>${esc(n.actor.name)}</b>` : ''
-    const post = n.update ? `/p?id=${n.update.id}` : '/feed'
+    const post = n.update ? `/p?id=${n.update.id}` : '/home'
     const person = n.actor ? profileUrl(n.actor) : '/search'
     switch (n.kind) {
       case 'like':
-        return [`${who} liked your update${quote(n.update?.text)}`, post]
+        return [`${who} liked your post${quote(n.update?.text)}`, post]
       case 'comment':
-        return [`${who} commented on your update${quote(n.text)}`, `${post}#say`]
+        return [`${who} commented on your post${quote(n.text)}`, `${post}#say`]
       case 'reply':
         return [`${who} replied to your comment${quote(n.text)}`, `${post}#say`]
       case 'mention':
         return [`${who} mentioned you${quote(n.text)}`, post]
       case 'repost':
-        return [`${who} reposted your update${quote(n.text)}`, post]
+        return [`${who} reposted your post${quote(n.text)}`, post]
       case 'comment_like':
         return [`${who} liked your comment${quote(n.text)}`, post]
       case 'follow':
@@ -71,20 +71,22 @@ export default async function ({ main }) {
         return [`${who} accepted your request to follow them.`, person]
       case 'endorse':
         return [`${who} endorsed you for ${esc(n.text ?? 'a skill')}.`, profileUrl(me)]
+      case 'profile_like':
+        return [`${who} liked your profile.`, person]
       case 'recommend':
-        return [`${who} wrote you a recommendation. Choose whether it shows on your profile.`, '/settings#recommendations']
+        return [`${who} recommended your profile to the people who follow them.`, person]
       case 'update_approved':
-        return [`Your update was approved and is in the feed now${quote(n.update?.text)}`, post]
+        return [`Your post was approved, and people can see it in their Home now${quote(n.update?.text)}`, post]
       case 'update_rejected':
-        return [`Your update was not approved${n.text ? `. The reviewer said: “${esc(n.text)}”` : '.'} Only you can see it.`, post]
+        return [`Your post was not approved${n.text ? `. The reviewer said: “${esc(n.text)}”` : '.'} Only you can see it.`, post]
       case 'design_approved':
         return ['Your profile design was approved. It is on your profile now.', profileUrl(me)]
       case 'design_rejected':
         return [`Your profile design was not approved${n.text ? `: ${esc(n.text)}` : '.'}`, '/settings#design']
       case 'group_admin':
-        return [`${who} made you an admin of <b>${esc(n.group?.name ?? n.text ?? 'a community')}</b>.`, n.group ? `/groups?id=${n.group.id}` : '/groups']
+        return [`${who} made you an admin of <b>${esc(n.group?.name ?? n.text ?? 'a community')}</b>.`, n.group ? `/messages?g=${n.group.id}` : '/messages?box=communities']
       default:
-        return ['Something happened on Oporch.', '/feed']
+        return ['Something happened on Oporch.', '/home']
     }
   }
 
@@ -108,7 +110,7 @@ export default async function ({ main }) {
           .join('')
       )
       before = r.notifications.at(-1)?.id ?? before
-      if (!list.children.length) list.innerHTML = '<div class="empty"><h2>Nothing yet</h2><p>When people follow you, or react to and comment on your updates, it shows here.</p></div>'
+      if (!list.children.length) list.innerHTML = '<div class="empty"><h2>Nothing yet</h2><p>When people follow you, like your profile or your posts, or comment on them, it shows here.</p></div>'
       more.innerHTML = r.more ? '<div class="center" style="margin-top:16px"><button class="btn ghost" type="button">Show older</button></div>' : ''
       refreshBadges()
     } catch (e) {

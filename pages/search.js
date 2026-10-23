@@ -1,6 +1,6 @@
 /**
  * Search (the owner, 2026-10-08): people, by name, place and current company, among everyone, the people
- * you follow or your followers; and updates by their words or #hashtags. Under the search bar, before
+ * you follow or your followers; and posts by their words or #hashtags. Under the search bar, before
  * anything is typed: people to follow, ranked as X ranks Who To Follow (server: social/rank.ts), with why
  * each is suggested ("Followed by…", "Follows you"), as Instagram says it. Jobs are searched on Jobs.
  */
@@ -10,8 +10,8 @@ export default async function ({ main }) {
   if (!me) return void location.replace(`/login?next=${encodeURIComponent(location.pathname + location.search)}`)
   main.innerHTML = `<div class="page narrow">
 <form id="f" role="search" class="stack" style="gap:10px">
-<input class="input big" id="q" type="search" placeholder="Search people, updates or #hashtags" aria-label="Search" autocomplete="off" enterkeyhint="search">
-<div class="feed-tabs" role="tablist" aria-label="What to search"><button type="button" role="tab" data-tab="people">People</button><button type="button" role="tab" data-tab="posts">Updates</button></div>
+<input class="input big" id="q" type="search" placeholder="Search people, posts or #hashtags" aria-label="Search" autocomplete="off" enterkeyhint="search">
+<div class="feed-tabs" role="tablist" aria-label="What to search"><button type="button" role="tab" data-tab="people">People</button><button type="button" role="tab" data-tab="posts">Posts</button></div>
 <div class="filter-row" id="filters">
 <select class="input" id="among" aria-label="Among"><option value="">Everyone</option><option value="following">People you follow</option><option value="followers">Your followers</option></select>
 <input class="input" id="loc" placeholder="Location" aria-label="Location" autocomplete="off">
@@ -74,7 +74,7 @@ export default async function ({ main }) {
   async function posts(next = false) {
     const text = q.value.trim()
     if (!text) {
-      out.innerHTML = '<div class="card empty"><p>Search updates by their words, or a #hashtag.</p></div>'
+      out.innerHTML = '<div class="card empty"><p>Search posts by their words, or a #hashtag.</p></div>'
       return
     }
     const mine = ++asked
@@ -86,7 +86,7 @@ export default async function ({ main }) {
       if (next) {
         $('#more-posts', out)?.remove()
         $('#found', out).insertAdjacentHTML('beforeend', html)
-      } else out.innerHTML = `<div class="stack" id="found">${html || `<div class="card empty"><p>No updates match “${esc(text)}”.</p></div>`}</div>`
+      } else out.innerHTML = `<div class="stack" id="found">${html || `<div class="card empty"><p>No posts match “${esc(text)}”.</p></div>`}</div>`
       before = r.updates.at(-1)?.id ?? before
       if (r.more && r.updates.length) out.insertAdjacentHTML('beforeend', '<div class="center" id="more-posts" style="margin-top:16px"><button class="btn ghost" type="button">Show more</button></div>')
     } catch (e) {

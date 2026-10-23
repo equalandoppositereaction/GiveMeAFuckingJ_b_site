@@ -1,7 +1,7 @@
 /**
- * My items, as LinkedIn has them: updates you saved, jobs you saved, and the jobs you applied to from
+ * My items, as LinkedIn has them: posts you saved, jobs you saved, and the jobs you applied to from
  * the website, with Apply ("Did you apply?" said yes) or One click apply (your desktop app applied), and
- * those sent to your desktop app that it has not applied to yet.
+ * those sent to your desktop app that it has not applied to yet. Home links here, beside its tabs.
  */
 import { $, ago, api, didYouApply, esc, me, param, postHtml, toast } from '/app.js'
 
@@ -10,7 +10,7 @@ export default async function ({ main }) {
   let tab = ['posts', 'saved', 'applied'].includes(param('tab')) ? param('tab') : 'posts'
   main.innerHTML = `<div class="page narrow">
 <div class="page-h"><h1>My items</h1></div>
-<div class="feed-tabs" role="tablist" style="margin-bottom:16px"><button type="button" role="tab" data-tab="posts">Saved updates</button><button type="button" role="tab" data-tab="saved">Saved jobs</button><button type="button" role="tab" data-tab="applied">Applied jobs</button></div>
+<div class="feed-tabs" role="tablist" style="margin-bottom:16px"><button type="button" role="tab" data-tab="posts">Saved posts</button><button type="button" role="tab" data-tab="saved">Saved jobs</button><button type="button" role="tab" data-tab="applied">Applied jobs</button></div>
 <div id="out"><div class="spin"></div></div>
 </div>`
   const out = $('#out', main)
@@ -32,7 +32,7 @@ export default async function ({ main }) {
         if (more) {
           $('#more-saved', out)?.remove()
           $('#saved-list', out).insertAdjacentHTML('beforeend', html)
-        } else out.innerHTML = `<div class="stack" id="saved-list">${html || '<div class="card empty"><h2>No saved updates</h2><p>Save an update from its ⋯ menu to read it later.</p></div>'}</div>`
+        } else out.innerHTML = `<div class="stack" id="saved-list">${html || '<div class="card empty"><h2>No saved posts</h2><p>Save a post with the bookmark under it to read it later.</p></div>'}</div>`
         if (r.more) out.insertAdjacentHTML('beforeend', '<div class="center" id="more-saved" style="margin-top:16px"><button class="btn ghost" type="button">Show more</button></div>')
         return
       }

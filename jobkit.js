@@ -1,6 +1,6 @@
 /**
- * A website job, wherever it is shown (the jobs page, pages/jobsearch.js, and the feed's Jobs tab,
- * pages/feed.js): its salary and details as words, its link and details from its chunk file
+ * A website job, wherever it is shown (the jobs page, pages/jobsearch.js, and the Jobs tab of Home,
+ * pages/home.js): its salary and details as words, its link and details from its chunk file
  * (jobs/<chunk>.json, scripts/build-jobs.mjs), and its three buttons. Apply opens the job's own page (and
  * asks "Did you apply?" on the way back, app.js), Save keeps it in My items, One click apply hands it to
  * the person's desktop app. A job is { id, title, loc, flags, day, pay, chunk, detail }, and the element

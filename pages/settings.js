@@ -6,15 +6,18 @@
  *
  * - Your profile: Edit profile (the photo and cover, cropped before they are sent, the cover shown as it
  *   will be; name, username, pronouns, headline, place, website, About), Experience and more (LinkedIn's
- *   sections and skills, one at a time), Open to work and hiring, Design your profile (HTML and CSS, or
- *   React, with a prompt for the member's own AI and a live preview), Recommendations.
+ *   sections and skills, one at a time), Open to work and hiring, Design your profile (HTML and CSS, with
+ *   a prompt for the member's own AI and a live preview).
  * - Who can see your content: Account privacy (a private account, as Instagram's), Blocked.
  * - Your account: Password and account, Appearance.
+ *
+ * Recommendations are one press on a profile since 2026-10-22, nothing to manage here: someone's
+ * recommendation of you is taken off from the list of who recommends you, on your profile.
  *
  * Nothing here is for sale: no prices, no payments (the owner, 2026-10-08).
  */
 import { $, API, api, avatar, cropImage, esc, me, param, profileUrl, toast, toggleTheme, upload, who } from '/app.js'
-import { BASE_CSS, BASE_HTML, BASE_JSX, designPrompt, mb, mountDesign, parseAnswer, PLACEHOLDERS, PROFICIENCY, WORK_TYPE } from '/design.js'
+import { BASE_CSS, BASE_HTML, designPrompt, mb, mountDesign, parseAnswer, PLACEHOLDERS, PROFICIENCY, WORK_TYPE } from '/design.js'
 
 const HANDLE = /^[a-z0-9][a-z0-9._]{1,28}[a-z0-9]$/
 
@@ -64,7 +67,6 @@ const ICON = {
   sections: svg('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'),
   work: svg('<path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/>'),
   design: svg('<path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 3-4 3h-2a2 2 0 0 0-1 3.7A2 2 0 0 1 12 22z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/>'),
-  recommendations: svg('<path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>'),
   privacy: svg('<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
   blocked: svg('<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>'),
   account: svg('<circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M17 6l3 3M14.5 8.5l2 2"/>'),
@@ -72,13 +74,13 @@ const ICON = {
 }
 /** The list on the left, Instagram's groups. */
 const GROUPS = [
-  ['Your profile', [['edit', 'Edit profile'], ['sections', 'Experience and more'], ['work', 'Open to work and hiring'], ['design', 'Design your profile'], ['recommendations', 'Recommendations']]],
+  ['Your profile', [['edit', 'Edit profile'], ['sections', 'Experience and more'], ['work', 'Open to work and hiring'], ['design', 'Design your profile']]],
   ['Who can see your content', [['privacy', 'Account privacy'], ['blocked', 'Blocked']]],
   ['Your account', [['account', 'Password and account'], ['appearance', 'Appearance']]]
 ]
 const PANES = GROUPS.flatMap(([, items]) => items.map(([id]) => id))
-// Links from before this layout (#profile) still land somewhere sensible.
-const OLD = { profile: 'edit' }
+// Links from before this layout (#profile), and to the Recommendations there were, still land somewhere sensible.
+const OLD = { profile: 'edit', recommendations: 'edit' }
 
 export default async function ({ main }) {
   if (!me) return void location.replace('/login?next=/settings')
@@ -275,7 +277,7 @@ ${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or th
       const body = () =>
         kind === 'skills'
           ? `<label class="field"><span>Skills, separated by commas (up to 60)</span><input data-k="skills" data-dirty value="${esc(draft.skills.join(', '))}" placeholder="SQL, Excel, Python"></label>
-<p class="muted small" style="margin-top:6px">People who follow each other can endorse them. A skill you take off takes its endorsements with it.</p>`
+<p class="muted small" style="margin-top:6px">Anyone on Oporch can endorse them. A skill you take off takes its endorsements with it.</p>`
           : `<div class="sec-h"><h3>${SECTIONS[kind].title}</h3><button class="btn ghost small" type="button" data-add>${SECTIONS[kind].add}</button></div>
 <div class="list-ed">${(draft[kind] || []).map(entryCard).join('') || '<p class="muted small">Nothing added yet.</p>'}</div>
 <p class="muted small" style="margin-top:10px">Dates as 2023-04 (April 2023), or a year.</p>`
@@ -381,57 +383,30 @@ ${
       await designPane()
     },
 
-    // ── Recommendations: written for you (shown when you say so) and by you
-    async recommendations() {
-      const r = await api('GET', '/social/me/recommendations')
-      const STATE = { pending: '<span class="state pending">New</span>', shown: '<span class="state approved">On your profile</span>', hidden: '<span class="state">Hidden</span>' }
-      const card = (x, mine) => `<div class="rec-ed" data-rec="${x.id}"><div class="row">${who(mine ? x.about : x.author, x.relationship)}${mine ? '' : STATE[x.state] ?? ''}</div><p class="pre small">${esc(x.text)}</p><div class="row wrap">${
-        mine
-          ? '<button class="btn ghost small" type="button" data-rec-del>Delete</button>'
-          : `${x.state !== 'shown' ? '<button class="btn small" type="button" data-rec-state="shown">Show on my profile</button>' : '<button class="btn ghost small" type="button" data-rec-state="hidden">Hide</button>'}<button class="btn ghost small" type="button" data-rec-del>Delete</button>`
-      }</div></div>`
-      pane.innerHTML = frame(
-        'Recommendations',
-        `<div class="card pad"><h3 style="margin-bottom:10px">Received</h3>${r.received.map((x) => card(x, false)).join('') || '<p class="muted small">None yet.</p>'}</div>
-<div class="card pad" style="margin-top:16px"><h3 style="margin-bottom:10px">Given</h3>${r.given.map((x) => card(x, true)).join('') || '<p class="muted small">None yet. Recommend someone you follow each other with, from their profile.</p>'}</div>`,
-        'People who follow each other with you can recommend you. A recommendation shows on your profile only once you choose to show it.'
-      )
-      pane.onclick = async (e) => {
-        const el = e.target.closest('[data-rec]')
-        if (!el) return
-        const state = e.target.closest('[data-rec-state]')?.dataset.recState
-        try {
-          if (state) await api('PATCH', `/social/recommendations/${el.dataset.rec}`, { state })
-          else if (e.target.closest('[data-rec-del]')) {
-            if (!confirm('Delete this recommendation?')) return
-            await api('DELETE', `/social/recommendations/${el.dataset.rec}`)
-          } else return
-          void DRAW.recommendations()
-        } catch (x) {
-          toast(esc(x.message))
-        }
-      }
-    },
-
     // ── Account privacy: saved as soon as it is changed
     async privacy() {
       const tick = (key, title, text) => `<label class="toggle"><span><b>${title}</b><span class="muted small">${text}</span></span><input type="checkbox" role="switch" data-p="${key}"${me[key] ? ' checked' : ''}></label>`
       pane.innerHTML = frame(
         'Account privacy',
         `<div class="card">
-${tick('privateAccount', 'Private account', 'Only the people you approve can follow you and see your updates, your followers and who you follow. Your name, photo, headline and profile sections stay visible to everyone, so recruiters can find you. Turning it off approves everyone waiting.')}
-${tick('profilePublic', 'Visitors without an account can see my profile', 'Off: only people signed in to Oporch can. Updates for anyone stay open to whoever has their link.')}
+${tick('privateAccount', 'Private account', 'Only the people you approve can follow you and see your posts, your followers and who you follow. Your name, photo, headline and profile sections stay visible to everyone, so recruiters can find you, and a profile you recommend still shows that you do. Turning it off approves everyone waiting.')}
+${tick('profilePublic', 'Visitors without an account can see my profile', 'Off: only people signed in to Oporch can. Posts for anyone stay open to whoever has their link.')}
 ${tick('appliesVisible', 'People who follow me can see the jobs I apply to', 'They see your face on a job you applied to with Apply or One click apply. Off: you are only counted, never named.')}
-${tick('privateViewing', 'View profiles privately', 'People whose profiles you open see "Someone on Oporch" instead of your name. Like on LinkedIn, you then see only how many people viewed yours, not who.')}
-<label class="toggle"><span><b>Who can see my email address</b><span class="muted small">In your profile’s Contact info.</span></span><select class="input" data-p="emailVisible" style="width:auto"><option value="mutual"${me.emailVisible !== 'nobody' ? ' selected' : ''}>People who follow each other with me</option><option value="nobody"${me.emailVisible === 'nobody' ? ' selected' : ''}>Nobody</option></select></label>
+<label class="toggle"><span><b>Who can see my email address</b><span class="muted small">In your profile’s Contact info. Never people without an account.</span></span><select class="input" data-p="emailVisible" style="width:auto">${[
+          ['anyone', 'Anyone on Oporch'],
+          ['mutual', 'People who follow each other with me'],
+          ['nobody', 'Nobody']
+        ]
+          .map(([v, t]) => `<option value="${v}"${(me.emailVisible ?? 'mutual') === v ? ' selected' : ''}>${t}</option>`)
+          .join('')}</select></label>
 </div>`,
-        'Who can follow you, see your updates, and find you.'
+        'Who can follow you, see your posts, and find you.'
       )
       pane.onchange = async (e) => {
         const box = e.target.closest('[data-p]')
         if (!box) return
         const value = box.type === 'checkbox' ? box.checked : box.value
-        if (box.dataset.p === 'privateAccount' && !value && !confirm('Make your account public? Anyone can then follow you and see your updates, and everyone waiting to follow you is approved.')) {
+        if (box.dataset.p === 'privateAccount' && !value && !confirm('Make your account public? Anyone can then follow you and see your posts, and everyone waiting to follow you is approved.')) {
           box.checked = true
           return
         }
@@ -471,7 +446,7 @@ ${tick('privateViewing', 'View profiles privately', 'People whose profiles you o
         'Password and account',
         `<div class="card pad stack">
 <p>Signed in as <b>${esc(me.email)}</b>. The same account signs in to the desktop app.</p>
-<div class="row wrap"><a class="btn ghost" href="/items">My items</a><a class="btn ghost" href="/views">Who viewed your profile</a><button class="btn ghost" type="button" data-signout>Log out</button></div>
+<div class="row wrap"><a class="btn ghost" href="/items">My items</a><button class="btn ghost" type="button" data-signout>Log out</button></div>
 </div>
 <div class="card pad stack" style="margin-top:16px"><h3>Change your password</h3>
 <div class="stack" style="max-width:360px">
@@ -480,7 +455,7 @@ ${tick('privateViewing', 'View profiles privately', 'People whose profiles you o
 <p class="muted small">Every other device, the app included, signs out.</p>
 <div><button class="btn" type="button" data-pw>Change password</button></div></div></div>
 <div class="card pad stack danger-zone" style="margin-top:16px"><h3>Delete your account</h3>
-<p class="muted small">This deletes your account, profile, updates, comments, messages, followers and pictures, here and in the app. It cannot be undone.</p>
+<p class="muted small">This deletes your account, profile, posts, comments, likes, recommendations, messages, followers and pictures, here and in the app. It cannot be undone.</p>
 <label class="field" style="max-width:360px"><span>Your password</span><input type="password" autocomplete="current-password" data-delpw></label>
 <div><button class="btn danger" type="button" data-delete>Delete everything</button></div></div>`,
         'Your sign-in, your password, and your account.'
@@ -545,7 +520,7 @@ ${tick('privateViewing', 'View profiles privately', 'People whose profiles you o
     }
   }
 
-  // ── Design your profile: HTML and CSS or React, your AI's or your own, its pictures, a live preview, the review
+  // ── Design your profile: HTML and CSS (the owner, 2026-10-22: "just html and css"), your AI's or your own, its pictures, a live preview, the review
   /** `keep`: the code typed so far, when the pane is drawn again (a picture added or removed). */
   async function designPane(keep = null) {
     const [d, mine, pics, updates] = await Promise.all([
@@ -561,21 +536,14 @@ ${tick('privateViewing', 'View profiles privately', 'People whose profiles you o
       approved: '<span class="state approved">Approved and on your profile</span>',
       rejected: '<span class="state rejected">Not approved</span>'
     }[d.state]
-    let kind = keep?.kind ?? (d.kind === 'react' ? 'react' : 'html')
-    // Each kind keeps its own code while you switch between them; nothing designed yet starts from the standard profile.
-    const code = keep?.code ?? { html: d.kind === 'html' && d.html.trim() ? d.html : BASE_HTML, react: d.kind === 'react' && d.jsx.trim() ? d.jsx : BASE_JSX }
-    const css = keep?.css ?? { html: d.kind === 'html' && d.html.trim() ? d.css : BASE_CSS, react: d.kind === 'react' && d.jsx.trim() ? d.css : BASE_CSS }
-    const kept = () => ({ kind, code: { ...code }, css: { ...css } })
+    // Nothing designed yet starts from the standard profile.
+    const code = keep ?? { html: d.html.trim() ? d.html : BASE_HTML, css: d.html.trim() ? d.css : BASE_CSS }
     const address = (f) => `${API}${f.path}`
     pane.innerHTML = frame(
       `Design your profile ${state}`,
       `${d.state === 'rejected' && d.note ? `<p class="err">Why it was not approved: ${esc(d.note)}</p>` : ''}
 ${d.live && d.state !== 'approved' ? '<p class="muted small">Your last approved design stays up until this one is approved.</p>' : ''}
 ${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still try one out here.</p>'}
-<div class="kind-pick" role="radiogroup" aria-label="How you make it">
-<label><input type="radio" name="kind" value="html"${kind === 'html' ? ' checked' : ''}><span><b>HTML and CSS</b><span class="muted small">A page and its styles. Your details fill in through placeholders.</span></span></label>
-<label><input type="radio" name="kind" value="react"${kind === 'react' ? ' checked' : ''}><span><b>React</b><span class="muted small">A component that gets your whole profile. Tabs, filters, animation: anything interactive.</span></span></label>
-</div>
 <details class="ai card"><summary><b>Design it with your AI</b><span class="muted small">Copy a prompt into the AI you use, then paste its answer</span></summary>
 <div class="stack" style="padding:0 18px 18px">
 <p class="muted small">Change the first lines to say how you want it to look, then copy the whole prompt. Upload your pictures first (below) so the prompt lists them.</p>
@@ -586,13 +554,14 @@ ${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still
 </div></details>
 <div class="studio">
 <div class="stack studio-code">
-<label class="field"><span data-code-label></span><textarea class="code" data-d="code" data-dirty spellcheck="false"></textarea></label>
-<p class="err small" data-compile hidden></p>
+<label class="field"><span>HTML</span><textarea class="code" data-d="code" data-dirty spellcheck="false"></textarea></label>
 <label class="field"><span>CSS</span><textarea class="code" data-d="css" data-dirty spellcheck="false"></textarea></label>
-<details class="code-v" data-help></details>
+<details class="code-v"><summary>What the placeholders fill in</summary><ul class="small" style="margin:6px 0 0 18px">${Object.entries(PLACEHOLDERS)
+        .map(([k, v]) => `<li><code class="code">{{${k}}}</code> ${esc(v)}</li>`)
+        .join('')}<li><code class="code">data-if="name"</code> on any element shows it only when that placeholder has something</li></ul></details>
 <div class="row wrap"><button class="btn ghost small" type="button" data-dbase>Start again from the standard profile</button></div>
 </div>
-<div class="studio-prev"><div class="sec-h" style="margin:0 0 8px"><h3>Preview</h3><span class="muted small">As people will see it</span></div><div id="dprev" class="dprev"></div></div>
+<div class="studio-prev"><div class="sec-h" style="margin:0 0 8px"><h3>Preview</h3><span class="muted small">As people will see it, a window’s height</span></div><div id="dprev" class="dprev"></div><p class="muted small" style="margin-top:8px">On your profile it fills the window, with Oporch’s menu over its left edge (on a phone, its top and bottom) and your profile’s buttons over its top right.</p></div>
 </div>
 <div class="card pad stack" style="margin-top:16px">
 <div class="sec-h" style="margin:0"><h3>Pictures and GIFs</h3><span class="muted small" data-meter></span></div>
@@ -605,13 +574,12 @@ ${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still
         .join('')}${pics.files.length < pics.maxFiles ? '<label class="pic add"><input type="file" accept="image/jpeg,image/png,image/gif" hidden data-dpic><span>Upload a picture</span></label>' : ''}</div>
 </div>
 <div class="save-bar"><button class="btn" type="button" data-dsend${canPublish ? '' : ' disabled'}>Send for review</button>${d.state !== 'none' ? '<button class="btn danger" type="button" data-ddel>Remove my design</button>' : ''}<span class="err grow" hidden></span></div>`,
-      'Make your profile your own. Your updates, projects, experience and everything else fill in by themselves, so it stays up to date. We check every design before it shows on your profile.'
+      'Make your profile your own, in HTML and CSS. Your posts, projects, experience and everything else fill in by themselves, so it stays up to date. We check every design before it shows on your profile.'
     )
 
     const codeBox = $('[data-d=code]', pane)
     const cssBox = $('[data-d=css]', pane)
     const prev = $('#dprev', pane)
-    const compileErr = $('[data-compile]', pane)
     const err = $('.save-bar .err', pane)
     const picBytes = pics.files.reduce((s, f) => s + f.bytes, 0)
     const meter = () => {
@@ -620,78 +588,45 @@ ${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still
       $('[data-bar]', pane).style.width = `${Math.min(100, (used / pics.budget) * 100)}%`
       $('.meter', pane).classList.toggle('over', used > pics.budget)
     }
-    const help = () =>
-      kind === 'react'
-        ? `<summary>What your component gets</summary><p class="small" style="margin:6px 0">One file, <code class="code">export default function Profile({ profile })</code>, rendered with React 19. Import from <code class="code">react</code> only. <code class="code">profile</code> holds: name, pronouns, headline, location, about, website, handle, url, joined, initials, counts (followers, following, updates), avatar and cover (addresses or null), openToWork, hiring, experience, education, certifications, projects, volunteering, honors, languages, skills, recommendations, featured and updates (each with url, date, text, image). The AI prompt above describes every field.</p>`
-        : `<summary>What the placeholders fill in</summary><ul class="small" style="margin:6px 0 0 18px">${Object.entries(PLACEHOLDERS)
-            .map(([k, v]) => `<li><code class="code">{{${k}}}</code> ${esc(v)}</li>`)
-            .join('')}<li><code class="code">data-if="name"</code> on any element shows it only when that placeholder has something</li></ul>`
-    const prompt = () => designPrompt({ kind, headline: me.headline, pictures: pics.files.map(address) })
-    /** The preview: an HTML design at once; a React one compiled by the server first, its mistakes said under the code. */
-    let compiling = 0
-    const preview = async () => {
+    const aiPrompt = () => designPrompt({ headline: me.headline, pictures: pics.files.map(address) })
+    const preview = () => {
       meter()
-      if (kind === 'html') {
-        compileErr.hidden = true
-        mountDesign(prev, { kind: 'html', html: codeBox.value, css: cssBox.value }, mine, updates)
-        return
-      }
-      const mineNow = ++compiling
-      try {
-        const r = await api('POST', '/social/me/design/compile', { jsx: codeBox.value })
-        if (mineNow !== compiling) return
-        compileErr.hidden = true
-        mountDesign(prev, { kind: 'react', js: r.js, css: cssBox.value }, mine, updates, (why) => {
-          compileErr.textContent = `It compiled, but did not run: ${why}`
-          compileErr.hidden = false
-        })
-      } catch (x) {
-        if (mineNow !== compiling) return
-        compileErr.textContent = x.message
-        compileErr.hidden = false
-      }
+      mountDesign(prev, { html: codeBox.value, css: cssBox.value }, mine, updates)
     }
     const fill = () => {
-      $('[data-code-label]', pane).textContent = kind === 'react' ? 'React (JSX)' : 'HTML'
-      codeBox.value = code[kind]
-      cssBox.value = css[kind]
-      $('[data-help]', pane).innerHTML = help()
-      $('[data-prompt]', pane).value = prompt()
-      void preview()
+      codeBox.value = code.html
+      cssBox.value = code.css
+      $('[data-prompt]', pane).value = aiPrompt()
+      preview()
     }
     fill()
     let typing = 0
     pane.oninput = (e) => {
       if (!e.target.closest('[data-d]')) return
-      code[kind] = codeBox.value
-      css[kind] = cssBox.value
+      code.html = codeBox.value
+      code.css = cssBox.value
       clearTimeout(typing)
-      typing = setTimeout(preview, kind === 'react' ? 800 : 400)
+      typing = setTimeout(preview, 400)
     }
     pane.onchange = async (e) => {
-      if (e.target.name === 'kind') {
-        kind = e.target.value
-        return fill()
-      }
       const input = e.target.closest('[data-dpic]')
       const file = input?.files?.[0]
       if (!file) return
       try {
         await upload(file, 'design', 2000)
         // The code typed so far stays: the pane is drawn again from it.
-        await designPane(kept())
+        await designPane({ ...code })
         toast('Uploaded. Insert it into your code, or ask your AI to use it.')
       } catch (x) {
         toast(esc(x.message))
       }
     }
     const insert = (url) => {
-      const tag = kind === 'react' ? `<img src="${url}" alt="" />` : `<img src="${url}" alt="">`
       const at = codeBox.selectionStart ?? codeBox.value.length
-      codeBox.value = codeBox.value.slice(0, at) + tag + codeBox.value.slice(at)
-      code[kind] = codeBox.value
+      codeBox.value = `${codeBox.value.slice(0, at)}<img src="${url}" alt="">${codeBox.value.slice(at)}`
+      code.html = codeBox.value
       dirty = true
-      void preview()
+      preview()
     }
     pane.onclick = async (e) => {
       const t = e.target
@@ -705,13 +640,12 @@ ${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still
         }
         return
       }
-      if (t.closest('[data-reprompt]')) return void ($('[data-prompt]', pane).value = prompt())
+      if (t.closest('[data-reprompt]')) return void ($('[data-prompt]', pane).value = aiPrompt())
       if (t.closest('[data-use]')) {
-        const got = parseAnswer($('[data-answer]', pane).value, kind)
-        const body = kind === 'react' ? got.jsx : got.html
-        if (!body) return toast(kind === 'react' ? 'That answer has no React code in it. Paste the whole answer, with its code blocks.' : 'That answer has no HTML in it. Paste the whole answer, with its code blocks.')
-        code[kind] = body
-        css[kind] = got.css
+        const got = parseAnswer($('[data-answer]', pane).value)
+        if (!got.html) return toast('That answer has no HTML in it. Paste the whole answer, with its code blocks.')
+        code.html = got.html
+        code.css = got.css
         dirty = true
         fill()
         prev.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -719,8 +653,8 @@ ${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still
       }
       if (t.closest('[data-dbase]')) {
         if (!confirm('Replace your code with the standard profile?')) return
-        code[kind] = kind === 'react' ? BASE_JSX : BASE_HTML
-        css[kind] = BASE_CSS
+        code.html = BASE_HTML
+        code.css = BASE_CSS
         dirty = true
         return fill()
       }
@@ -735,13 +669,13 @@ ${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still
         if (t.closest('[data-pic-rm]')) {
           if (!confirm('Remove this picture? A design that uses it will show nothing there.')) return
           await api('DELETE', `/social/media/${encodeURIComponent(pic.dataset.picId)}`).catch((x) => toast(esc(x.message)))
-          return void designPane(kept())
+          return void designPane({ ...code })
         }
       }
       if (t.closest('[data-dsend]')) {
         err.hidden = true
         try {
-          await api('PUT', '/social/me/design', kind === 'react' ? { kind, jsx: codeBox.value, css: cssBox.value } : { kind, html: codeBox.value, css: cssBox.value })
+          await api('PUT', '/social/me/design', { html: codeBox.value, css: cssBox.value })
           dirty = false
           toast('Sent for review. We will email you when it is decided.')
           void designPane()
