@@ -11,14 +11,14 @@
  * 2026-10-22: "There is no button to look at /items, add that on the home page next to feed, following and
  * jobs"). Beside it all on wide screens: you, people to follow, and whether your desktop app is open.
  */
-import { $, api, appliedLine, esc, me, on, personRow, popMenu, postHtml, profileUrl, toast, who } from '/app.js'
+import { $, api, appliedLine, esc, me, on, param, personRow, popMenu, postHtml, profileUrl, toast, who } from '/app.js'
 import { ARROW, BOLT, BOOKMARK, apply, detail, details, oneClick, salary, save, tags } from '/jobkit.js'
 
 export default async function ({ main }) {
   if (!me) return void location.replace('/login?next=/home')
   main.innerHTML = `<div class="feed-wrap">
 <section class="feed" aria-label="Home">
-<div class="feed-tabs"><div class="tabs-in" role="tablist" aria-label="What to show"><button type="button" role="tab" data-mode="foryou">For you</button><button type="button" role="tab" data-mode="following">Following</button><button type="button" role="tab" data-mode="jobs">Jobs</button></div><a class="tab-link" href="/items">My items</a></div>
+<div class="feed-tabs"><div class="tabs-in" role="tablist" aria-label="What to show"><button type="button" role="tab" data-mode="foryou">For You</button><button type="button" role="tab" data-mode="following">Following</button><button type="button" role="tab" data-mode="jobs">Jobs</button></div><a class="tab-link" href="/items">My Items</a></div>
 <div id="posts" class="stack"></div>
 <div id="more"><div class="spin"></div></div>
 </section>
@@ -43,6 +43,8 @@ export default async function ({ main }) {
   } catch {
     /* the default */
   }
+  // A tab named in the address (a profile's Jobs for you: /home?tab=jobs).
+  if (MODES.includes(param('tab'))) mode = param('tab')
   let shown = new Set()
   let before = null
   let done = false
@@ -187,7 +189,7 @@ export default async function ({ main }) {
     if (menu) {
       popMenu(menu, [
         [
-          'Not interested',
+          'Not Interested',
           async () => {
             try {
               await api('POST', `/social/jobs/${job.id}/hide`)
@@ -197,7 +199,7 @@ export default async function ({ main }) {
             }
           }
         ],
-        ['See all jobs', () => (location.href = '/explore')]
+        ['See All Jobs', () => (location.href = '/explore')]
       ])
     }
   })

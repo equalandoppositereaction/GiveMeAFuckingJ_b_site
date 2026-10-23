@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-src https://www.youtube-nocookie.com">
+<title>Video | Oporch</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#ccc;font:14px system-ui,sans-serif}iframe{display:block;width:100%;height:100%;border:0}p{margin:0;padding:16px}</style>
+</head>
+<body>
+<script>
+/*
+ * A YouTube video inside a profile design (website/design.js; the owner, 2026-10-23: "make videos be youtube video
+ * boxes inside the page"). A design runs in a frame with no origin of its own, so it cannot send YouTube the page's
+ * address, and YouTube's player refuses to play without it (Error 153). This page is Oporch's, so it can: the design
+ * frames it, and it frames the player, privacy-enhanced (youtube-nocookie.com). It takes a video's id and a start
+ * time, and nothing else.
+ */
+const q = new URLSearchParams(location.search)
+const id = q.get('v') ?? ''
+const start = Math.max(0, Math.floor(Number(q.get('t')) || 0))
+if (/^[A-Za-z0-9_-]{11}$/.test(id)) {
+  const f = document.createElement('iframe')
+  f.src = `https://www.youtube-nocookie.com/embed/${id}?rel=0&playsinline=1${start ? `&start=${start}` : ''}`
+  f.title = 'YouTube video'
+  f.allow = 'fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope'
+  f.allowFullscreen = true
+  f.referrerPolicy = 'strict-origin-when-cross-origin'
+  document.body.append(f)
+} else {
+  document.body.innerHTML = '<p>This is not a YouTube video.</p>'
+}
+</script>
+</body>
+</html>

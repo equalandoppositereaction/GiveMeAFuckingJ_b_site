@@ -172,9 +172,9 @@ ${
       }
     }
     $('[data-thread-menu]', pane).addEventListener('click', (e) => {
-      const items = [['View profile', () => (location.href = profileUrl(r.peer))]]
-      if (r.messages.length) items.push(['Delete conversation', () => void remove(), true])
-      if (open?.theirs) items.push(['Report their last message', () => report('message', { id: open.theirs }), true])
+      const items = [['View Profile', () => (location.href = profileUrl(r.peer))]]
+      if (r.messages.length) items.push(['Delete Conversation', () => void remove(), true])
+      if (open?.theirs) items.push(['Report Their Last Message', () => report('message', { id: open.theirs }), true])
       items.push(['Block', () => void block(), true])
       popMenu(e.currentTarget, items)
     })

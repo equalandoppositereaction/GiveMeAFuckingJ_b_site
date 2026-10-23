@@ -1,28 +1,28 @@
 /**
- * A profile, /u?h=<username>, laid out as LinkedIn's (the owner, 2026-10-08: "the profile should be like
- * linkedin") with Instagram's and X's following (2026-10-21): the top card (cover, photo with its
- * #OpenToWork or #Hiring ring, name, pronouns, headline, place, contact info, posts, followers and
- * following, "Followed by", Follow and Message), then Featured, About, Posts, Experience, Education,
- * Licenses and certifications, Projects, Volunteering, Skills, who recommends them and whom they recommend,
- * Honors and awards, Languages; beside it your profile's views, or people to follow.
+ * A profile, /u/<username> (the owner, 2026-10-23: "The users should be at /u/ in the link"; /u?h=<username>
+ * from before still lands here), laid out as LinkedIn's (2026-10-08) with Instagram's and X's following: the top
+ * card (cover, photo ringed green when open to work and blue when hiring, name, pronouns, the bio's lines, place,
+ * contact info; the profile's links as named buttons on its right; posts, followers and following on a line of
+ * their own; "Followed by", Follow and Message; what they are open to, under "Open to work"), then About, Posts
+ * (the pinned ones whole, then the three latest as tiles), Projects to show, Experience, Education, Skills,
+ * Licenses and certifications, Volunteering, who recommends them and whom they recommend, Honors and awards,
+ * Languages. Beside it, profiles like theirs and jobs for the viewer (2026-10-23: "it should have profile and
+ * jobs recommendations"), and your own profile's views.
  *
- * The owner, 2026-10-22: a heart with the profile's likes, its recommendations and Share on its top right
- * (who liked it and who recommends it open from their numbers); its posts as small tiles, LinkedIn's
- * Activity, "Show all posts" opening them as a feed (/u?h=<username>&view=posts); skills as a grid, three a
- * row and centred, a long one taking two or three places; "posts", not "updates"; "just number of views".
- * A recommendation is one press: the people who follow you see the profile in their Home (server: people.ts).
+ * Its top right is the heart with the profile's likes, its recommendations and Share, and nothing else (the
+ * owner, 2026-10-23). A recommendation is one press: the people who follow you see the profile in their Home.
  *
  * A private account shows its card and sections to everyone, and its posts and lists to its followers. A
- * member's own design (Settings, Design your profile), once approved, is the whole page, with the site's
- * menu and the profile's buttons over it ("just an overlay of the app's icons and sidebar as default").
+ * member's own design, once approved, is the whole page, the site's menu over it, the like, recommend and
+ * share buttons on its top right and Follow and Message on its bottom right.
  *
  * Visitors without an account see a profile its owner left public.
  */
-import { $, ago, api, avatar, dialog, esc, ICON, me, media, on, param, personRow, plural, popMenu, postHtml, profileUrl, relButtons, report, requireLogin, share, toast, who } from '/app.js'
-import { mountDesign, openLine, profileParts } from '/design.js'
+import { $, ago, api, avatar, dialog, esc, ICON, linkIcon, me, media, on, param, personRow, plural, popMenu, postHtml, profileUrl, relButtons, report, requireLogin, share, toast, who, ytBox } from '/app.js'
+import { mountDesign, openSpecs, profileParts, projectCard } from '/design.js'
+import { ARROW, BOLT, apply, oneClick, salary, tags } from '/jobkit.js'
 
 const LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'
-const PEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 const MORE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>'
 /** The lists a profile's numbers open: their titles, and what an empty one says. */
 const LISTS = {
@@ -32,32 +32,43 @@ const LISTS = {
   recommenders: ['Recommended by', 'Nobody has recommended this profile yet.'],
   recommends: ['Recommends', 'No profiles recommended yet.']
 }
-/** Tiles of posts on the profile; the rest are on the page of all their posts. */
-const TILES = 10
+/** The latest posts as tiles, beside the pinned ones (the owner, 2026-10-23: "the current small 3 latest posts row form"). */
+const TILES = 3
+
+/** Whose profile, and which view, from the address: /u/<username>, /u/<username>/posts; /u?h=<username> from before. */
+function address() {
+  const m = /^\/u\/([^/]+)(?:\/(posts))?\/?$/.exec(location.pathname)
+  if (m) return { handle: decodeURIComponent(m[1]).toLowerCase(), posts: m[2] === 'posts', old: false }
+  return { handle: param('h') || me?.handle || null, posts: param('view') === 'posts', old: true }
+}
 
 export default async function ({ main }) {
-  const handle = param('h') || me?.handle
-  if (!handle) return void location.replace(`/login?next=${encodeURIComponent('/u')}`)
+  const at = address()
+  if (!at.handle) return void location.replace(`/login?next=${encodeURIComponent('/u')}`)
+  // An address from before becomes the one now, in place.
+  if (at.old) history.replaceState(null, '', `/u/${encodeURIComponent(at.handle)}${at.posts ? '/posts' : ''}${location.hash}`)
   main.innerHTML = '<div class="spin"></div>'
   let p
   try {
-    p = await api('GET', `/social/u/${encodeURIComponent(handle)}`)
+    p = await api('GET', `/social/u/${encodeURIComponent(at.handle)}`)
   } catch (e) {
     const next = encodeURIComponent(location.pathname + location.search)
     main.innerHTML =
       e.code === 'members_only'
         ? `<div class="empty"><h2>This profile is for members</h2><p>Log in to see it.</p><a class="btn" href="/login?next=${next}">Log in</a></div>`
-        : `<div class="empty"><h2>${e.status === 404 ? 'There is no one by that username' : 'This profile could not load'}</h2><p>${esc(e.message)}</p></div>`
+        : `<div class="empty"><h2>${e.status === 404 ? 'There is no one by that username' : 'This profile could not load'}</h2><p>${e.status === 404 ? 'The username may be mistyped, or the account may have been deleted.' : esc(e.message)}</p></div>`
     return
   }
-  document.title = `${p.name}${p.headline ? ` | ${p.headline}` : ''} | Oporch`
+  const bioLine = (p.headline || '').split('\n')[0]
+  document.title = `${p.name}${bioLine ? ` | ${bioLine}` : ''} | Oporch`
   const self = p.relation === 'self'
   const h = encodeURIComponent(p.handle)
-  // The menu's Profile is yours: it is not lit on someone else's.
-  if (!self) for (const a of document.querySelectorAll('[data-nav=profile]')) a.removeAttribute('aria-current')
-  if (param('view') === 'posts') return allPosts(main, p, self)
+  const url = `/u/${h}`
+  // The menu's Profile is yours: lit on your own, not on someone else's.
+  for (const a of document.querySelectorAll('[data-nav=profile]')) self ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')
+  if (at.posts) return allPosts(main, p, self)
 
-  // ── The top right (the owner, 2026-10-22): the heart and its likes, the recommendations, Share.
+  // ── The top right (the owner, 2026-10-22 and 23): the heart and its likes, the recommendations, Share. Nothing else.
   const count = (n, which, label) => `<button class="pf-n" type="button" data-pf-list="${which}" aria-label="${label}">${Number(n).toLocaleString('en')}</button>`
   const cluster = () => {
     const liked = !!p.likes.mine
@@ -76,17 +87,32 @@ export default async function ({ main }) {
     for (const el of main.querySelectorAll('[data-pf]')) el.innerHTML = cluster()
   }
 
+  // ── A design of their own: the whole page, the site's menu over it, and two small bars of the profile's buttons.
+  if (p.design) {
+    main.innerHTML = `<div class="pd" id="design"></div>
+<div class="pd-bar" role="toolbar" aria-label="Like, recommend and share"><div class="pf-acts" data-pf>${cluster()}</div></div>
+<div class="pd-bar pd-me" role="toolbar" aria-label="${esc(p.name)}">${avatar(p, 's')}<b class="pd-name">${esc(p.name)}</b>${
+      self
+        ? '<a class="btn small" href="/settings#design">Edit design</a>'
+        : `${me ? relButtons(p.handle, p.relation, true, { followsYou: p.followsYou }) : relButtons(p.handle, 'none', true)}<a class="ig" href="/messages?h=${h}" aria-label="Message ${esc(p.name)}" title="Message">${ICON.send}</a>`
+    }<button class="ig" type="button" data-more aria-label="More" title="More">${MORE}</button></div>`
+    // As others see it, on your own too: a post turned down is not in it.
+    const updates = p.locked ? [] : await api('GET', `/social/u/${h}/updates`).then((r) => r.updates.filter((u) => u.review !== 'rejected'), () => [])
+    mountDesign($('#design', main), p.design, p, updates, { fill: true })
+    return wire()
+  }
+
   const parts = profileParts(p)
   const actions = () =>
     self
       ? `<a class="btn" href="/settings#edit">Edit profile</a><a class="btn line" href="/settings#design">Design your profile</a><button class="btn line" type="button" data-more aria-label="More">More</button>`
       : `${me ? relButtons(p.handle, p.relation, false, { followsYou: p.followsYou }) : relButtons(p.handle, 'none', false)}<button class="btn line" type="button" data-more aria-label="More">More</button>`
   const nameLine = `<h1>${esc(p.name)}</h1>${p.pronouns ? `<span class="muted">(${esc(p.pronouns)})</span>` : ''}${p.private ? `<span class="lock" title="Private account">${LOCK}</span>` : ''}${p.followsYou ? '<span class="chip">Follows you</span>' : ''}`
-  /** Instagram's three numbers; followers and following open their lists. */
+  /** Posts, followers and following, on a line of their own (the owner, 2026-10-23); followers and following open their lists. */
   const counts = () =>
-    `<p class="li-counts"><span><b>${p.counts.posts.toLocaleString('en')}</b> ${p.counts.posts === 1 ? 'post' : 'posts'}</span><button type="button" class="link-quiet" data-pf-list="followers"><b data-followers>${p.counts.followers.toLocaleString('en')}</b> ${
+    `<div class="pf-counts"><a href="${url}/posts"><b>${p.counts.posts.toLocaleString('en')}</b> ${p.counts.posts === 1 ? 'post' : 'posts'}</a><button type="button" data-pf-list="followers"><b data-followers>${p.counts.followers.toLocaleString('en')}</b> ${
       p.counts.followers === 1 ? 'follower' : 'followers'
-    }</button><button type="button" class="link-quiet" data-pf-list="following"><b>${p.counts.following.toLocaleString('en')}</b> following</button></p>`
+    }</button><button type="button" data-pf-list="following"><b>${p.counts.following.toLocaleString('en')}</b> following</button></div>`
   const followedBy = () => {
     const f = p.followedBy
     if (!f?.count) return ''
@@ -94,19 +120,16 @@ export default async function ({ main }) {
     const rest = f.count - f.faces.length
     return `<p class="faces li-by"><span class="stack-av">${f.faces.map((x) => avatar(x, 'xs')).join('')}</span><span>Followed by ${names.join(', ')}${rest > 0 ? ` and ${plural(rest, 'other')} you follow` : ''}</span></p>`
   }
-
-  // ── A design of their own: the whole page, the site's menu and these buttons over it.
-  if (p.design) {
-    main.innerHTML = `<div class="pd" id="design"></div>
-<div class="pd-bar" role="toolbar" aria-label="${esc(p.name)}"><div class="pf-acts" data-pf>${cluster()}</div>${
-      self
-        ? `<a class="ig" href="/settings#design" aria-label="Edit your design" title="Edit your design">${PEN}</a>`
-        : `<span class="pd-rel">${me ? relButtons(p.handle, p.relation, true, { followsYou: p.followsYou }) : relButtons(p.handle, 'none', true)}</span><a class="ig" href="/messages?h=${h}" aria-label="Message ${esc(p.name)}" title="Message">${ICON.send}</a>`
-    }<button class="ig" type="button" data-more aria-label="More" title="More">${MORE}</button></div>`
-    const updates = p.locked ? [] : await api('GET', `/social/u/${h}/updates`).then((r) => r.updates, () => [])
-    mountDesign($('#design', main), p.design, p, updates, { fill: true })
-    return wire()
-  }
+  /** Their links (the owner, 2026-10-23): a name and an icon, the address not shown, on the right under the cover. */
+  const links = p.links.length
+    ? `<nav class="pf-links" aria-label="${esc(p.name)}’s links">${p.links.map((l) => `<a class="pf-link" href="${esc(l.url)}" target="_blank" rel="noopener nofollow ugc">${linkIcon(l)}<span>${esc(l.label)}</span></a>`).join('')}</nav>`
+    : ''
+  /** Open to work as LinkedIn shows it: the heading, then what they are looking for; or that they are hiring. */
+  const status = p.openToWork
+    ? `<div class="pf-otw"><h2>Open to work</h2><dl>${openSpecs(p.openToWork).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl></div>`
+    : p.hiring
+      ? `<div class="pf-otw hiring"><h2>Hiring</h2><p>${self ? 'You are hiring. People can message you about your roles.' : `${esc(p.name)} is hiring. Send a message to ask about the role.`}</p></div>`
+      : ''
 
   const section = (title, body, extra = '', id = '') => (body ? `<section class="card li-sec"${id ? ` id="${id}"` : ''}><div class="sec-h"><h2>${title}</h2>${extra}</div>${body}</section>` : '')
   /** Skills as a grid (the owner, 2026-10-22: "3 per row, centered"); a long one takes two places or three (`fitSkills`). */
@@ -119,6 +142,8 @@ export default async function ({ main }) {
         )
         .join('')}</div>`
     : ''
+  /** Projects to show (the owner, 2026-10-23: "a place for people to showcase their projects"): picture or video, skills, a way to it. */
+  const projects = p.projects.length ? `<div class="pf-projects">${p.projects.map((x) => projectCard(x, (id, name) => ytBox(id, name))).join('')}</div>` : ''
   /** People as small cards: who recommends them, and whom they recommend. */
   const cards = (list) => `<div class="pf-people">${list.map((x) => `<a class="pf-person" href="${profileUrl(x)}">${avatar(x, 'l')}<b>${esc(x.name)}</b>${x.headline ? `<span class="who-h">${esc(x.headline)}</span>` : ''}</a>`).join('')}</div>`
   const seeAll = (n, shown, which) => (n > shown ? `<button class="textbtn" type="button" data-pf-list="${which}">See all ${n.toLocaleString('en')}</button>` : '')
@@ -133,7 +158,7 @@ export default async function ({ main }) {
     ? ''
     : `<section class="card li-sec" id="posts-box"><div class="sec-h"><div><h2>Posts</h2><div class="muted small">${plural(p.counts.followers, 'follower')}</div></div>${
         self ? '<button class="btn line small" type="button" data-act="create">Create a post</button>' : ''
-      }</div><div class="tiles" id="tiles"><div class="spin"></div></div><div id="tiles-f"></div></section>`
+      }</div><div class="stack pf-pinned" id="pinned"></div><div class="tiles three" id="tiles"><div class="spin"></div></div><div id="tiles-f"></div></section>`
 
   main.innerHTML = `<div class="li">
 <div class="li-main">
@@ -141,33 +166,36 @@ export default async function ({ main }) {
 <div class="li-cover"></div>
 <div class="li-head">
 <div class="li-photo-row"><div class="li-photo">${avatar(p, 'xl')}</div><div class="pf-acts" data-pf>${cluster()}</div></div>
+<div class="li-cols">
+<div class="li-who">
 <div class="li-name">${nameLine}</div>
-${p.headline ? `<p class="li-headline">${esc(p.headline)}</p>` : ''}
+${p.headline ? `<p class="li-bio">${esc(p.headline)}</p>` : ''}
 <p class="li-meta">${p.location ? `${esc(p.location)} · ` : ''}<button type="button" class="link" data-contact>Contact info</button></p>
+</div>
+${links}
+</div>
 ${counts()}
 ${followedBy()}
-${p.openToWork ? `<div class="otw"><b>${esc(openLine(p.openToWork))}</b>${p.openToWork.start === 'now' ? '<div class="muted small">Can start now</div>' : ''}</div>` : ''}
-${p.hiring ? `<div class="otw hiring"><b>Hiring</b><div class="muted small">${esc(p.name)} is hiring. Send a message to ask about the role.</div></div>` : ''}
 <div class="row wrap li-actions">${actions()}</div>
+${status}
 </div>
 </section>
 ${locked}
-${p.featured.length ? section('Featured', `<div class="tiles">${p.featured.map(tile).join('')}</div>`) : ''}
 ${section('About', p.about ? `<p class="pre">${esc(p.about)}</p>` : '')}
 ${postsBox}
+${section('Projects', projects)}
 ${section('Experience', parts.experience)}
 ${section('Education', parts.education)}
-${section('Licenses and certifications', parts.certifications)}
-${section('Projects', parts.projects)}
-${section('Volunteering', parts.volunteering)}
 ${section('Skills', skills)}
+${section('Licenses and certifications', parts.certifications)}
+${section('Volunteering', parts.volunteering)}
 ${recommendedBy}
 ${recommending}
 ${section('Honors and awards', parts.honors)}
 ${section('Languages', parts.languages)}
 ${
-  self && !p.about && !p.experience.length && !p.education.length && !p.skills.length
-    ? '<section class="card li-sec"><h2>Your profile is empty</h2><p class="muted">Add an About, your experience, education and skills so people know you, or fill it in from the desktop app.</p><p style="margin-top:12px"><a class="btn" href="/settings#edit">Fill in your profile</a></p></section>'
+  self && !p.about && !p.experience.length && !p.education.length && !p.skills.length && !p.projects.length
+    ? '<section class="card li-sec"><h2>Your profile is empty</h2><p class="muted">Add an About, your projects, experience, education and skills so people know your work, or fill it in from the desktop app.</p><p style="margin-top:12px"><a class="btn" href="/settings#edit">Fill in your profile</a></p></section>'
     : ''
 }
 </div>
@@ -177,21 +205,28 @@ ${
   const grid = $('[data-skills]', main)
   if (grid) {
     fitSkills(grid)
-    new ResizeObserver(() => fitSkills(grid)).observe(grid)
+    // Fitted again when its width changes, never in the same frame as its own change.
+    let wide = grid.clientWidth
+    new ResizeObserver(() => grid.clientWidth !== wide && ((wide = grid.clientWidth), requestAnimationFrame(() => fitSkills(grid)))).observe(grid)
   }
 
-  // ── Posts: their latest as tiles, all of them on their own page.
+  // ── Posts (the owner, 2026-10-23): the pinned ones whole, then the three latest of the rest as tiles; all of them on their own page.
   const tiles = $('#tiles', main)
   if (tiles) {
+    const pinned = p.featured || []
+    $('#pinned', main).innerHTML = pinned.map((u) => postHtml(u, { pinned: true })).join('')
     api('GET', `/social/u/${h}/updates`)
       .then((r) => {
-        tiles.innerHTML = r.updates.slice(0, TILES).map(tile).join('') || `<p class="muted">${self ? 'You have not shared a post yet.' : `${esc(p.name)} has not shared a post yet.`}</p>`
-        if (r.updates.length) $('#tiles-f', main).innerHTML = `<a class="btn ghost wide tiles-all" href="/u?h=${h}&view=posts">Show all posts</a>`
+        const rest = r.updates.filter((u) => !pinned.some((x) => x.id === u.id))
+        tiles.innerHTML = rest.slice(0, TILES).map(tile).join('')
+        if (!rest.length && !pinned.length) tiles.outerHTML = `<p class="muted">${self ? 'You have not shared a post yet.' : `${esc(p.name)} has not shared a post yet.`}</p>`
+        else if (!rest.length) tiles.remove()
+        if (r.updates.length) $('#tiles-f', main).innerHTML = `<a class="btn ghost wide tiles-all" href="${url}/posts">Show all posts</a>`
       })
       .catch((e) => (tiles.innerHTML = `<p class="muted">${esc(e.message)}</p>`))
   }
 
-  // ── Beside it: your profile's views, people to follow; for a visitor, the way in.
+  // ── Beside it (the owner, 2026-10-23): your profile's views; profiles like this one; jobs for you. For a visitor, the way in.
   const aside = $('#aside', main)
   if (me) {
     const boxes = []
@@ -203,17 +238,39 @@ ${
       )
     }
     boxes.push(
-      api('GET', '/social/suggestions?limit=6')
+      api('GET', `/social/u/${h}/related?limit=5`)
+        .then((r) => (r.people.length ? `<section class="card li-sec"><div class="sec-h"><h2>${self ? 'Profiles for you' : 'More profiles for you'}</h2><a class="textbtn" href="/search">See all</a></div>${r.people.map((x) => personRow(x, x.reason)).join('')}</section>` : ''))
+        .catch(() => '')
+    )
+    let build = null
+    const jobs = new Map()
+    boxes.push(
+      api('POST', '/social/jobs/feed', { limit: 4 })
         .then((r) => {
-          const list = r.people.filter((x) => x.handle !== p.handle).slice(0, 5)
-          return list.length ? `<section class="card li-sec"><div class="sec-h"><h2>Suggested for you</h2><a class="textbtn" href="/search">See all</a></div>${list.map((x) => personRow(x, x.reason)).join('')}</section>` : ''
+          if (!r.ready || !r.jobs.length) return ''
+          build = r.build
+          for (const j of r.jobs) jobs.set(j.id, j)
+          return `<section class="card li-sec"><div class="sec-h"><h2>Jobs for you</h2><a class="textbtn" href="/home?tab=jobs">See all</a></div>${r.jobs
+            .map(
+              (j) => `<article class="jobcard pf-job" data-id="${j.id}"><b class="pf-job-t">${esc(j.title)}</b><p class="muted small">${/^remote$/i.test((j.loc || '').trim()) ? '' : `${esc(j.loc || 'Location not listed')} · `}${tags(j)}</p><p class="small">${esc(salary(j.pay))}</p>${
+                j.why?.text ? `<p class="muted small pf-job-why">${esc(j.why.text)}</p>` : ''
+              }<div class="apply-row"><button class="apply" type="button">Apply${ARROW}</button><button class="oneclick" type="button" title="Your desktop app applies to it for you">${BOLT}<span>One click apply</span></button></div></article>`
+            )
+            .join('')}</section>`
         })
         .catch(() => '')
     )
     Promise.all(boxes).then((html) => (aside.innerHTML = html.join('')))
+    aside.addEventListener('click', (e) => {
+      const el = e.target.closest('.pf-job')
+      const job = el && jobs.get(+el.dataset.id)
+      if (!job) return
+      if (e.target.closest('.oneclick')) return void oneClick(job, e.target.closest('.oneclick'), build)
+      if (e.target.closest('.apply')) return void apply(job, e.target.closest('.apply'), build)
+    })
   } else {
     const next = encodeURIComponent(location.pathname + location.search)
-    aside.innerHTML = `<section class="card li-sec"><h2>${esc(p.name)} is on Oporch</h2><p class="muted">Join to follow ${esc(p.name)}, apply to jobs with one click and see which jobs the people you follow apply to.</p><div class="stack" style="margin-top:14px"><a class="btn" href="/login?new=1&next=${next}">Join Oporch</a><a class="btn ghost" href="/login?next=${next}">Log in</a></div></section>`
+    aside.innerHTML = `<section class="card li-sec"><h2>${esc(p.name)} is on Oporch</h2><p class="muted">Join to follow ${esc(p.name)}, show your own work, and apply to jobs with one click.</p><div class="stack" style="margin-top:14px"><a class="btn" href="/login?new=1&next=${next}">Join Oporch</a><a class="btn ghost" href="/login?next=${next}">Log in</a></div></section>`
   }
   return wire()
 
@@ -224,7 +281,7 @@ ${
       if (t.closest('[data-contact]')) return contact()
       const list = t.closest('[data-pf-list]')
       if (list) return void people(list.dataset.pfList)
-      if (t.closest('[data-pf-share]')) return void share(`/u?h=${h}`, p.name)
+      if (t.closest('[data-pf-share]')) return void share(url, p.name)
       if (t.closest('[data-pf-like]')) return void like(t.closest('[data-pf-like]'))
       if (t.closest('[data-pf-rec]')) return void recommend(t.closest('[data-pf-rec]'))
       const menu = t.closest('[data-more]')
@@ -284,15 +341,15 @@ ${
   }
 
   function moreMenu(btn) {
-    const items = [['Share profile', () => share(`/u?h=${h}`, p.name)]]
+    const items = [['Share Profile', () => share(url, p.name)], ['Contact Info', contact]]
     // Over a design, the lists the standard profile shows are here.
     if (p.design) {
-      items.push(['Contact info', contact], [`Followers (${p.counts.followers.toLocaleString('en')})`, () => void people('followers')], [`Following (${p.counts.following.toLocaleString('en')})`, () => void people('following')])
-      if (p.recommending?.count) items.push([self ? 'Profiles you recommend' : 'Profiles they recommend', () => void people('recommends')])
+      items.push([`Posts (${p.counts.posts.toLocaleString('en')})`, () => (location.href = `${url}/posts`)], [`Followers (${p.counts.followers.toLocaleString('en')})`, () => void people('followers')], [`Following (${p.counts.following.toLocaleString('en')})`, () => void people('following')])
+      if (p.recommending?.count) items.push([self ? 'Profiles You Recommend' : 'Profiles They Recommend', () => void people('recommends')])
     }
     if (self) items.push(['Settings', () => (location.href = '/settings')])
     if (me && !self) {
-      items.push(['Report profile', () => report('profile', { handle: p.handle }), true])
+      items.push(['Report Profile', () => report('profile', { handle: p.handle }), true])
       items.push(['Block', block, true])
     }
     popMenu(btn, items)
@@ -335,13 +392,13 @@ ${
   }
 
   function contact() {
-    const url = `${location.origin}/u?h=${h}`
+    const address = `${location.origin}${url}`
     const row = (label, value) => `<div class="contact-row"><div class="muted small">${label}</div>${value}</div>`
     dialog(
       `<div class="dialog-h"><h2>${esc(p.name)}</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div><div class="dialog-b stack">
-${row('Profile', `<a class="link" href="${esc(url)}">${esc(url.replace(/^https?:\/\//, ''))}</a>`)}
-${p.contact.website ? row('Website', `<a class="link" href="${esc(p.contact.website)}" target="_blank" rel="noopener nofollow ugc">${esc(p.contact.website.replace(/^https?:\/\//, ''))}</a>`) : ''}
+${row('Profile', `<a class="link" href="${esc(address)}">${esc(address.replace(/^https?:\/\//, ''))}</a>`)}
 ${p.contact.email ? row('Email', `<a class="link" href="mailto:${esc(p.contact.email)}">${esc(p.contact.email)}</a>`) : ''}
+${p.links.length ? row('Links', `<div class="pf-links in-dialog">${p.links.map((l) => `<a class="pf-link" href="${esc(l.url)}" target="_blank" rel="noopener nofollow ugc">${linkIcon(l)}<span>${esc(l.label)}</span></a>`).join('')}</div>`) : ''}
 ${p.joined ? row('Joined', esc(new Date(p.joined).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }))) : ''}
 </div>`,
       'small'
@@ -388,11 +445,11 @@ function fitSkills(grid) {
   }
 }
 
-/** All of someone's posts, as a feed (the owner, 2026-10-22: "when 'see all' button is pressed, the rest of the posts are showed in a feed format"). */
+/** All of someone's posts, as a feed (the owner, 2026-10-22: "when 'see all' button is pressed, the rest of the posts are showed in a feed format"), the pinned ones first. */
 async function allPosts(main, p, self) {
   const h = encodeURIComponent(p.handle)
   main.innerHTML = `<div class="page narrow posts-page stack">
-<div class="card pad row">${avatar(p, 'l')}<div class="grow"><h1 class="pf-ph">${self ? 'Your posts' : `${esc(p.name)}’s posts`}</h1><div class="muted small">${plural(p.counts.posts, 'post')}</div></div><a class="btn ghost small" href="/u?h=${h}">Back to the profile</a></div>
+<div class="card pad row">${avatar(p, 'l')}<div class="grow"><h1 class="pf-ph">${self ? 'Your posts' : `${esc(p.name)}’s posts`}</h1><div class="muted small">${plural(p.counts.posts, 'post')}</div></div><a class="btn ghost small" href="/u/${h}">Back to the profile</a></div>
 <div id="all" class="stack"><div class="spin"></div></div>
 <div id="all-more"></div>
 </div>`
@@ -400,15 +457,16 @@ async function allPosts(main, p, self) {
   const list = $('#all', main)
   const moreBox = $('#all-more', main)
   if (p.locked) {
-    list.innerHTML = `<div class="card empty"><h2>This account is private</h2><p>Follow ${esc(p.name)} to see their posts.</p><a class="btn" href="/u?h=${h}">Back to the profile</a></div>`
+    list.innerHTML = `<div class="card empty"><h2>This account is private</h2><p>Follow ${esc(p.name)} to see their posts.</p><a class="btn" href="/u/${h}">Back to the profile</a></div>`
     return
   }
+  const pinned = p.featured || []
   let cursor = null
   const load = async () => {
     try {
       const r = await api('GET', `/social/u/${h}/updates${cursor ? `?before=${cursor}` : ''}`)
-      if (!cursor) list.innerHTML = ''
-      list.insertAdjacentHTML('beforeend', r.updates.map((u) => postHtml(u)).join(''))
+      if (!cursor) list.innerHTML = pinned.map((u) => postHtml(u, { pinned: true })).join('')
+      list.insertAdjacentHTML('beforeend', r.updates.filter((u) => !pinned.some((x) => x.id === u.id)).map((u) => postHtml(u)).join(''))
       cursor = r.updates.at(-1)?.id ?? cursor
       if (!list.children.length) list.innerHTML = `<div class="card empty"><p>${self ? 'You have not shared a post yet.' : `${esc(p.name)} has not shared a post yet.`}</p></div>`
       moreBox.innerHTML = r.more ? '<div class="center"><button class="btn ghost" type="button">Show more</button></div>' : ''

@@ -113,10 +113,10 @@ ${footer(g)}`
     })
     $('[data-members]', pane).addEventListener('click', () => void members(g))
     $('[data-group-menu]', pane).addEventListener('click', (e) => {
-      const items = [['Copy link', () => navigator.clipboard?.writeText(`${location.origin}/messages?g=${g.id}`).then(() => toast('Link copied.'))]]
+      const items = [['Copy Link', () => navigator.clipboard?.writeText(`${location.origin}/messages?g=${g.id}`).then(() => toast('Link copied.'))]]
       if (ROLE[g.role]) items.push(['Settings', () => void settings(g)])
-      if (g.role && g.role !== 'owner') items.push(['Leave community', () => void leave(g), true])
-      if (g.role === 'owner' || g.siteAdmin) items.push(['Delete community', () => void remove(g), true])
+      if (g.role && g.role !== 'owner') items.push(['Leave Community', () => void leave(g), true])
+      if (g.role === 'owner' || g.siteAdmin) items.push(['Delete Community', () => void remove(g), true])
       popMenu(e.currentTarget, items)
     })
     $('[data-join]', pane)?.addEventListener('click', async () => {
@@ -216,14 +216,14 @@ ${footer(g)}`
       const p = b && people.find((x) => x.handle === b.closest('[data-p]').dataset.p)
       if (!p) return
       const items = []
-      if (g.role === 'owner') items.push(p.role === 'admin' ? ['Remove as admin', () => void change(p, { role: 'member' })] : ['Make admin', () => void change(p, { role: 'admin' })])
+      if (g.role === 'owner') items.push(p.role === 'admin' ? ['Remove as Admin', () => void change(p, { role: 'member' })] : ['Make Admin', () => void change(p, { role: 'admin' })])
       if (p.role === 'member') {
-        items.push(p.canPost ? ['Stop them writing', () => void change(p, { canPost: false })] : ['Let them write', () => void change(p, { canPost: true })])
-        if (p.said !== null) items.push([`Back to the community’s rule (${g.whoPosts === 'admins' ? 'admins only' : 'everyone'})`, () => void change(p, { canPost: null })])
+        items.push(p.canPost ? ['Stop Them Writing', () => void change(p, { canPost: false })] : ['Let Them Write', () => void change(p, { canPost: true })])
+        if (p.said !== null) items.push([`Back to the Community’s Rule (${g.whoPosts === 'admins' ? 'Admins Only' : 'Everyone'})`, () => void change(p, { canPost: null })])
       }
       if (p.role === 'member' || g.role === 'owner')
         items.push([
-          'Remove from community',
+          'Remove From Community',
           async () => {
             if (!confirm(`Remove ${p.name} from ${g.name}?`)) return
             try {

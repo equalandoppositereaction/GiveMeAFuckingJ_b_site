@@ -10,7 +10,7 @@ export default async function ({ main }) {
   let tab = ['posts', 'saved', 'applied'].includes(param('tab')) ? param('tab') : 'posts'
   main.innerHTML = `<div class="page narrow">
 <div class="page-h"><h1>My items</h1></div>
-<div class="feed-tabs" role="tablist" style="margin-bottom:16px"><button type="button" role="tab" data-tab="posts">Saved posts</button><button type="button" role="tab" data-tab="saved">Saved jobs</button><button type="button" role="tab" data-tab="applied">Applied jobs</button></div>
+<div class="feed-tabs" role="tablist" style="margin-bottom:16px"><button type="button" role="tab" data-tab="posts">Saved Posts</button><button type="button" role="tab" data-tab="saved">Saved Jobs</button><button type="button" role="tab" data-tab="applied">Applied Jobs</button></div>
 <div id="out"><div class="spin"></div></div>
 </div>`
   const out = $('#out', main)

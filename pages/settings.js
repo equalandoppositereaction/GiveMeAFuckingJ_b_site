@@ -2,27 +2,59 @@
  * Settings, laid out as Instagram's (the owner, 2026-10-21: "replicate the layout of instagram, fix the
  * screen being too narrow and too long to scroll"): the sections in a list on the left, the one chosen on
  * the right; on a phone the list, then the section with a way back. One section at a time, so no page is
- * one long scroll.
+ * one long scroll. Every menu's title in title case (the owner, 2026-10-23: "like 'Password and Account'").
  *
- * - Your profile: Edit profile (the photo and cover, cropped before they are sent, the cover shown as it
- *   will be; name, username, pronouns, headline, place, website, About), Experience and more (LinkedIn's
- *   sections and skills, one at a time), Open to work and hiring, Design your profile (HTML and CSS, with
- *   a prompt for the member's own AI and a live preview).
- * - Who can see your content: Account privacy (a private account, as Instagram's), Blocked.
- * - Your account: Password and account, Appearance.
+ * - Your Profile: Edit Profile (the photo and cover, cropped before they are sent; name, username, pronouns,
+ *   the bio's lines, place, About; links, each a name and an address, shown as buttons with an icon), Other
+ *   Details (projects with their pictures and videos, LinkedIn's sections and skills, one at a time), Open to
+ *   Work and Hiring (one or the other, never both), Design Your Profile (files dropped in, the template and a
+ *   prompt for the member's own AI, a preview below at full width).
+ * - Who Can See Your Content: Account Privacy (a private account, as Instagram's), Blocked.
+ * - Your Account: Password and Account, Appearance.
  *
  * Recommendations are one press on a profile since 2026-10-22, nothing to manage here: someone's
  * recommendation of you is taken off from the list of who recommends you, on your profile.
  *
  * Nothing here is for sale: no prices, no payments (the owner, 2026-10-08).
  */
-import { $, API, api, avatar, cropImage, esc, me, param, profileUrl, toast, toggleTheme, upload, who } from '/app.js'
-import { BASE_CSS, BASE_HTML, designPrompt, mb, mountDesign, parseAnswer, PLACEHOLDERS, PROFICIENCY, WORK_TYPE } from '/design.js'
+import { $, API, api, avatar, cropImage, dialog, esc, linkIcon, me, param, profileUrl, toast, toggleTheme, upload, who, ytId } from '/app.js'
+import {
+  JOB_TYPE,
+  PROFICIENCY,
+  START,
+  TEMPLATE_CSS,
+  TEMPLATE_HTML,
+  TEMPLATE_JS,
+  WORK_TYPE,
+  designPrompt,
+  designReadme,
+  download,
+  droppedFiles,
+  mb,
+  mountDesign,
+  parseAnswer,
+  sortFiles,
+  zip
+} from '/design.js'
 
 const HANDLE = /^[a-z0-9][a-z0-9._]{1,28}[a-z0-9]$/
 
 /** LinkedIn's sections, as the editor shows them: [field, label, kind, most characters]. The first field must be filled. */
 const SECTIONS = {
+  projects: {
+    title: 'Projects',
+    add: 'Add a project',
+    fields: [
+      ['name', 'Project name', 'text', 150],
+      ['start', 'Start', 'date'],
+      ['end', 'End', 'date'],
+      ['url', 'Link to the project', 'url', 300],
+      ['video', 'YouTube video', 'url', 300],
+      ['skills', 'Skills and tools used, separated by commas', 'list', 15],
+      ['description', 'What it is, and what you did', 'area', 2000],
+      ['image', 'Picture', 'pic']
+    ]
+  },
   experience: {
     title: 'Experience',
     add: 'Add experience',
@@ -39,11 +71,6 @@ const SECTIONS = {
     add: 'Add a certification',
     fields: [['name', 'Name', 'text', 150], ['issuer', 'Issuing organization', 'text', 150], ['issued', 'Issued', 'date'], ['expires', 'Expires', 'date'], ['credentialId', 'Credential ID', 'text', 100], ['url', 'Credential URL', 'url', 300]]
   },
-  projects: {
-    title: 'Projects',
-    add: 'Add a project',
-    fields: [['name', 'Project name', 'text', 150], ['start', 'Start', 'date'], ['end', 'End', 'date'], ['url', 'Project URL', 'url', 300], ['description', 'Description', 'area', 2000]]
-  },
   volunteering: {
     title: 'Volunteering',
     add: 'Add volunteering',
@@ -57,9 +84,10 @@ const SECTIONS = {
   },
   languages: { title: 'Languages', add: 'Add a language', fields: [['name', 'Language', 'text', 60], ['proficiency', 'Proficiency', 'select']] }
 }
-const blank = (kind) => Object.fromEntries(SECTIONS[kind].fields.map(([f, , type]) => [f, type === 'check' ? false : type === 'select' ? 'professional' : '']))
+const blank = (kind) => Object.fromEntries(SECTIONS[kind].fields.map(([f, , type]) => [f, type === 'check' ? false : type === 'select' ? 'professional' : type === 'list' ? [] : type === 'pic' ? null : '']))
 const filled = (kind, x) => SECTIONS[kind].fields.slice(0, kind === 'experience' ? 2 : 1).some(([f]) => String(x[f] ?? '').trim())
 const commas = (s) => s.split(',').map((x) => x.trim()).filter(Boolean)
+const typeOf = (kind, field) => SECTIONS[kind]?.fields.find(([f]) => f === field)?.[2]
 
 const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`
 const ICON = {
@@ -72,15 +100,19 @@ const ICON = {
   account: svg('<circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M17 6l3 3M14.5 8.5l2 2"/>'),
   appearance: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>')
 }
-/** The list on the left, Instagram's groups. */
+const UPLOAD = svg('<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>')
+/** The list on the left, Instagram's groups, every title in title case (the owner, 2026-10-23). */
 const GROUPS = [
-  ['Your profile', [['edit', 'Edit profile'], ['sections', 'Experience and more'], ['work', 'Open to work and hiring'], ['design', 'Design your profile']]],
-  ['Who can see your content', [['privacy', 'Account privacy'], ['blocked', 'Blocked']]],
-  ['Your account', [['account', 'Password and account'], ['appearance', 'Appearance']]]
+  ['Your Profile', [['edit', 'Edit Profile'], ['sections', 'Other Details'], ['work', 'Open to Work and Hiring'], ['design', 'Design Your Profile']]],
+  ['Who Can See Your Content', [['privacy', 'Account Privacy'], ['blocked', 'Blocked']]],
+  ['Your Account', [['account', 'Password and Account'], ['appearance', 'Appearance']]]
 ]
-const PANES = GROUPS.flatMap(([, items]) => items.map(([id]) => id))
+const TITLE = Object.fromEntries(GROUPS.flatMap(([, items]) => items))
+const PANES = Object.keys(TITLE)
 // Links from before this layout (#profile), and to the Recommendations there were, still land somewhere sensible.
 const OLD = { profile: 'edit', recommendations: 'edit' }
+/** Names offered for a link; any other name is fine too. */
+const LINK_NAMES = ['Website', 'Portfolio', 'Google Scholar', 'GitHub', 'LinkedIn', 'Behance', 'Dribbble', 'YouTube', 'Blog', 'Résumé']
 
 export default async function ({ main }) {
   if (!me) return void location.replace('/login?next=/settings')
@@ -98,8 +130,8 @@ ${GROUPS.map(([title, items]) => `<div class="set-group"><h2>${title}</h2>${item
   let dirty = false
 
   /** A pane's frame: Back (on a phone), its title, and its body. */
-  const frame = (title, body, sub = '') =>
-    `<div class="pane-h"><button class="btn ghost small set-back" type="button" data-back>Back</button><div><h2>${title}</h2>${sub ? `<p class="muted small">${sub}</p>` : ''}</div></div>${body}`
+  const frame = (id, body, sub = '', extra = '') =>
+    `<div class="pane-h"><button class="btn ghost small set-back" type="button" data-back>Back</button><div><h2>${TITLE[id]}${extra}</h2>${sub ? `<p class="muted small">${sub}</p>` : ''}</div></div>${body}`
 
   /** Changes not saved yet are asked about before leaving the pane. */
   const leave = () => !dirty || confirm('Leave without saving your changes?')
@@ -162,8 +194,16 @@ ${GROUPS.map(([title, items]) => `<div class="set-group"><h2>${title}</h2>${item
     const body = Object.fromEntries(fields.map((f) => [f, draft[f]]))
     if ('handle' in body && !HANDLE.test(body.handle)) return fail('A username is 3 to 30 lower-case letters, digits, dots or underscores, starting and ending with a letter or digit.')
     if ('name' in body && !String(body.name).trim()) return fail('Your name cannot be empty.')
+    if ('headline' in body && String(body.headline).split('\n').length > 8) return fail('A bio has up to 8 lines.')
+    if ('links' in body) {
+      body.links = (body.links || []).map((l) => ({ label: l.label.trim(), url: l.url.trim() })).filter((l) => l.label || l.url)
+      for (const l of body.links) if (l.url && !/^[a-z][a-z0-9+.-]*:/i.test(l.url)) l.url = `https://${l.url}`
+      if (body.links.some((l) => !l.label)) return fail('Give each link a name, like Website or Portfolio.')
+      if (body.links.some((l) => !/^https?:\/\/[^\s<>"]+$/i.test(l.url))) return fail('Each link needs a web address, starting with https://')
+    }
     if ('skills' in body) body.skills = [...new Set(body.skills.map((s) => s.slice(0, 60)))].slice(0, 60)
     for (const kind of Object.keys(SECTIONS)) if (kind in body) body[kind] = (body[kind] || []).filter((x) => filled(kind, x))
+    if ((body.projects || []).some((x) => x.video && !ytId(x.video))) return fail('A project’s video is a YouTube link, like https://youtu.be/…')
     button.disabled = true
     try {
       Object.assign(me, await api('PATCH', '/social/me', body))
@@ -180,10 +220,10 @@ ${GROUPS.map(([title, items]) => `<div class="set-group"><h2>${title}</h2>${item
   }
 
   const DRAW = {
-    // ── Edit profile: the pictures, as they will look, and who you are
+    // ── Edit Profile: the pictures, as they will look, who you are, and your links
     async edit() {
       const welcome = param('welcome')
-        ? '<div class="card pad stack" style="margin-bottom:18px"><h3>Welcome to Oporch</h3><p class="muted">Add a photo and a headline so people know you. Have the desktop app? Fill everything in from it.</p></div>'
+        ? '<div class="card pad stack" style="margin-bottom:18px"><h3>Welcome to Oporch</h3><p class="muted">Add a photo, a bio and links to your work, so people know you. Have the desktop app? Fill everything in from it.</p></div>'
         : ''
       const pictures = () => `<div class="pic-head card">
 <div class="pic-cover"${draft.cover ? ` style="background-image:url('${esc(API + draft.cover)}')"` : ''}>
@@ -192,26 +232,46 @@ ${GROUPS.map(([title, items]) => `<div class="set-group"><h2>${title}</h2>${item
 <div class="pic-me"><div class="pic-av">${avatar(draft, 'xl')}</div><div class="grow"><b>${esc(draft.name)}</b><div class="muted small">@${esc(draft.handle)}</div></div>
 <div class="row wrap"><label class="btn small">Change photo<input type="file" accept="image/jpeg,image/png,image/webp" hidden data-pic="avatar"></label>${draft.avatar ? '<button class="btn ghost small" type="button" data-unpic="avatar">Remove</button>' : ''}</div></div>
 </div>`
-      const fields = ['name', 'handle', 'pronouns', 'headline', 'location', 'website', 'about']
+      /** One link: its icon as it will show, its name, and where it goes. */
+      const linkRow = (l, i) => `<div class="link-row" data-link="${i}"><span class="link-ic" data-link-ic>${linkIcon(l)}</span><input class="input" data-link-label list="link-names" maxlength="40" placeholder="Name, like Website" value="${esc(l.label)}" aria-label="The link’s name"><input class="input" data-link-url type="url" maxlength="500" placeholder="https://" value="${esc(l.url)}" aria-label="Where it goes"><button class="btn ghost small" type="button" data-rm-link aria-label="Remove this link">Remove</button></div>`
+      const linkList = () => (draft.links || []).map(linkRow).join('') || '<p class="muted small">No links yet.</p>'
+      const fields = ['name', 'handle', 'pronouns', 'headline', 'location', 'about', 'links']
       pane.innerHTML = frame(
-        'Edit profile',
+        'edit',
         `${welcome}<div data-pics>${pictures()}</div>
 <div class="stack" style="margin-top:20px">
 <div class="grid2">${input('name', 'Name', 'maxlength="100" required autocomplete="name"')}${input('pronouns', 'Pronouns', 'maxlength="30" placeholder="she/her, he/him, they/them"')}</div>
-<label class="field"><span>Username</span><input data-k="handle" data-dirty value="${esc(draft.handle)}" maxlength="30" pattern="[a-z0-9][a-z0-9._]{1,28}[a-z0-9]" autocapitalize="none" spellcheck="false"><span class="hint">Your profile’s address: ${esc(location.host)}/u?h=<b data-handle-preview>${esc(draft.handle)}</b></span></label>
-${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or the job you want"')}
-<div class="grid2">${input('location', 'Location', 'maxlength="100" placeholder="City, Country"')}${input('website', 'Website', 'maxlength="300" type="url" placeholder="https://"')}</div>
+<label class="field"><span>Username</span><input data-k="handle" data-dirty value="${esc(draft.handle)}" maxlength="30" pattern="[a-z0-9][a-z0-9._]{1,28}[a-z0-9]" autocapitalize="none" spellcheck="false"><span class="hint">Your profile’s address: ${esc(location.host)}/u/<b data-handle-preview>${esc(draft.handle)}</b></span></label>
+<label class="field"><span>Bio</span><textarea data-k="headline" data-dirty maxlength="300" rows="4" style="min-height:96px" placeholder="What you do and what you make. Use a few lines if you like.">${esc(draft.headline ?? '')}</textarea><span class="hint" data-bio-left>${300 - (draft.headline ?? '').length} characters left, up to 8 lines</span></label>
+${input('location', 'Location', 'maxlength="100" placeholder="City, Country"')}
 <label class="field"><span>About</span><textarea data-k="about" data-dirty maxlength="2600" style="min-height:150px">${esc(draft.about ?? '')}</textarea><span class="hint" data-left>${2600 - (draft.about ?? '').length} characters left</span></label>
 </div>
+<section class="card pad stack links-ed" aria-labelledby="links-h">
+<div><h3 id="links-h">Links</h3><p class="muted small">Buttons on the right of your profile, under your cover: each shows its name and an icon, and goes to its address when pressed. The address itself is not shown.</p></div>
+<div class="stack" data-links>${linkList()}</div>
+<div><button class="btn ghost small" type="button" data-add-link>Add a link</button></div>
+<datalist id="link-names">${LINK_NAMES.map((n) => `<option value="${n}"></option>`).join('')}</datalist>
+</section>
 <div class="save-bar"><button class="btn" type="button" data-save>Save</button><button class="btn ghost" type="button" data-import>Fill in from the desktop app</button><a class="textbtn" href="${profileUrl(me)}">See your profile</a><span class="err grow" hidden></span></div>`,
-        'How people see you: your photo and cover, name, headline and About.'
+        'How people see you: your photo and cover, name, bio, links and About.'
       )
+      const redrawLinks = () => ($('[data-links]', pane).innerHTML = linkList())
       pane.oninput = (e) => {
+        const row = e.target.closest('[data-link]')
+        if (row) {
+          const l = draft.links[+row.dataset.link]
+          if (e.target.matches('[data-link-label]')) l.label = e.target.value
+          if (e.target.matches('[data-link-url]')) l.url = e.target.value
+          $('[data-link-ic]', row).innerHTML = linkIcon(l)
+          dirty = true
+          return
+        }
         const el = e.target.closest('[data-k]')
         if (!el) return
         draft[el.dataset.k] = el.value
         if (el.dataset.k === 'handle') $('[data-handle-preview]', pane).textContent = el.value
         if (el.dataset.k === 'about') $('[data-left]', pane).textContent = `${2600 - el.value.length} characters left`
+        if (el.dataset.k === 'headline') $('[data-bio-left]', pane).textContent = `${300 - el.value.length} characters left, up to 8 lines`
       }
       pane.onchange = async (e) => {
         const picked = e.target.closest('[data-pic]')
@@ -246,14 +306,29 @@ ${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or th
           }
           return
         }
-        if (t.closest('[data-import]')) return void importFromApp()
-        if (t.closest('[data-save]')) await save(fields, t.closest('[data-save]'))
+        if (t.closest('[data-add-link]')) {
+          if ((draft.links ||= []).length >= 12) return toast('A profile has up to 12 links.')
+          draft.links.push({ label: draft.links.length ? '' : 'Website', url: '' })
+          dirty = true
+          redrawLinks()
+          return void [...pane.querySelectorAll('[data-link-url]')].at(-1)?.focus()
+        }
+        const rm = t.closest('[data-rm-link]')
+        if (rm) {
+          draft.links.splice(+rm.closest('[data-link]').dataset.link, 1)
+          dirty = true
+          return redrawLinks()
+        }
+        if (t.closest('[data-import]')) return void importFromApp(() => void DRAW.edit())
+        if (t.closest('[data-save]')) {
+          if (await save(fields, t.closest('[data-save]'))) redrawLinks()
+        }
       }
     },
 
-    // ── Experience and more: LinkedIn's sections, one at a time
+    // ── Other Details: your projects first, then LinkedIn's sections, one at a time
     async sections() {
-      let kind = 'experience'
+      let kind = 'projects'
       const tabs = () =>
         `<div class="feed-tabs sub-tabs" role="tablist">${[...Object.entries(SECTIONS).map(([k, s]) => [k, s.short ?? s.title]), ['skills', 'Skills']]
           .map(([k, t]) => `<button type="button" role="tab" data-kind="${k}" aria-selected="${k === kind}">${t}<span class="n">${k === 'skills' ? draft.skills.length || '' : (draft[k] || []).length || ''}</span></button>`)
@@ -268,7 +343,15 @@ ${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or th
               return `<label class="field"><span>${label}</span><select data-k="${k(f)}" data-dirty>${Object.entries(PROFICIENCY)
                 .map(([v, t]) => `<option value="${v}"${x[f] === v ? ' selected' : ''}>${t}</option>`)
                 .join('')}</select></label>`
-            const attrs = type === 'date' ? 'maxlength="20" placeholder="2023-04"' : type === 'url' ? `type="url" maxlength="${max}" placeholder="https://"` : `maxlength="${max}"`
+            if (type === 'list') return `<label class="field span2"><span>${label}</span><input data-k="${k(f)}" data-dirty value="${esc((x[f] || []).join(', '))}" placeholder="Figma, React, Photography"></label>`
+            if (type === 'pic')
+              return `<div class="field span2"><span>${label}</span><div class="proj-pic">${
+                x.image ? `<img src="${esc(API)}/media/${esc(x.image)}" alt="">` : '<span class="muted small">None. A video, when there is one, shows instead.</span>'
+              }<label class="btn ghost small">${x.image ? 'Change picture' : 'Add a picture'}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden data-proj-pic="${i}"></label>${
+                x.image ? `<button class="btn ghost small" type="button" data-proj-unpic="${i}">Remove</button>` : ''
+              }</div></div>`
+            const attrs =
+              type === 'date' ? 'maxlength="20" placeholder="2023-04"' : type === 'url' ? `type="url" maxlength="${max}" placeholder="${f === 'video' ? 'https://www.youtube.com/watch?v=…' : 'https://'}"` : `maxlength="${max}"`
             return `<label class="field"><span>${label}</span><input data-k="${k(f)}" data-dirty value="${esc(x[f] ?? '')}" ${attrs}${f === 'end' && x.current ? ' disabled' : ''}></label>`
           })
           .join('')
@@ -280,13 +363,13 @@ ${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or th
 <p class="muted small" style="margin-top:6px">Anyone on Oporch can endorse them. A skill you take off takes its endorsements with it.</p>`
           : `<div class="sec-h"><h3>${SECTIONS[kind].title}</h3><button class="btn ghost small" type="button" data-add>${SECTIONS[kind].add}</button></div>
 <div class="list-ed">${(draft[kind] || []).map(entryCard).join('') || '<p class="muted small">Nothing added yet.</p>'}</div>
-<p class="muted small" style="margin-top:10px">Dates as 2023-04 (April 2023), or a year.</p>`
+<p class="muted small" style="margin-top:10px">Dates as 2023-04 (April 2023), or a year.${kind === 'projects' ? ' A project shows its YouTube video when it has one, else its picture.' : ''}</p>`
       const draw = () => {
         pane.innerHTML = frame(
-          'Experience and more',
+          'sections',
           `${tabs()}<div class="stack sub-body">${body()}</div>
 <div class="save-bar"><button class="btn" type="button" data-save>Save</button><button class="btn ghost" type="button" data-import>Fill in from the desktop app</button><span class="err grow" hidden></span></div>`,
-          'What you have done, as LinkedIn lays it out. Everything here shows on your profile.'
+          'Your projects, experience, education and the rest, as LinkedIn lays them out. Everything here shows on your profile.'
         )
       }
       draw()
@@ -294,7 +377,8 @@ ${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or th
         const el = e.target
         if (!el.matches('[data-k]')) return
         const path = el.dataset.k.split('.')
-        const value = el.type === 'checkbox' ? el.checked : path[0] === 'skills' ? commas(el.value) : el.value
+        const list = path[0] === 'skills' || typeOf(path[0], path[2]) === 'list'
+        const value = el.type === 'checkbox' ? el.checked : list ? commas(el.value).slice(0, path[0] === 'skills' ? 60 : 15) : el.value
         if (path.length === 1) draft[path[0]] = value
         else draft[path[0]][+path[1]][path[2]] = value
         if (path[2] === 'current') {
@@ -303,7 +387,21 @@ ${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or th
           if (el.checked) end.value = draft[path[0]][+path[1]].end = ''
         }
       }
-      pane.onchange = pane.oninput
+      pane.onchange = async (e) => {
+        const pic = e.target.closest('[data-proj-pic]')
+        const file = pic?.files?.[0]
+        if (!file) return pane.oninput(e)
+        pic.value = ''
+        try {
+          const r = await upload(file, 'project', 4096)
+          draft.projects[+pic.dataset.projPic].image = r.id
+          dirty = true
+          draw()
+          toast('Picture added. Press Save to keep it.')
+        } catch (x) {
+          toast(esc(x.message))
+        }
+      }
       pane.onclick = async (e) => {
         const t = e.target
         const tab = t.closest('[data-kind]')
@@ -315,7 +413,13 @@ ${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or th
           ;(draft[kind] ||= []).push(blank(kind))
           dirty = true
           draw()
-          return void [...pane.querySelectorAll(`[data-k^="${kind}."]`)].at(-SECTIONS[kind].fields.length)?.focus()
+          return void [...pane.querySelectorAll(`[data-k^="${kind}."]`)].at(-SECTIONS[kind].fields.filter(([, , type]) => type !== 'pic').length)?.focus()
+        }
+        const unpic = t.closest('[data-proj-unpic]')
+        if (unpic) {
+          draft.projects[+unpic.dataset.projUnpic].image = null
+          dirty = true
+          return draw()
         }
         const rm = t.closest('[data-rm]')
         if (rm) {
@@ -330,52 +434,68 @@ ${input('headline', 'Headline', 'maxlength="220" placeholder="What you do, or th
       }
     },
 
-    // ── Open to work and hiring
+    // ── Open to Work and Hiring: one or the other, never both (the owner, 2026-10-23)
     async work() {
       const draw = () => {
         const o = draft.openToWork
+        const mode = o ? 'open' : draft.hiring ? 'hiring' : 'none'
+        const choice = (value, title, text) => `<label class="toggle"><span><b>${title}</b><span class="muted small">${text}</span></span><input type="radio" name="status" value="${value}" data-status${mode === value ? ' checked' : ''}></label>`
+        const ticks = (map, picked, attr) => Object.entries(map).map(([v, t]) => `<label class="check"><input type="checkbox" ${attr}="${v}" data-dirty${picked.includes(v) ? ' checked' : ''}><span>${t}</span></label>`).join('')
         pane.innerHTML = frame(
-          'Open to work and hiring',
+          'work',
           `<div class="stack">
-<label class="check"><input type="checkbox" data-otw-on data-dirty${o ? ' checked' : ''}><span><b>I am open to work</b><br><span class="muted small">Recruiters and the people who follow you see what you are looking for. The #OpenToWork frame on your photo is up to you.</span></span></label>
+<div class="card" role="radiogroup" aria-label="Open to work or hiring">
+${choice('none', 'Neither', 'Your profile says neither.')}
+${choice('open', 'I am open to work', 'A green ring round your photo wherever it shows on Oporch, and what you are looking for on your profile, under Open to work.')}
+${choice('hiring', 'I am hiring', 'A blue ring round your photo wherever it shows on Oporch, so people know to message you about your roles.')}
+</div>
 ${
   o
-    ? `<div class="grid2">
+    ? `<div class="card pad stack"><h3>What you are looking for</h3>
+<div class="grid2">
 <label class="field"><span>Job titles, separated by commas (up to 5)</span><input data-otw="titles" data-dirty value="${esc(o.titles.join(', '))}" placeholder="Data Analyst, Product Analyst"></label>
 <label class="field"><span>Locations, separated by commas (up to 5)</span><input data-otw="places" data-dirty value="${esc(o.places.join(', '))}" placeholder="Bengaluru, Remote"></label></div>
-<div class="row wrap"><span class="small" style="font-weight:600">Workplace</span>${Object.entries(WORK_TYPE)
-        .map(([v, t]) => `<label class="check"><input type="checkbox" data-otw-type="${v}" data-dirty${o.types.includes(v) ? ' checked' : ''}><span>${t}</span></label>`)
-        .join('')}</div>
-<div class="grid2"><label class="field"><span>Start date</span><select data-otw="start" data-dirty><option value="flexible"${o.start === 'flexible' ? ' selected' : ''}>Flexible</option><option value="now"${o.start === 'now' ? ' selected' : ''}>Immediately, I am actively applying</option></select></label></div>
-<label class="check"><input type="checkbox" data-otw="frame" data-dirty${o.frame ? ' checked' : ''}><span>Show the #OpenToWork frame on my photo</span></label>`
+<div class="row wrap"><span class="small" style="font-weight:600">Workplace</span>${ticks(WORK_TYPE, o.types, 'data-otw-type')}</div>
+<div class="row wrap"><span class="small" style="font-weight:600">Job types</span>${ticks(JOB_TYPE, o.jobTypes ?? [], 'data-otw-job')}</div>
+<div class="grid2"><label class="field"><span>Start date</span><select data-otw="start" data-dirty>${Object.entries(START)
+        .map(([v, t]) => `<option value="${v}"${o.start === v ? ' selected' : ''}>${t}</option>`)
+        .join('')}</select></label></div></div>`
     : ''
 }
-<label class="check"><input type="checkbox" data-hiring data-dirty${draft.hiring ? ' checked' : ''}><span><b>I am hiring</b><br><span class="muted small">Puts the #Hiring frame on your photo, so people know to message you about roles.</span></span></label>
 </div>
 <div class="save-bar"><button class="btn" type="button" data-save>Save</button><span class="err grow" hidden></span></div>`,
-          'Let people know what you are looking for, or that you are hiring.'
+          'Let people know what you are looking for, or that you are hiring. One or the other, never both.'
         )
       }
       draw()
+      const toggle = (list, value, on) => {
+        const s = new Set(list)
+        on ? s.add(value) : s.delete(value)
+        return [...s]
+      }
       const read = (e) => {
         const el = e.target
+        if (el.matches('[data-status]')) {
+          draft.openToWork = el.value === 'open' ? (draft.openToWork ?? (me.openToWork ? structuredClone(me.openToWork) : { titles: [], places: [], types: [], jobTypes: [], start: 'flexible' })) : null
+          draft.hiring = el.value === 'hiring'
+          dirty = true
+          return draw()
+        }
         if (el.matches('[data-otw]')) {
           const f = el.dataset.otw
-          draft.openToWork[f] = f === 'frame' ? el.checked : f === 'start' ? el.value : commas(el.value).slice(0, 5)
-        } else if (el.matches('[data-otw-type]')) {
-          const types = new Set(draft.openToWork.types)
-          el.checked ? types.add(el.dataset.otwType) : types.delete(el.dataset.otwType)
-          draft.openToWork.types = [...types]
-        } else if (el.matches('[data-otw-on]')) {
-          draft.openToWork = el.checked ? (me.openToWork ? structuredClone(me.openToWork) : { titles: [], places: [], types: [], start: 'flexible', frame: true }) : null
-          draw()
-          dirty = true
-        } else if (el.matches('[data-hiring]')) draft.hiring = el.checked
+          draft.openToWork[f] = f === 'start' ? el.value : commas(el.value).slice(0, 5)
+        } else if (el.matches('[data-otw-type]')) draft.openToWork.types = toggle(draft.openToWork.types, el.dataset.otwType, el.checked)
+        else if (el.matches('[data-otw-job]')) draft.openToWork.jobTypes = toggle(draft.openToWork.jobTypes ?? [], el.dataset.otwJob, el.checked)
       }
       pane.onchange = read
       pane.oninput = (e) => e.target.matches('input[type=text], input:not([type])') && read(e)
       pane.onclick = async (e) => {
-        if (e.target.closest('[data-save]')) await save(['openToWork', 'hiring'], e.target.closest('[data-save]'))
+        const b = e.target.closest('[data-save]')
+        if (!b) return
+        if (await save(['openToWork', 'hiring'], b)) {
+          // Your own ring follows at once, in the menus too.
+          for (const slot of document.querySelectorAll('[data-me-av]')) slot.innerHTML = avatar(me, 'xs')
+        }
       }
     },
 
@@ -383,13 +503,13 @@ ${
       await designPane()
     },
 
-    // ── Account privacy: saved as soon as it is changed
+    // ── Account Privacy: saved as soon as it is changed
     async privacy() {
       const tick = (key, title, text) => `<label class="toggle"><span><b>${title}</b><span class="muted small">${text}</span></span><input type="checkbox" role="switch" data-p="${key}"${me[key] ? ' checked' : ''}></label>`
       pane.innerHTML = frame(
-        'Account privacy',
+        'privacy',
         `<div class="card">
-${tick('privateAccount', 'Private account', 'Only the people you approve can follow you and see your posts, your followers and who you follow. Your name, photo, headline and profile sections stay visible to everyone, so recruiters can find you, and a profile you recommend still shows that you do. Turning it off approves everyone waiting.')}
+${tick('privateAccount', 'Private account', 'Only the people you approve can follow you and see your posts, your followers and who you follow. Your name, photo, bio, links and profile sections stay visible to everyone, so recruiters can find you, and a profile you recommend still shows that you do. Turning it off approves everyone waiting.')}
 ${tick('profilePublic', 'Visitors without an account can see my profile', 'Off: only people signed in to Oporch can. Posts for anyone stay open to whoever has their link.')}
 ${tick('appliesVisible', 'People who follow me can see the jobs I apply to', 'They see your face on a job you applied to with Apply or One click apply. Off: you are only counted, never named.')}
 <label class="toggle"><span><b>Who can see my email address</b><span class="muted small">In your profile’s Contact info. Never people without an account.</span></span><select class="input" data-p="emailVisible" style="width:auto">${[
@@ -424,7 +544,7 @@ ${tick('appliesVisible', 'People who follow me can see the jobs I apply to', 'Th
     async blocked() {
       const r = await api('GET', '/social/me/blocked')
       pane.innerHTML = frame(
-        'Blocked',
+        'blocked',
         `<div class="card pad">${
           r.people.length
             ? r.people.map((p) => `<div class="person">${who(p)}<button class="btn ghost small" type="button" data-unblock="${esc(p.handle)}">Unblock</button></div>`).join('')
@@ -440,10 +560,10 @@ ${tick('appliesVisible', 'People who follow me can see the jobs I apply to', 'Th
       }
     },
 
-    // ── Password and account
+    // ── Password and Account
     async account() {
       pane.innerHTML = frame(
-        'Password and account',
+        'account',
         `<div class="card pad stack">
 <p>Signed in as <b>${esc(me.email)}</b>. The same account signs in to the desktop app.</p>
 <div class="row wrap"><a class="btn ghost" href="/items">My items</a><button class="btn ghost" type="button" data-signout>Log out</button></div>
@@ -455,7 +575,7 @@ ${tick('appliesVisible', 'People who follow me can see the jobs I apply to', 'Th
 <p class="muted small">Every other device, the app included, signs out.</p>
 <div><button class="btn" type="button" data-pw>Change password</button></div></div></div>
 <div class="card pad stack danger-zone" style="margin-top:16px"><h3>Delete your account</h3>
-<p class="muted small">This deletes your account, profile, posts, comments, likes, recommendations, messages, followers and pictures, here and in the app. It cannot be undone.</p>
+<p class="muted small">This deletes your account, profile, posts, comments, likes, recommendations, messages, followers, pictures and design, here and in the app. It cannot be undone.</p>
 <label class="field" style="max-width:360px"><span>Your password</span><input type="password" autocomplete="current-password" data-delpw></label>
 <div><button class="btn danger" type="button" data-delete>Delete everything</button></div></div>`,
         'Your sign-in, your password, and your account.'
@@ -494,7 +614,7 @@ ${tick('appliesVisible', 'People who follow me can see the jobs I apply to', 'Th
     async appearance() {
       const dark = document.documentElement.classList.contains('dark')
       pane.innerHTML = frame(
-        'Appearance',
+        'appearance',
         `<div class="card"><label class="toggle"><span><b>Light</b><span class="muted small">The default.</span></span><input type="radio" name="theme" value="light"${dark ? '' : ' checked'}></label>
 <label class="toggle"><span><b>Dark</b><span class="muted small">Easier on the eyes at night. Remembered on this browser.</span></span><input type="radio" name="theme" value="dark"${dark ? ' checked' : ''}></label></div>`,
         'How Oporch looks on this device.'
@@ -506,190 +626,257 @@ ${tick('appliesVisible', 'People who follow me can see the jobs I apply to', 'Th
     }
   }
 
-  /** "Fill in from the desktop app": what the app knows goes into the draft, to be checked and saved. */
+  /** "Fill in from the desktop app": what the app knows goes into the draft, to be checked and saved; its links join yours. */
   async function importFromApp(redraw) {
     try {
       const got = await api('GET', '/social/me/import')
-      for (const [k, v] of Object.entries(got)) if (v && (!Array.isArray(v) || v.length)) draft[k] = v
+      for (const [k, v] of Object.entries(got)) {
+        if (!v || (Array.isArray(v) && !v.length)) continue
+        if (k === 'links') draft.links = [...(draft.links || []), ...v.filter((l) => !(draft.links || []).some((m) => m.url === l.url))].slice(0, 12)
+        else draft[k] = v
+      }
       dirty = true
-      if (redraw) redraw()
-      else for (const el of pane.querySelectorAll('[data-k]')) if (typeof draft[el.dataset.k] === 'string') el.value = draft[el.dataset.k]
-      toast('Filled in from your desktop app. Check it, then press Save. Experience and the rest are under Experience and more.', 8000)
+      redraw()
+      toast('Filled in from your desktop app. Check it, then press Save. Your bio, links and About are under Edit Profile; projects, experience and the rest under Other Details.', 9000)
     } catch (x) {
       toast(esc(x.message), 7000)
     }
   }
 
-  // ── Design your profile: HTML and CSS (the owner, 2026-10-22: "just html and css"), your AI's or your own, its pictures, a live preview, the review
-  /** `keep`: the code typed so far, when the pane is drawn again (a picture added or removed). */
-  async function designPane(keep = null) {
+  /*
+   * ── Design Your Profile (the owner, 2026-10-23: "it is too confusing ... make the whole process more easier for the
+   * user to understand and do. The user should be drag and dropping the files instead of editing in the boxes, they
+   * should also be able to download the template of the files. The drag and drop place of the files and media above
+   * and the preview should be below it in its full width"). Three steps, the files and pictures in place, and the
+   * preview under them. What is dropped is saved at once as a draft; nobody sees it until it is sent and approved.
+   */
+  async function designPane() {
     const [d, mine, pics, updates] = await Promise.all([
       api('GET', '/social/me/design'),
       api('GET', `/social/u/${encodeURIComponent(me.handle)}`),
       api('GET', '/social/me/design/media'),
-      api('GET', `/social/u/${encodeURIComponent(me.handle)}/updates`).then((r) => r.updates)
+      // What others see: not a post that was turned down.
+      api('GET', `/social/u/${encodeURIComponent(me.handle)}/updates`).then((r) => r.updates.filter((u) => u.review !== 'rejected'))
     ])
     const canPublish = (me.features ?? []).includes('design')
     const state = {
       none: '',
+      draft: '<span class="state">Draft, not sent</span>',
       pending: '<span class="state pending">Waiting for review</span>',
       approved: '<span class="state approved">Approved and on your profile</span>',
       rejected: '<span class="state rejected">Not approved</span>'
     }[d.state]
-    // Nothing designed yet starts from the standard profile.
-    const code = keep ?? { html: d.html.trim() ? d.html : BASE_HTML, css: d.html.trim() ? d.css : BASE_CSS }
-    const address = (f) => `${API}${f.path}`
+    const code = { html: d.html, css: d.css, js: d.js }
+    const started = !!d.html.trim()
+    const FILES = [
+      ['html', 'index.html', 'The page'],
+      ['css', 'style.css', 'How it looks'],
+      ['js', 'script.js', 'What it does, if anything']
+    ]
+    const size = (s) => new Blob([s]).size
+    const fileRow = ([k, name, what]) =>
+      `<li class="dfile${code[k].trim() ? '' : ' none'}"><span class="dfile-n"><b>${name}</b><span class="muted small">${what}</span></span><span class="muted small">${code[k].trim() ? mb(size(code[k])) : 'Not added'}</span>${
+        code[k].trim() ? `<button class="btn ghost small" type="button" data-dl="${k}">Download</button><button class="btn ghost small" type="button" data-unfile="${k}">Remove</button>` : ''
+      }</li>`
     pane.innerHTML = frame(
-      `Design your profile ${state}`,
+      'design',
       `${d.state === 'rejected' && d.note ? `<p class="err">Why it was not approved: ${esc(d.note)}</p>` : ''}
-${d.live && d.state !== 'approved' ? '<p class="muted small">Your last approved design stays up until this one is approved.</p>' : ''}
-${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still try one out here.</p>'}
-<details class="ai card"><summary><b>Design it with your AI</b><span class="muted small">Copy a prompt into the AI you use, then paste its answer</span></summary>
-<div class="stack" style="padding:0 18px 18px">
-<p class="muted small">Change the first lines to say how you want it to look, then copy the whole prompt. Upload your pictures first (below) so the prompt lists them.</p>
-<textarea class="textarea code prompt" data-prompt spellcheck="false"></textarea>
-<div class="row wrap"><button class="btn" type="button" data-copy>Copy the prompt</button><button class="btn ghost small" type="button" data-reprompt>Start the prompt again</button></div>
-<label class="field"><span>Its answer</span><textarea class="textarea code" data-answer spellcheck="false" placeholder="Paste the AI’s whole answer here, with its code blocks" style="min-height:100px"></textarea></label>
-<div class="row wrap"><button class="btn" type="button" data-use>Use this answer</button><span class="muted small">It fills in the code below, and the preview.</span></div>
-</div></details>
-<div class="studio">
-<div class="stack studio-code">
-<label class="field"><span>HTML</span><textarea class="code" data-d="code" data-dirty spellcheck="false"></textarea></label>
-<label class="field"><span>CSS</span><textarea class="code" data-d="css" data-dirty spellcheck="false"></textarea></label>
-<details class="code-v"><summary>What the placeholders fill in</summary><ul class="small" style="margin:6px 0 0 18px">${Object.entries(PLACEHOLDERS)
-        .map(([k, v]) => `<li><code class="code">{{${k}}}</code> ${esc(v)}</li>`)
-        .join('')}<li><code class="code">data-if="name"</code> on any element shows it only when that placeholder has something</li></ul></details>
-<div class="row wrap"><button class="btn ghost small" type="button" data-dbase>Start again from the standard profile</button></div>
-</div>
-<div class="studio-prev"><div class="sec-h" style="margin:0 0 8px"><h3>Preview</h3><span class="muted small">As people will see it, a window’s height</span></div><div id="dprev" class="dprev"></div><p class="muted small" style="margin-top:8px">On your profile it fills the window, with Oporch’s menu over its left edge (on a phone, its top and bottom) and your profile’s buttons over its top right.</p></div>
-</div>
-<div class="card pad stack" style="margin-top:16px">
-<div class="sec-h" style="margin:0"><h3>Pictures and GIFs</h3><span class="muted small" data-meter></span></div>
-<div class="meter"><span data-bar></span></div>
-<p class="muted small">JPEG, PNG or GIF (GIFs up to 5 MB), at most ${pics.maxFiles}. Your design, with its pictures, can be up to ${mb(pics.budget)}.</p>
-<div class="pics">${pics.files
+${d.live && d.state !== 'approved' ? '<p class="muted small">Your last approved design stays on your profile until this one is approved.</p>' : ''}
+${canPublish ? '' : '<p><b>Publishing a design is part of Pro.</b> You can still make one and see it here.</p>'}
+<ol class="steps">
+<li class="card step"><span class="step-n" aria-hidden="true">1</span><div class="stack"><div><h3>Get the template</h3><p class="muted small">The three files a design is made of: index.html, style.css and script.js. Oporch fills your profile in wherever the template says, so your posts, projects and details stay up to date. Change the files yourself, or give them to an AI.</p></div><div class="row wrap"><button class="btn" type="button" data-template>Download the template</button>${started ? '<button class="btn ghost small" type="button" data-dl-all>Download your files</button>' : ''}</div></div></li>
+<li class="card step"><span class="step-n" aria-hidden="true">2</span><div class="stack"><div><h3>Ask your AI, if you like</h3><p class="muted small">The prompt tells an AI how the files must be made. Paste it into the AI you use, then write under it how you want your page to look, and attach the template files.</p></div><div class="row wrap"><button class="btn ghost" type="button" data-copy>Copy the prompt</button><button class="textbtn" type="button" data-see-prompt>Read it first</button></div></div></li>
+<li class="card step"><span class="step-n" aria-hidden="true">3</span><div class="stack grow"><div><h3>Drop your files here</h3><p class="muted small">Your index.html, style.css and script.js, and the pictures they use, all at once, or a folder or .zip of them. Pictures keep their names, so &lt;img src="photo.jpg"&gt; shows photo.jpg. Videos go on YouTube: put the link in a &lt;div data-youtube="…"&gt;.</p></div>
+<div class="drop" data-drop tabindex="0" role="button" aria-label="Drop your files here, or press to choose them">${UPLOAD}<b>Drop files, a folder or a .zip here</b><span class="muted small">or press to choose them</span><input type="file" multiple hidden data-pick accept=".html,.htm,.css,.js,.mjs,.zip,image/jpeg,image/png,image/gif,image/webp"></div>
+<p class="muted small" data-progress hidden></p>
+<ul class="dfiles">${FILES.map(fileRow).join('')}</ul>
+<div class="dpics-h"><b>Pictures</b><span class="muted small">${pics.files.length} of ${pics.maxFiles} · ${mb(pics.used)} of ${mb(pics.budget)} used with your files</span></div>
+<div class="meter"><span style="width:${Math.min(100, (pics.used / pics.budget) * 100)}%"></span></div>
+${
+  pics.files.length
+    ? `<div class="pics">${pics.files
         .map(
-          (f) => `<div class="pic" data-pic-id="${esc(f.id)}"><img src="${esc(address(f))}" alt=""><div class="small muted">${mb(f.bytes)}</div><div class="row wrap" style="gap:4px"><button class="btn ghost small" type="button" data-insert>Insert</button><button class="btn ghost small" type="button" data-copyurl>Copy address</button><button class="btn ghost small" type="button" data-pic-rm>Remove</button></div></div>`
+          (f) => `<div class="pic" data-pic-id="${esc(f.id)}"><img src="${esc(API + f.path)}" alt="" loading="lazy"><b class="pic-n" title="${esc(f.name ?? '')}">${esc(f.name ?? 'No name')}</b><span class="small muted">${mb(f.bytes)}</span><div class="row wrap" style="gap:4px"><button class="btn ghost small" type="button" data-copyname>${f.name ? 'Copy name' : 'Copy address'}</button><button class="btn ghost small" type="button" data-pic-rm>Remove</button></div></div>`
         )
-        .join('')}${pics.files.length < pics.maxFiles ? '<label class="pic add"><input type="file" accept="image/jpeg,image/png,image/gif" hidden data-dpic><span>Upload a picture</span></label>' : ''}</div>
-</div>
-<div class="save-bar"><button class="btn" type="button" data-dsend${canPublish ? '' : ' disabled'}>Send for review</button>${d.state !== 'none' ? '<button class="btn danger" type="button" data-ddel>Remove my design</button>' : ''}<span class="err grow" hidden></span></div>`,
-      'Make your profile your own, in HTML and CSS. Your posts, projects, experience and everything else fill in by themselves, so it stays up to date. We check every design before it shows on your profile.'
+        .join('')}</div>`
+    : '<p class="muted small">No pictures yet. Drop them in with your files.</p>'
+}
+<p class="muted small">Your AI gave you code instead of files? <button class="textbtn" type="button" data-paste>Paste its answer</button></p>
+</div></li>
+</ol>
+<section class="card dprev-card" aria-label="Preview">
+<div class="sec-h dprev-h"><div><h3>Preview</h3><p class="muted small">${started ? 'Your design as people will see it, filled in from your profile.' : 'Nothing dropped yet: this is the template, filled in from your profile.'} On your profile it fills the window, with Oporch’s menu over its left edge (on a phone, its top and bottom) and two small bars of your profile’s buttons over its right corners.</p></div>
+<div class="feed-tabs" role="tablist" aria-label="Preview size"><button type="button" role="tab" data-size="wide" aria-selected="true">Wide</button><button type="button" role="tab" data-size="phone" aria-selected="false">Phone</button></div></div>
+<div id="dprev" class="dprev"></div>
+</section>
+<div class="save-bar"><button class="btn" type="button" data-dsend${canPublish && started && (d.state === 'draft' || d.state === 'rejected') ? '' : ' disabled'}>${d.state === 'pending' ? 'Waiting for review' : d.state === 'approved' ? 'Approved' : 'Send for review'}</button>${started ? '<button class="btn ghost" type="button" data-dbase>Start again from the template</button>' : ''}${d.state !== 'none' ? '<button class="btn danger" type="button" data-ddel>Remove my design</button>' : ''}<span class="err grow" hidden></span></div>`,
+      'Make your profile page your own: a small website of HTML, CSS and JavaScript. Your posts, projects, experience and everything else fill in by themselves. We check every design before it shows on your profile.',
+      state ? ` ${state}` : ''
     )
 
-    const codeBox = $('[data-d=code]', pane)
-    const cssBox = $('[data-d=css]', pane)
     const prev = $('#dprev', pane)
     const err = $('.save-bar .err', pane)
-    const picBytes = pics.files.reduce((s, f) => s + f.bytes, 0)
-    const meter = () => {
-      const used = picBytes + new Blob([codeBox.value]).size + new Blob([cssBox.value]).size
-      $('[data-meter]', pane).textContent = `${mb(used)} of ${mb(pics.budget)} used`
-      $('[data-bar]', pane).style.width = `${Math.min(100, (used / pics.budget) * 100)}%`
-      $('.meter', pane).classList.toggle('over', used > pics.budget)
+    const progress = $('[data-progress]', pane)
+    mountDesign(prev, started ? { ...code, files: d.files } : { html: TEMPLATE_HTML, css: TEMPLATE_CSS, js: TEMPLATE_JS, files: d.files }, mine, updates)
+
+    /** Saved as the draft: these files in place of what was there. */
+    const keep = async (next) => {
+      await api('PUT', '/social/me/design', { ...code, ...next, submit: false })
     }
-    const aiPrompt = () => designPrompt({ headline: me.headline, pictures: pics.files.map(address) })
-    const preview = () => {
-      meter()
-      mountDesign(prev, { html: codeBox.value, css: cssBox.value }, mine, updates)
-    }
-    const fill = () => {
-      codeBox.value = code.html
-      cssBox.value = code.css
-      $('[data-prompt]', pane).value = aiPrompt()
-      preview()
-    }
-    fill()
-    let typing = 0
-    pane.oninput = (e) => {
-      if (!e.target.closest('[data-d]')) return
-      code.html = codeBox.value
-      code.css = cssBox.value
-      clearTimeout(typing)
-      typing = setTimeout(preview, 400)
-    }
-    pane.onchange = async (e) => {
-      const input = e.target.closest('[data-dpic]')
-      const file = input?.files?.[0]
-      if (!file) return
+    /** What was dropped or chosen: pictures uploaded by their names, the files saved as the draft, the pane drawn again. */
+    const take = async (dropped) => {
+      const got = await sortFiles(await dropped)
+      const failed = []
+      let uploaded = 0
+      progress.hidden = false
+      for (const [i, f] of got.pictures.entries()) {
+        progress.textContent = `Uploading ${f.name}, ${i + 1} of ${got.pictures.length}…`
+        try {
+          await upload(f, 'design', 4096, f.name)
+          uploaded++
+        } catch (x) {
+          failed.push(`${f.name}: ${x.message}`)
+        }
+      }
+      const next = Object.fromEntries(['html', 'css', 'js'].filter((k) => got[k] !== null).map((k) => [k, got[k]]))
       try {
-        await upload(file, 'design', 2000)
-        // The code typed so far stays: the pane is drawn again from it.
-        await designPane({ ...code })
-        toast('Uploaded. Insert it into your code, or ask your AI to use it.')
+        if (Object.keys(next).length) {
+          progress.textContent = 'Saving your files…'
+          await keep(next)
+        }
       } catch (x) {
-        toast(esc(x.message))
+        failed.push(x.message)
+      }
+      const said = [
+        Object.keys(next).length ? `Added ${Object.keys(next).map((k) => FILES.find(([f]) => f === k)[1]).join(', ')}.` : '',
+        uploaded ? `${uploaded} picture${uploaded === 1 ? '' : 's'} uploaded.` : '',
+        got.unused.length ? `Not used: ${got.unused.slice(0, 5).join(', ')}${got.unused.length > 5 ? ' and more' : ''} (a design takes HTML, CSS, JavaScript and pictures).` : '',
+        failed.length ? `Not added: ${failed.join(' ')}` : ''
+      ].filter(Boolean)
+      await designPane()
+      toast(esc(said.join(' ') || 'Nothing there a design can use: drop your index.html, style.css, script.js and pictures.'), failed.length || got.unused.length ? 9000 : 5000)
+    }
+
+    const zone = $('[data-drop]', pane)
+    const picker = $('[data-pick]', pane)
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault()
+      zone.classList.add('over')
+    })
+    zone.addEventListener('dragleave', () => zone.classList.remove('over'))
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault()
+      zone.classList.remove('over')
+      // Read while the drop is still happening: a dropped folder can only be opened then.
+      void take(droppedFiles(e.dataTransfer)).catch((x) => toast(esc(x.message)))
+    })
+    zone.addEventListener('keydown', (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), picker.click()))
+    pane.onchange = (e) => {
+      if (e.target !== picker || !picker.files?.length) return
+      const list = [...picker.files]
+      picker.value = ''
+      void take(droppedFiles(list)).catch((x) => toast(esc(x.message)))
+    }
+
+    const copyPrompt = async () => {
+      try {
+        await navigator.clipboard.writeText(designPrompt())
+        toast('Prompt copied. Paste it into your AI, then write how you want your page to look.')
+      } catch {
+        seePrompt()
       }
     }
-    const insert = (url) => {
-      const at = codeBox.selectionStart ?? codeBox.value.length
-      codeBox.value = `${codeBox.value.slice(0, at)}<img src="${url}" alt="">${codeBox.value.slice(at)}`
-      code.html = codeBox.value
-      dirty = true
-      preview()
+    const seePrompt = () => {
+      const { el } = dialog(
+        `<div class="dialog-h"><h2>The prompt for your AI</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div><div class="dialog-b stack"><p class="muted small">It says only how the files must be made. Under its last line, write how you want your page to look.</p><textarea class="textarea code prompt" readonly spellcheck="false">${esc(designPrompt())}</textarea></div><div class="dialog-f"><button class="btn" type="button" data-copy-in>Copy the prompt</button></div>`
+      )
+      $('[data-copy-in]', el).addEventListener('click', async () => {
+        const box = $('textarea', el)
+        box.select()
+        await navigator.clipboard.writeText(box.value).then(() => toast('Prompt copied.'), () => toast('Press Ctrl+C (or Cmd+C) to copy it.'))
+      })
     }
+    const paste = () => {
+      const { el, close } = dialog(
+        `<div class="dialog-h"><h2>Paste your AI’s answer</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div><div class="dialog-b stack"><p class="muted small">The whole answer, with its code blocks: the HTML, CSS and JavaScript in it become your files.</p><textarea class="textarea code" spellcheck="false" style="min-height:220px" aria-label="The AI’s answer"></textarea></div><div class="dialog-f"><button class="btn" type="button" data-use>Use it</button></div>`
+      )
+      $('[data-use]', el).addEventListener('click', async () => {
+        const got = parseAnswer($('textarea', el).value)
+        if (!got.html) return toast('That answer has no HTML in it. Paste the whole answer, with its code blocks.')
+        try {
+          await keep(got)
+          close()
+          await designPane()
+          toast('Your files are in. Check the preview, then send it for review.')
+        } catch (x) {
+          toast(esc(x.message))
+        }
+      })
+    }
+
     pane.onclick = async (e) => {
       const t = e.target
-      if (t.closest('[data-copy]')) {
-        try {
-          await navigator.clipboard.writeText($('[data-prompt]', pane).value)
-          toast('Prompt copied. Paste it into your AI.')
-        } catch {
-          $('[data-prompt]', pane).select()
-          toast('Press Ctrl+C (or Cmd+C) to copy it.')
-        }
-        return
+      if (t.closest('[data-drop]') && !t.closest('input')) return picker.click()
+      if (t.closest('[data-template]')) {
+        download('oporch-profile-template.zip', zip([{ name: 'index.html', text: TEMPLATE_HTML }, { name: 'style.css', text: TEMPLATE_CSS }, { name: 'script.js', text: TEMPLATE_JS }, { name: 'README.txt', text: designReadme() }]))
+        return toast('The template is downloading: index.html, style.css, script.js and a README.')
       }
-      if (t.closest('[data-reprompt]')) return void ($('[data-prompt]', pane).value = aiPrompt())
-      if (t.closest('[data-use]')) {
-        const got = parseAnswer($('[data-answer]', pane).value)
-        if (!got.html) return toast('That answer has no HTML in it. Paste the whole answer, with its code blocks.')
-        code.html = got.html
-        code.css = got.css
-        dirty = true
-        fill()
-        prev.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        return toast('Your design is in. Check the preview, then send it for review.')
+      if (t.closest('[data-dl-all]')) return download('my-oporch-design.zip', zip(FILES.filter(([k]) => code[k].trim()).map(([k, name]) => ({ name, text: code[k] }))))
+      const dl = t.closest('[data-dl]')
+      if (dl) {
+        const [, name] = FILES.find(([k]) => k === dl.dataset.dl)
+        return download(name, new Blob([code[dl.dataset.dl]], { type: 'text/plain' }))
       }
-      if (t.closest('[data-dbase]')) {
-        if (!confirm('Replace your code with the standard profile?')) return
-        code.html = BASE_HTML
-        code.css = BASE_CSS
-        dirty = true
-        return fill()
+      if (t.closest('[data-copy]')) return void copyPrompt()
+      if (t.closest('[data-see-prompt]')) return seePrompt()
+      if (t.closest('[data-paste]')) return paste()
+      const size = t.closest('[data-size]')
+      if (size) {
+        for (const b of pane.querySelectorAll('[data-size]')) b.setAttribute('aria-selected', String(b === size))
+        return prev.classList.toggle('phone', size.dataset.size === 'phone')
+      }
+      const unfile = t.closest('[data-unfile]')
+      if (unfile) {
+        const [, name] = FILES.find(([k]) => k === unfile.dataset.unfile)
+        if (!confirm(`Remove ${name} from your design?`)) return
+        await keep({ [unfile.dataset.unfile]: '' }).catch((x) => toast(esc(x.message)))
+        return void designPane()
       }
       const pic = t.closest('[data-pic-id]')
       if (pic) {
-        const url = `${API}/media/${pic.dataset.picId}`
-        if (t.closest('[data-insert]')) return insert(url)
-        if (t.closest('[data-copyurl]')) {
-          await navigator.clipboard.writeText(url).then(() => toast('Address copied.'), () => prompt('Copy this address:', url))
+        const f = pics.files.find((x) => x.id === pic.dataset.picId)
+        if (t.closest('[data-copyname]')) {
+          const text = f?.name ?? `${API}${f?.path ?? ''}`
+          await navigator.clipboard.writeText(text).then(() => toast(f?.name ? `Copied “${esc(f.name)}”. Use it as src="${esc(f.name)}".` : 'Address copied.'), () => prompt('Copy this:', text))
           return
         }
         if (t.closest('[data-pic-rm]')) {
-          if (!confirm('Remove this picture? A design that uses it will show nothing there.')) return
+          if (!confirm('Remove this picture? A design that uses it shows nothing there.')) return
           await api('DELETE', `/social/media/${encodeURIComponent(pic.dataset.picId)}`).catch((x) => toast(esc(x.message)))
-          return void designPane({ ...code })
+          return void designPane()
         }
       }
       if (t.closest('[data-dsend]')) {
         err.hidden = true
         try {
-          await api('PUT', '/social/me/design', { html: codeBox.value, css: cssBox.value })
-          dirty = false
+          await api('PUT', '/social/me/design', { ...code, submit: true })
           toast('Sent for review. We will email you when it is decided.')
-          void designPane()
+          return void designPane()
         } catch (x) {
           err.textContent = x.message
           err.hidden = false
         }
         return
       }
+      if (t.closest('[data-dbase]')) {
+        if (!confirm('Replace your files with the template? Your pictures stay.')) return
+        await keep({ html: TEMPLATE_HTML, css: TEMPLATE_CSS, js: TEMPLATE_JS }).catch((x) => toast(esc(x.message)))
+        return void designPane()
+      }
       if (t.closest('[data-ddel]')) {
-        if (!confirm('Remove your design? Your profile goes back to the standard one.')) return
+        if (!confirm('Remove your design? Your profile goes back to the standard one. Your pictures stay until you remove them.')) return
         await api('DELETE', '/social/me/design').catch((x) => toast(esc(x.message)))
-        dirty = false
-        void designPane()
+        return void designPane()
       }
     }
   }

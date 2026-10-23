@@ -6,10 +6,10 @@
  * Every page is the same shell: the menus, built into the page, and a <main> filled in here. This file
  * is what every page shares: the API (api.givemeafuckingjob.com until Oporch's own domain, signed in by an
  * HttpOnly cookie no script can read), who is signed in, the menus' badges, and the pieces pages are made
- * of: people and following, posts (the server's "updates": likes, comments beside them, reposts, sending,
- * recommendations of a profile, their review), dialogs, pictures and cropping them, jobs and One click
- * apply. A member's own profile design is design.js, a post's comments comments.js. Each page's own part
- * is /pages/<name>.js, named by <body data-page>.
+ * of: people and following (a profile is /u/<username>), posts (the server's "updates": likes, comments beside
+ * them, reposts, sending, pinning, recommendations of a profile, their review), YouTube videos as boxes,
+ * dialogs, pictures and cropping them, jobs and One click apply. A member's own profile design is design.js,
+ * a post's comments comments.js. Each page's own part is /pages/<name>.js, named by <body data-page>.
  *
  * Everything a person wrote goes through esc() on its way into the page. A profile design is the one
  * thing shown as written, and only inside a sandboxed frame (design.js).
@@ -38,13 +38,53 @@ const store = (key, value) => {
 const LOCAL = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
 export const API = ((LOCAL && stored('gmafj.api')) || 'https://api.givemeafuckingjob.com').replace(/\/+$/, '')
 
+/** This website, for what a profile design frames from it (design.js: /yt.html). The review console's stand-in names the public one. */
+export const SITE = location.origin
+
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 export const $ = (sel, root = document) => root.querySelector(sel)
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)]
 export const media = (path) => (path ? API + path : '')
 export const param = (key) => new URLSearchParams(location.search).get(key)
-export const profileUrl = (p) => `/u?h=${encodeURIComponent(p.handle)}`
+/** A profile's address (the owner, 2026-10-23: "The users should be at /u/ in the link"): /u/<username>. */
+export const profileUrl = (p) => `/u/${encodeURIComponent(p.handle)}`
 export const plural = (n, one, many = `${one}s`) => `${Number(n).toLocaleString('en')} ${n === 1 ? one : many}`
+
+/** A YouTube video's id from any of its links (watch, youtu.be, shorts, embed, live), or from the id itself; else null. */
+export function ytId(link) {
+  const s = String(link ?? '').trim()
+  if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s
+  let u
+  try {
+    u = new URL(s)
+  } catch {
+    return null
+  }
+  const host = u.hostname.replace(/^(www|m|music)\./, '')
+  const id =
+    host === 'youtu.be'
+      ? u.pathname.slice(1).split('/')[0]
+      : host === 'youtube.com' || host === 'youtube-nocookie.com'
+        ? u.pathname === '/watch'
+          ? u.searchParams.get('v')
+          : /^\/(?:embed|shorts|live|v)\/([^/?#]+)/.exec(u.pathname)?.[1]
+        : null
+  return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null
+}
+/**
+ * A YouTube video as a box on the page (the owner, 2026-10-23: "make videos be youtube video boxes"): its picture
+ * and a play button, the player itself only once it is pressed (app.js's click), privacy-enhanced.
+ */
+export const ytBox = (id, title = 'Video') =>
+  `<div class="yt" data-yt="${esc(id)}"><img src="https://i.ytimg.com/vi/${esc(id)}/hqdefault.jpg" alt="" loading="lazy"><button class="yt-play" type="button" aria-label="Play ${esc(title)}"><svg viewBox="0 0 68 48" aria-hidden="true"><path d="M66.5 7.7a8.6 8.6 0 0 0-6-6C55.2.3 34 .3 34 .3S12.8.3 7.5 1.7a8.6 8.6 0 0 0-6 6C0 13 0 24 0 24s0 11 1.5 16.3a8.6 8.6 0 0 0 6 6C12.8 47.7 34 47.7 34 47.7s21.2 0 26.5-1.4a8.6 8.6 0 0 0 6-6C68 35 68 24 68 24s0-11-1.5-16.3z" fill="#f00"/><path d="M45 24 27 14v20z" fill="#fff"/></svg></button></div>`
+/** The first YouTube video a post's text links to. */
+const videoIn = (text) => {
+  for (const m of String(text ?? '').matchAll(/https?:\/\/[^\s<]+/g)) {
+    const id = ytId(m[0])
+    if (id) return id
+  }
+  return null
+}
 
 // ── Talking to the API
 
@@ -222,6 +262,40 @@ export function relButtons(handle, relation, compact = false, opts = {}) {
   return `<span class="row wrap" data-rel="${h}"${opts.followsYou ? ' data-follows-you="1"' : ''}>${follow}${message}</span>`
 }
 
+/** A profile's link wears an icon for what it is (the owner, 2026-10-23: "name website, and icon as a globe"): a globe unless its name or address says more. */
+const LINK_ICON = {
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  portfolio: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>',
+  scholar: '<path d="m12 4 10 5-10 5L2 9z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6"/>',
+  code: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
+  video: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/>',
+  art: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 17-5-5-9 8"/>',
+  write: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  doc: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/>',
+  people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 6 5"/>'
+}
+export function linkIcon({ label = '', url = '' }) {
+  const s = `${label} ${url}`.toLowerCase()
+  const kind = /scholar|orcid|researchgate|academia\.edu|arxiv|pubmed/.test(s)
+    ? 'scholar'
+    : /github|gitlab|bitbucket|codepen|kaggle|leetcode|stackoverflow|hackerrank|huggingface|npmjs/.test(s)
+      ? 'code'
+      : /youtube|youtu\.be|vimeo|twitch/.test(s)
+        ? 'video'
+        : /behance|dribbble|instagram|artstation|flickr|figma|deviantart|pinterest/.test(s)
+          ? 'art'
+          : /medium\.com|substack|blog|hashnode|dev\.to|wordpress/.test(s)
+            ? 'write'
+            : /resume|résumé|\bcv\b|\.pdf\b/.test(s)
+              ? 'doc'
+              : /linkedin|twitter|\bx\.com|facebook|threads\.net|mastodon|bsky/.test(s)
+                ? 'people'
+                : /portfolio|case stud/.test(s)
+                  ? 'portfolio'
+                  : 'globe'
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${LINK_ICON[kind]}</svg>`
+}
+
 /** A person in a list: face, name and line, and Follow. */
 export const personRow = (p, line) => `<div class="person">${who(p, line)}${relButtons(p.handle, p.relation ?? 'none', true, { followsYou: p.followsYou })}</div>`
 
@@ -247,8 +321,8 @@ async function relate(btn) {
     }
   }
   if (btn.dataset.follow !== undefined) return void change('POST')
-  if (btn.dataset.following !== undefined) return popMenu(btn, [[`Unfollow`, () => void change('DELETE'), true]])
-  if (btn.dataset.requested !== undefined) return popMenu(btn, [['Cancel the request', () => void change('DELETE'), true]])
+  if (btn.dataset.following !== undefined) return popMenu(btn, [['Unfollow', () => void change('DELETE'), true]])
+  if (btn.dataset.requested !== undefined) return popMenu(btn, [['Cancel the Request', () => void change('DELETE'), true]])
 }
 
 /** Who applied to a job: the faces of people you follow, then how many applied through Oporch. */
@@ -277,7 +351,7 @@ export function ago(t) {
 export const linkify = (text) =>
   esc(text)
     .replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"&]/g, (url) => `<a href="${url}" target="_blank" rel="noopener nofollow ugc">${url}</a>`)
-    .replace(/(^|[^a-z0-9._@/])@([a-z0-9][a-z0-9._]{1,28}[a-z0-9])/gi, (_, pre, h) => `${pre}<a href="/u?h=${h.toLowerCase()}">@${h}</a>`)
+    .replace(/(^|[^a-z0-9._@/])@([a-z0-9][a-z0-9._]{1,28}[a-z0-9])/gi, (_, pre, h) => `${pre}<a href="/u/${h.toLowerCase()}">@${h}</a>`)
     .replace(/(^|[\s(])#([\p{L}\p{N}_]{2,50})/gu, (_, pre, tag) => `${pre}<a href="/search?tab=posts&amp;q=${encodeURIComponent('#' + tag)}">#${tag}</a>`)
 
 // ── Posts (the server's "updates"; the owner, 2026-10-22: "change updates to posts")
@@ -300,6 +374,8 @@ const ICON = {
   share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-6.5"/></svg>'
 }
 export { ICON }
+/** A post pinned to its author's profile wears this over it. */
+const PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l-1 6 4 4H6l4-4z"/><path d="M12 13v8"/></svg>'
 const posts = new Map() // id -> the post as last drawn, for redrawing it
 
 /** "Liked by" the first person you follow who liked it, and how many others, as Instagram says it. */
@@ -348,7 +424,10 @@ ${p.headline ? `<p class="rec-h">${esc(p.headline)}</p>` : ''}
 </article>`
 }
 
-/** A post as every list shows it: who and why, the text, a picture, a repost, then Instagram's actions. `opts.solo`: on its own page. */
+/**
+ * A post as every list shows it: who and why, the text, a YouTube video it links to, a picture, a repost, then
+ * Instagram's actions. `opts.solo`: on its own page; `opts.pinned`: whole on its author's profile, as pinned.
+ */
 export function postHtml(u, opts = {}) {
   posts.set(u.id, u)
   if (u.recommends !== undefined) return recommendationHtml(u, opts)
@@ -356,13 +435,19 @@ export function postHtml(u, opts = {}) {
   const line = [a.headline, `${ago(u.at)}${u.edited ? ' · Edited' : ''} · ${AUDIENCE[u.audience] ?? ''}`].filter(Boolean)
   const repost = u.repostOf
   const plain = repost && !u.text
-  const head = u.via?.card
-    ? `<div class="via">${avatar(u.via.card, 'xs')}<span><b>${esc(u.via.card.name)}</b> ${VIA[u.via.kind] ?? ''}</span></div>`
-    : plain
-      ? `<div class="via">${avatar(a, 'xs')}<span class="grow"><a href="${profileUrl(a)}"><b>${esc(a.name)}</b></a> reposted this</span>${
-          u.mine ? '<button class="menu-b" type="button" data-repost-menu aria-label="Repost actions">⋯</button>' : ''
-        }</div>`
-      : ''
+  const head = `${opts.pinned ? `<div class="via pinned">${PIN}<span>Pinned</span></div>` : ''}${
+    u.via?.card
+      ? `<div class="via">${avatar(u.via.card, 'xs')}<span><b>${esc(u.via.card.name)}</b> ${VIA[u.via.kind] ?? ''}</span></div>`
+      : plain
+        ? `<div class="via">${avatar(a, 'xs')}<span class="grow"><a href="${profileUrl(a)}"><b>${esc(a.name)}</b></a> reposted this</span>${
+            u.mine ? '<button class="menu-b" type="button" data-repost-menu aria-label="Repost actions">⋯</button>' : ''
+          }</div>`
+        : ''
+  }`
+  const video = (x) => {
+    const id = videoIn(x.text)
+    return id ? ytBox(id, 'the video') : ''
+  }
   const inner = (x) =>
     x.gone
       ? '<div class="card pad muted small">This post is not available.</div>'
@@ -370,15 +455,16 @@ export function postHtml(u, opts = {}) {
           x.text ? `<div class="post-t clamp">${esc(x.text)}</div>` : ''
         }${x.image ? `<img class="post-i" src="${esc(media(x.image))}" alt="" loading="lazy">` : ''}</a>`
   const body = plain
-    ? `<div class="post-h">${who(repost.gone ? a : repost.author, repost.gone ? '' : `${repost.author?.headline ?? ''}`)}</div>${repost.gone ? inner(repost) : `${repost.text ? `<div class="post-t clamp">${linkify(repost.text)}</div>` : ''}${repost.image ? `<a href="/p?id=${repost.id}"><img class="post-i" src="${esc(media(repost.image))}" alt="" loading="lazy"></a>` : ''}`}`
+    ? `<div class="post-h">${who(repost.gone ? a : repost.author, repost.gone ? '' : `${repost.author?.headline ?? ''}`)}</div>${repost.gone ? inner(repost) : `${repost.text ? `<div class="post-t clamp">${linkify(repost.text)}</div>` : ''}${video(repost)}${repost.image ? `<a href="/p?id=${repost.id}"><img class="post-i" src="${esc(media(repost.image))}" alt="" loading="lazy"></a>` : ''}`}`
     : `<div class="post-h">${who(a, line.join(' · '))}<button class="menu-b" type="button" data-post-menu aria-label="More actions">⋯</button></div>
 ${reviewNote(u)}
 ${u.text ? `<div class="post-t clamp">${linkify(u.text)}</div>` : ''}
+${video(u)}
 ${u.image ? `<a href="/p?id=${u.id}"><img class="post-i" src="${esc(media(u.image))}" alt="" loading="lazy"></a>` : ''}
 ${repost ? `<div class="embed-wrap">${inner(repost)}</div>` : ''}`
   const shown = plain && !repost.gone ? repost : u
   if (shown !== u) posts.set(shown.id, shown)
-  return `<article class="card post" data-post="${shown.id}"${plain ? ` data-wrapper="${u.id}"` : ''}${opts.solo ? ' data-solo="1"' : ''}>
+  return `<article class="card post" data-post="${shown.id}"${plain ? ` data-wrapper="${u.id}"` : ''}${opts.solo ? ' data-solo="1"' : ''}${opts.pinned ? ' data-pinned="1"' : ''}>
 ${head}
 ${body}
 ${actions(shown, opts.solo)}
@@ -613,23 +699,23 @@ function postMenu(card, btn) {
   if (!u) return
   const items = []
   if (u.recommends !== undefined) {
-    if (u.recommends) items.push(['Copy link to the profile', () => share(profileUrl(u.recommends), u.recommends.name)])
-    if (me && u.mine && u.recommends) items.push(['Undo the recommendation', () => void unrecommend(card, u), true])
-    else if (me && !u.mine) items.push(['I don’t want to see this', () => hideUpdate(card, u)], ['Report', () => report('update', { id: u.id }), true])
-    if (me?.admin && !u.mine) items.push(['Remove (admin)', () => removeUpdate(card, u), true])
+    if (u.recommends) items.push(['Copy Link to the Profile', () => share(profileUrl(u.recommends), u.recommends.name)])
+    if (me && u.mine && u.recommends) items.push(['Undo the Recommendation', () => void unrecommend(card, u), true])
+    else if (me && !u.mine) items.push(['I Don’t Want to See This', () => hideUpdate(card, u)], ['Report', () => report('update', { id: u.id }), true])
+    if (me?.admin && !u.mine) items.push(['Remove (Admin)', () => removeUpdate(card, u), true])
     return popMenu(btn, items)
   }
-  items.push(['Copy link to post', () => share(`/p?id=${u.id}`)])
+  items.push(['Copy Link to Post', () => share(`/p?id=${u.id}`)])
   if (me && u.mine) {
-    if (u.audience === 'anyone') items.push([u.featured ? 'Remove from Featured' : 'Feature on top of profile', () => toggleFeature(u)])
-    items.push(['Edit post', () => compose({ edit: u })])
-    items.push([u.audience === 'anyone' ? 'Show to followers only' : 'Show to anyone', () => changeAudience(card, u)])
-    items.push(['Delete post', () => removeUpdate(card, u), true])
+    if (u.audience === 'anyone') items.push([u.featured ? 'Unpin from Profile' : 'Pin to Profile', () => toggleFeature(u)])
+    items.push(['Edit Post', () => compose({ edit: u })])
+    items.push([u.audience === 'anyone' ? 'Show to Followers Only' : 'Show to Anyone', () => changeAudience(card, u)])
+    items.push(['Delete Post', () => removeUpdate(card, u), true])
   } else if (me) {
-    items.push(['I don’t want to see this', () => hideUpdate(card, u)])
-    items.push(['Report post', () => report('update', { id: u.id }), true])
+    items.push(['I Don’t Want to See This', () => hideUpdate(card, u)])
+    items.push(['Report Post', () => report('update', { id: u.id }), true])
   }
-  if (me?.admin && !u.mine) items.push(['Remove (admin)', () => removeUpdate(card, u), true])
+  if (me?.admin && !u.mine) items.push(['Remove (Admin)', () => removeUpdate(card, u), true])
   popMenu(btn, items)
 }
 
@@ -660,7 +746,7 @@ async function toggleFeature(u) {
   try {
     await api(u.featured ? 'DELETE' : 'POST', `/social/updates/${u.id}/feature`)
     u.featured = !u.featured
-    toast(u.featured ? 'Featured on your profile.' : 'Taken off your profile’s Featured.')
+    toast(u.featured ? 'Pinned to your profile. It shows whole there, above your other posts.' : 'Unpinned from your profile.')
   } catch (e) {
     toast(esc(e.message))
   }
@@ -668,7 +754,7 @@ async function toggleFeature(u) {
 async function changeAudience(card, u) {
   try {
     Object.assign(u, await api('PATCH', `/social/updates/${u.id}`, { audience: u.audience === 'anyone' ? 'followers' : 'anyone' }))
-    card.outerHTML = postHtml(u, { solo: !!card.dataset.solo })
+    card.outerHTML = postHtml(u, { solo: !!card.dataset.solo, pinned: !!card.dataset.pinned })
   } catch (e) {
     toast(esc(e.message))
   }
@@ -720,7 +806,7 @@ function repostMenu(card, btn) {
   const u = posts.get(+card.dataset.post)
   if (!u) return
   popMenu(btn, [
-    ['Repost with your thoughts', () => compose({ repostOf: u })],
+    ['Repost With Your Thoughts', () => compose({ repostOf: u })],
     [
       'Repost',
       async () => {
@@ -880,17 +966,19 @@ export async function toImage(file, max = 1600) {
 }
 
 /**
- * Upload a chosen file for `purpose` (post, design): JPEG and PNG remade here first; a GIF sent as it
- * is, for the server to check. A photo or cover goes through `cropImage` first and arrives as a Blob.
+ * Upload a chosen file for `purpose` (post, project, design): JPEG, PNG and WebP remade here first, at most
+ * `max` pixels a side; a GIF sent as it is, for the server to check. A design's picture keeps its file's name
+ * (`name`), which its code calls it by. A photo or cover goes through `cropImage` first and arrives as a Blob.
  */
-export async function upload(file, purpose = 'post', max = 1600) {
-  if (!(file instanceof File)) return api('POST', `/social/media?purpose=${purpose}`, file)
-  if (file.type === 'image/gif') {
+export async function upload(file, purpose = 'post', max = 1600, name = null) {
+  const to = `/social/media?purpose=${purpose}${name ? `&name=${encodeURIComponent(name)}` : ''}`
+  if (!(file instanceof File)) return api('POST', to, file)
+  if (file.type === 'image/gif' || /\.gif$/i.test(file.name)) {
     if (purpose === 'avatar' || purpose === 'cover') throw new ApiError('A photo or cover is a JPEG or PNG.', 400)
-    if (file.size > 5 * 1024 * 1024) throw new ApiError('A GIF can be up to 5 MB.', 400)
-    return api('POST', `/social/media?purpose=${purpose}`, new Blob([await file.arrayBuffer()], { type: 'image/gif' }))
+    if (file.size > 30 * 1024 * 1024) throw new ApiError('A GIF can be up to 30 MB.', 400)
+    return api('POST', to, new Blob([await file.arrayBuffer()], { type: 'image/gif' }))
   }
-  return api('POST', `/social/media?purpose=${purpose}`, await toImage(file, max))
+  return api('POST', to, await toImage(file, max))
 }
 
 /**
@@ -1042,7 +1130,7 @@ export function compose(opts = {}) {
   const { el, close } = dialog(`<div class="dialog-h"><h2>${title}</h2><button class="menu-b" type="button" data-close aria-label="Close">✕</button></div>
 <div class="dialog-b compose">
 <div class="row" style="margin-bottom:12px">${avatar(me)}<div><b>${esc(me.name)}</b><div><select class="aud" aria-label="Who can see this"><option value="anyone">Anyone</option><option value="followers">Followers only</option></select></div></div></div>
-<textarea maxlength="3000" placeholder="${repostOf ? 'Add your thoughts' : 'What do you want to talk about? Use @username to mention someone and #hashtags.'}" aria-label="Your post">${esc(edit?.text ?? '')}</textarea>
+<textarea maxlength="3000" placeholder="${repostOf ? 'Add your thoughts' : 'What are you working on? A YouTube link plays in your post. Use @username to mention someone, and #hashtags.'}" aria-label="Your post">${esc(edit?.text ?? '')}</textarea>
 ${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="post-a">[\s\S]*<\/article>/, '</article>')}</div>` : ''}
 <div class="preview" hidden><img alt=""><button class="btn ghost small" type="button" data-unpick>Remove</button></div>
 <p class="muted small">${me.admin ? '' : 'Every post is checked before it reaches anyone’s Home. Until then it shows on your profile.'}</p>
@@ -1082,7 +1170,7 @@ ${repostOf ? `<div class="embed-wrap">${postHtml(repostOf).replace(/<div class="
       close()
       if (edit) {
         Object.assign(edit, u)
-        for (const card of $$(`[data-post="${u.id}"]`)) card.outerHTML = postHtml(u, { solo: !!card.dataset.solo })
+        for (const card of $$(`[data-post="${u.id}"]`)) card.outerHTML = postHtml(u, { solo: !!card.dataset.solo, pinned: !!card.dataset.pinned })
         toast(u.review === 'pending' ? 'Saved. It is checked again before it is back in anyone’s Home.' : 'Saved.')
       } else {
         emit('posted', u)
@@ -1232,15 +1320,22 @@ document.addEventListener('click', (e) => {
     const go = (href) => () => (location.href = href)
     return popMenu(more, [
       ['Settings', go('/settings')],
-      ['My items', go('/items')],
-      ['Get the desktop app', go('/download')],
+      ['My Items', go('/items')],
+      ['Get the Desktop App', go('/download')],
       // As the desktop app's account menu: it offers the theme that is not showing (boot.js applies it next time).
-      [document.documentElement.classList.contains('dark') ? 'Light mode' : 'Dark mode', toggleTheme],
-      ['Log out', () => void signOut()]
+      [document.documentElement.classList.contains('dark') ? 'Light Mode' : 'Dark Mode', toggleTheme],
+      ['Log Out', () => void signOut()]
     ])
   }
   const rel = t.closest('[data-follow],[data-following],[data-requested]')
   if (rel) return void relate(rel)
+  // A video box: YouTube's player takes its place, playing.
+  const video = t.closest('[data-yt]:not(.on)')
+  if (video) {
+    video.classList.add('on')
+    video.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.dataset.yt)}?autoplay=1&rel=0&playsinline=1" title="YouTube video" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" allowfullscreen></iframe>`
+    return
+  }
   const unhide = t.closest('[data-unhide]')
   if (unhide) {
     void api('DELETE', `/social/updates/${unhide.dataset.unhide}/hide`).then(() => location.reload())
@@ -1254,7 +1349,7 @@ document.addEventListener('click', (e) => {
     const id = +card.dataset.wrapper
     return popMenu(undo, [
       [
-        'Undo repost',
+        'Undo Repost',
         async () => {
           try {
             await api('DELETE', `/social/updates/${id}`)
